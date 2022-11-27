@@ -28,3 +28,38 @@ a {
     background: black;
   }
 }
+
+/* Expand service section based on checkbox */
+.interviews-section {
+  display: none;
+}
+
+.interviews:checked ~ * .interviews-section {
+  display: block;
+}
+
+.media-section {
+  display: none;
+}
+
+.media:checked ~ * .media-section {
+  display: block;
+}
+
+.show {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  transition-property: all;
+  transition-duration: 800ms;
+  opacity: 100;
+  max-height: 2000px;
+  visibility: show;
+}
+
+.hide {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  transition-property: all;
+  transition-duration: 400ms;
+  opacity: 0;
+  max-height: 0;
+  visibility: hidden;
+}
