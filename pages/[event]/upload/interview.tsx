@@ -1,7 +1,55 @@
 import Head from "next/head";
-import Image from "next/image";
+import { useCallback, useRef, useState } from "react";
+import ReactTags from "react-tag-autocomplete";
 
 export default function Home() {
+  const [videoSrc, setVideoSrc] = useState("");
+  const [tags, setTags] = useState([]);
+
+  const [suggestions, setSuggestions] = useState([
+    { id: 1, name: "Apples" },
+    { id: 2, name: "Pears" },
+    { id: 3, name: "Bananas" },
+    { id: 4, name: "Mangos" },
+    { id: 5, name: "Lemons" },
+    { id: 6, name: "Apricots" },
+  ]);
+
+  const reactTags = useRef();
+
+  const onDelete = useCallback(
+    (tagIndex: number) => {
+      setTags(tags.filter((_, i) => i !== tagIndex));
+    },
+    [tags]
+  );
+
+  const onAddition = useCallback(
+    (newTag: any) => {
+      setTags([...tags, newTag]);
+    },
+    [tags]
+  );
+
+  const handleInterviewSelection = (videoFile: File | null) => {
+    if (!videoFile) return;
+
+    let blobURL = URL.createObjectURL(videoFile);
+    setVideoSrc(blobURL);
+  };
+
+  const checkVideoMetadata = (video: HTMLVideoElement) => {
+    if (video.videoWidth > video.videoHeight) {
+      console.log("Video is landscape");
+    } else {
+      console.log("Video is portrait");
+    }
+
+    if (video.duration > 60) {
+      console.log("Video is too long");
+    }
+  };
+
   return (
     <div>
       <Head>
@@ -11,21 +59,156 @@ export default function Home() {
       </Head>
 
       <main>
-        <h1 className="text-3xl font-bold underline">Hello world!</h1>
-      </main>
+        <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
+          <div className="relative mx-auto max-w-xl">
+            <svg
+              className="absolute left-full translate-x-1/2 transform"
+              width={404}
+              height={404}
+              fill="none"
+              viewBox="0 0 404 404"
+              aria-hidden="true"
+            >
+              <defs>
+                <pattern
+                  id="85737c0e-0916-41d7-917f-596dc7edfa27"
+                  x={0}
+                  y={0}
+                  width={20}
+                  height={20}
+                  patternUnits="userSpaceOnUse"
+                >
+                  <rect
+                    x={0}
+                    y={0}
+                    width={4}
+                    height={4}
+                    className="text-gray-200"
+                    fill="currentColor"
+                  />
+                </pattern>
+              </defs>
+              <rect
+                width={404}
+                height={404}
+                fill="url(#85737c0e-0916-41d7-917f-596dc7edfa27)"
+              />
+            </svg>
+            <svg
+              className="absolute right-full bottom-0 -translate-x-1/2 transform"
+              width={404}
+              height={404}
+              fill="none"
+              viewBox="0 0 404 404"
+              aria-hidden="true"
+            >
+              <defs>
+                <pattern
+                  id="85737c0e-0916-41d7-917f-596dc7edfa27"
+                  x={0}
+                  y={0}
+                  width={20}
+                  height={20}
+                  patternUnits="userSpaceOnUse"
+                >
+                  <rect
+                    x={0}
+                    y={0}
+                    width={4}
+                    height={4}
+                    className="text-gray-200"
+                    fill="currentColor"
+                  />
+                </pattern>
+              </defs>
+              <rect
+                width={404}
+                height={404}
+                fill="url(#85737c0e-0916-41d7-917f-596dc7edfa27)"
+              />
+            </svg>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Interview Upload
+              </h2>
+              <p className="mt-4 text-lg leading-6 text-gray-500">
+                Record a short video message and upload it here.
+              </p>
+            </div>
+            <div className="mt-12">
+              <form
+                action="#"
+                method="POST"
+                className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
+              >
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="interview"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Interview Video
+                  </label>
+                  <p className="block text-sm text-gray-500 mt-1 mb-2">
+                    Must be (landscape/portrait) and less than 1 minute.
+                  </p>
+                  <input
+                    type="file"
+                    name="interview"
+                    accept="video/*"
+                    onChange={(e) =>
+                      handleInterviewSelection(
+                        e.target.files && e.target.files[0]
+                      )
+                    }
+                    className="block w-full text-sm text-slate-500
+    file:mr-4 file:py-2 file:px-4
+    file:rounded-full file:border-0
+    file:text-md file:font-semibold
+    file:bg-indigo-50 file:text-indigo-500
+    hover:file:bg-indigo-100"
+                  />
+                  <video
+                    src={videoSrc}
+                    className={`${videoSrc ? "show" : "hide"} mt-4 rounded-md`}
+                    controls
+                    onLoadedMetadata={(metadata) =>
+                      checkVideoMetadata(metadata.currentTarget)
+                    }
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                  <div className="sm:col-span-2 mt-4">
+                    <label
+                      htmlFor="guests"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Tag Guests in Video
+                    </label>
+                    <ReactTags
+                      id="guests"
+                      name="guests"
+                      ref={reactTags}
+                      tags={tags}
+                      suggestions={suggestions}
+                      onDelete={onDelete}
+                      onAddition={onAddition}
+                    />
+                  </div>
+                </div>
 
-      <footer>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{" "}
-          <span>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    className="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  >
+                    UPLOAD
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
