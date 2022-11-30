@@ -14,15 +14,20 @@ export default function Form() {
   const [isInterviewsChecked, setIsInterviewsChecked] = useState(true);
   const [isMediaChecked, setIsMediaChecked] = useState(true);
   const [interviewOrientation, setInterviewOrientation] = useState("landscape");
-  const [interviewsInitialMessage, setInterviewsInitialMessage] = useState("");
+  const [interviewsInitialMessage, setInterviewsInitialMessage] = useState<
+    string | undefined
+  >(undefined);
   const [interviewsInitialMessageTime, setInterviewsInitialMessageTime] =
     useState("");
-  const [interviewsReminderMessage, setInterviewsReminderMessage] =
-    useState("");
+  const [interviewsReminderMessage, setInterviewsReminderMessage] = useState<
+    string | undefined
+  >(undefined);
   const [interviewsReminderMessageTime, setInterviewsReminderMessageTime] =
     useState("");
   const [mediaMessageTime, setMediaMessageTime] = useState("");
-  const [mediaMessage, setMediaMessage] = useState("");
+  const [mediaMessage, setMediaMessage] = useState<string | undefined>(
+    undefined
+  );
 
   const getEstimatedEventEnd = (start: string) => {
     if (!start) return "";
@@ -121,8 +126,9 @@ export default function Form() {
         </div>
         <div className="mt-12">
           <form
-            action="#"
+            action="/api/event"
             method="POST"
+            encType="multipart/form-data"
             className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
           >
             <h1 className="text-2xl sm:col-span-2">Personal Information</h1>
@@ -140,6 +146,7 @@ export default function Form() {
                   id="first-name"
                   autoComplete="given-name"
                   placeholder="Jim"
+                  required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -158,6 +165,7 @@ export default function Form() {
                   id="last-name"
                   autoComplete="family-name"
                   placeholder="Halpert"
+                  required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -176,6 +184,7 @@ export default function Form() {
                   type="email"
                   autoComplete="email"
                   placeholder="jim@dundermifflinpaper.com"
+                  required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -209,6 +218,7 @@ export default function Form() {
                   autoComplete="tel"
                   className="block w-full rounded-md border-gray-300 py-3 px-4 focus:border-indigo-500 focus:ring-indigo-500" // pl-20
                   placeholder="555-987-6543"
+                  required
                 />
               </div>
             </div>
@@ -228,6 +238,7 @@ export default function Form() {
                   onChange={(e) => setEventTitle(e.target.value)}
                   value={eventTitle}
                   placeholder="Pam & Jim's Wedding"
+                  required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -245,6 +256,7 @@ export default function Form() {
                   name="date"
                   id="date"
                   onChange={(e) => setEventStart(e.target.value)}
+                  required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -262,6 +274,7 @@ export default function Form() {
                   name="location"
                   id="location"
                   placeholder="10 Rainbow Blvd., Niagara Falls, NY 14303"
+                  required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -299,6 +312,7 @@ export default function Form() {
                   accept=".csv"
                   name="guest-list"
                   id="guest-list"
+                  required
                   className="block w-full text-sm text-slate-500
       file:mr-4 file:py-2 file:px-4
       file:rounded-full file:border-0
@@ -419,6 +433,7 @@ export default function Form() {
                       id="interviews-initial-schedule"
                       onChange={(e) => setInterviewsInitialMessageTime}
                       value={interviewsInitialMessageTime || eventStart}
+                      required={isInterviewsChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
                   </div>
@@ -448,13 +463,15 @@ export default function Form() {
                         setInterviewsInitialMessage(e.target.value)
                       }
                       value={
-                        interviewsInitialMessage ||
-                        `Hi {{FirstName}}! We are collecting guest interviews using Guestography for ${eventTitle} and it’s your turn!\n\nPlease record a short video message (<10 seconds per person) using your smartphone (in ${
-                          interviewOrientation === "landscape"
-                            ? "landscape ↔️"
-                            : "portrait ↕️"
-                        }!) and upload it using the link below.\n{{UploadLink}}\n\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`
+                        interviewsInitialMessage !== undefined
+                          ? interviewsInitialMessage
+                          : `Hi {{FirstName}}! We are collecting guest interviews using Guestography for ${eventTitle} and it’s your turn!\n\nPlease record a short video message (<10 seconds per person) using your smartphone (in ${
+                              interviewOrientation === "landscape"
+                                ? "landscape ↔️"
+                                : "portrait ↕️"
+                            }!) and upload it using the link below.\n{{UploadLink}}\n\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`
                       }
+                      required={isInterviewsChecked}
                     />
                   </div>
                 </div>
@@ -481,6 +498,7 @@ export default function Form() {
                         interviewsReminderMessageTime ||
                         getEstimatedEventEnd(eventStart)
                       }
+                      required={isInterviewsChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
                   </div>
@@ -510,9 +528,11 @@ export default function Form() {
                         setInterviewsReminderMessage(e.target.value)
                       }
                       value={
-                        interviewsReminderMessage ||
-                        `Hi {{FirstName}}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n\n{{UploadLink}}`
+                        interviewsReminderMessage !== undefined
+                          ? interviewsReminderMessage
+                          : `Hi {{FirstName}}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n\n{{UploadLink}}`
                       }
+                      required={isInterviewsChecked}
                     />
                   </div>
                 </div>
@@ -558,6 +578,7 @@ export default function Form() {
                       id="media-schedule"
                       onChange={(e) => setMediaMessageTime(e.target.value)}
                       value={mediaMessageTime || getNextMorning(eventStart)}
+                      required={isMediaChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
                   </div>
@@ -585,9 +606,11 @@ export default function Form() {
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                       onChange={(e) => setMediaMessage(e.target.value)}
                       value={
-                        mediaMessage ||
-                        `Good morning {{FirstName}}! Guestography here and we hope that you had fun at ${eventTitle} yesterday and invite you to share any photos and videos you took by uploading them using the link below.\n\n{{UploadLink}}`
+                        mediaMessage !== undefined
+                          ? mediaMessage
+                          : `Good morning {{FirstName}}! Guestography here and we hope that you had fun at ${eventTitle} yesterday and invite you to share any photos and videos you took by uploading them using the link below.\n\n{{UploadLink}}`
                       }
+                      required={isMediaChecked}
                     />
                   </div>
                 </div>

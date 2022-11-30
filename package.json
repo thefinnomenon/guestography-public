@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@headlessui/react": "^1.7.4",
+    "csv": "^6.2.4",
+    "csv-parse": "^5.3.3",
     "firebase": "^9.14.0",
+    "multer": "^1.4.5-lts.1",
     "next": "13.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -19,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.3",
+    "@types/multer": "^1.4.7",
     "@types/node": "18.11.7",
     "@types/react": "18.0.24",
     "@types/react-dom": "18.0.8",
