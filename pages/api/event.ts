@@ -4,6 +4,7 @@ import serviceAccount from "../../lib/serviceAccountKey.json";
 import multer from "multer";
 import { parse } from "csv-parse/sync";
 import { slugify } from "../../utils/format";
+import { Event } from "../../types";
 import ShortUniqueId from "short-unique-id";
 
 if (!admin.apps.length)
@@ -13,11 +14,6 @@ if (!admin.apps.length)
     databaseURL: "https://guestography-37df8.firebaseio.com",
   });
 else admin.app();
-
-type Event = {
-  firstName: string;
-  lastName: string;
-};
 
 async function parseFormData(
   req: NextApiRequest & { files?: any },
@@ -72,22 +68,52 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const db = admin.firestore();
-  const { fields: event, files } = await parseFormData(req, res);
+  const { fields, files } = await parseFormData(req, res);
 
   // TODO: Validate event info and create event entry
 
   // Parse guest list CSV and add to event
   if (files[0])
-    event["guest-list"] = await parse(files[0].buffer, { columns, from: 2 });
+    fields["guest-list"] = await parse(files[0].buffer, { columns, from: 2 });
 
   // Map over guest list & add unique guest ids
   const uid = new ShortUniqueId();
-  event["guest-list"] = event["guest-list"].map((guest: any) => {
+  fields["guest-list"] = fields["guest-list"].map((guest: any) => {
     return { ...guest, id: uid() };
   });
 
+  const event: Event = {
+    firstName: fields["first-name"],
+    lastName: fields["last-name"],
+    email: fields["email"],
+    phone: fields["phone"],
+    title: fields["title"],
+    date: fields["date"],
+    location: fields["location"],
+    guests: fields["guest-list"],
+    interviews: {
+      enabled: fields["interviews"] === "on" ? true : false,
+      orientation: fields["interviews-orientation"],
+      initialMessage: {
+        message: fields["interviews-initial-message"],
+        schedule: fields["interviews-initial-schedule"],
+      },
+      reminderMessage: {
+        message: fields["interviews-reminder-message"],
+        schedule: fields["interviews-reminder-schedule"],
+      },
+    },
+    media: {
+      enabled: fields["media"] === "on" ? true : false,
+      message: {
+        message: fields["media-message"],
+        schedule: fields["media-schedule"],
+      },
+    },
+  };
+
   // Generate URL safe event ids
-  const eventId = `${slugify(event.title)}-${new ShortUniqueId({
+  const eventId = `${slugify(fields.title)}-${new ShortUniqueId({
     length: 4,
   })()}`;
 
