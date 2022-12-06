@@ -19,7 +19,8 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-icons": "^4.6.0",
-    "react-tag-autocomplete": "^6.3.0"
+    "react-tag-autocomplete": "^6.3.0",
+    "short-unique-id": "^4.4.4"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.3",
