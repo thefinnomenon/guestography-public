@@ -1,21 +1,22 @@
 import Head from "next/head";
+import { GetStaticProps, GetStaticPropsContext } from "next";
 import { useCallback, useRef, useState } from "react";
-import ReactTags from "react-tag-autocomplete";
+import ReactTags, { Tag } from "react-tag-autocomplete";
+import { Guest } from "../../../types";
+import { getEvent, getEvents } from "../../../lib/firebase";
 
-export default function Home() {
+interface Props {
+  title: string;
+  orientation: "landscape" | "portrait";
+  guests: Tag[];
+}
+
+export default function Home(props: Props) {
+  const { title, orientation, guests } = props;
   const [videoSrc, setVideoSrc] = useState("");
-  const [tags, setTags] = useState([]);
-
-  const [suggestions, setSuggestions] = useState([
-    { id: 1, name: "Apples" },
-    { id: 2, name: "Pears" },
-    { id: 3, name: "Bananas" },
-    { id: 4, name: "Mangos" },
-    { id: 5, name: "Lemons" },
-    { id: 6, name: "Apricots" },
-  ]);
-
-  const reactTags = useRef();
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [suggestions, setSuggestions] = useState(guests);
+  const reactTags = useRef<ReactTags>();
 
   const onDelete = useCallback(
     (tagIndex: number) => {
@@ -211,4 +212,68 @@ export default function Home() {
       </main>
     </div>
   );
+}
+
+export async function getStaticPaths() {
+  try {
+    const events = await getEvents();
+
+    if (!events)
+      return {
+        notFound: true,
+      };
+
+    const paths = events.map((event) => {
+      return { params: { eventId: event.id } };
+    });
+
+    return {
+      paths,
+      fallback: true,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      notFound: true,
+    };
+  }
+}
+
+export async function getStaticProps(
+  context: GetStaticPropsContext<{ eventId: string }>
+) {
+  const eventId = context?.params?.eventId;
+  if (!eventId)
+    return {
+      notFound: true,
+    };
+
+  try {
+    const event = await getEvent(eventId);
+
+    if (!event)
+      return {
+        notFound: true,
+      };
+
+    const guests = event.guests.map((guest) => {
+      return {
+        id: guest.id,
+        name: `${guest.firstName} ${guest.lastName}`,
+      };
+    });
+
+    return {
+      props: {
+        title: event.title,
+        orientation: event.interviews.orientation,
+        guests,
+      },
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      notFound: true,
+    };
+  }
 }
