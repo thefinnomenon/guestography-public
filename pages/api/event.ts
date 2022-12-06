@@ -74,13 +74,24 @@ export default async function handler(
   const db = admin.firestore();
   const { fields: event, files } = await parseFormData(req, res);
 
+  // TODO: Validate event info and create event entry
+
+  // Parse guest list CSV and add to event
   if (files[0])
     event["guest-list"] = await parse(files[0].buffer, { columns, from: 2 });
 
+  // Map over guest list & add unique guest ids
+  const uid = new ShortUniqueId();
+  event["guest-list"] = event["guest-list"].map((guest: any) => {
+    return { ...guest, id: uid() };
+  });
+
+  // Generate URL safe event ids
   const eventId = `${slugify(event.title)}-${new ShortUniqueId({
     length: 4,
   })()}`;
 
+  // Store event in db
   try {
     await db.collection("events").doc(eventId).create(event);
     console.log("Created record for event: ", event);
@@ -88,6 +99,5 @@ export default async function handler(
     console.error(e);
   }
 
-  // TODO: Validate event info and create event entry
   res.status(200).redirect("/success-page");
 }
