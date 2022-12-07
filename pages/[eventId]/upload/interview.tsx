@@ -1,8 +1,8 @@
 import Head from "next/head";
-import { GetStaticProps, GetStaticPropsContext } from "next";
-import { useCallback, useRef, useState } from "react";
-import ReactTags, { Tag } from "react-tag-autocomplete";
-import { Guest } from "../../../types";
+import { GetStaticPropsContext } from "next";
+import router from "next/router";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import ReactTags, { Tag, TagComponentProps } from "react-tag-autocomplete";
 import { getEvent, getEvents } from "../../../lib/firebase";
 import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { BiError } from "react-icons/bi";
@@ -15,17 +15,32 @@ interface Props {
 
 export default function Home(props: Props) {
   const { title, orientation, guests } = props;
+  let guestId = "";
+  if (typeof window !== "undefined" && router.query.guestId)
+    guestId = router.query.guestId as string;
+  const defaultTag = guests.find((guest) => guest.id === guestId);
+  console.log("defaultTag: ", defaultTag);
   const [videoSrc, setVideoSrc] = useState("");
-  const [tags, setTags] = useState<Tag[]>([]);
   const [suggestions, setSuggestions] = useState(guests);
+  const [tags, setTags] = useState<Tag[]>([]);
+  console.log("tags: ", tags);
   const [error, setError] = useState("");
   const reactTags = useRef<ReactTags>();
 
+  useEffect(() => {
+    setTags(defaultTag ? [defaultTag] : []);
+  }, [defaultTag]);
+
   const onDelete = useCallback(
     (tagIndex: number) => {
-      setTags(tags.filter((_, i) => i !== tagIndex));
+      setTags(
+        tags.filter((tag, i) => {
+          if (tag.id === guestId) return true;
+          return i !== tagIndex;
+        })
+      );
     },
-    [tags]
+    [guestId, tags]
   );
 
   const onAddition = useCallback(
@@ -215,6 +230,8 @@ export default function Home(props: Props) {
                     <ReactTags
                       id="guests"
                       name="guests"
+                      placeholderText="Add guest"
+                      noSuggestionsText="No matching guests"
                       // @ts-ignore
                       ref={reactTags}
                       tags={tags}
@@ -239,6 +256,47 @@ export default function Home(props: Props) {
         </div>
       </main>
     </div>
+  );
+}
+
+function TagComponent({ tag, removeButtonText, onDelete }: TagComponentProps) {
+  return (
+    <span
+      id="badge-dismiss-default"
+      className="inline-flex items-center py-1 px-2 mr-2 text-sm font-medium text-indigo-800 bg-indigo-100 rounded dark:bg-indigo-200 dark:text-indigo-800"
+    >
+      <button
+        type="button"
+        className="inline-flex items-center py-0.5 mr-2 text-sm text-indigo-400 bg-transparent rounded-sm hover:bg-indigo-200 hover:text-indigo-900 dark:hover:bg-indigo-300 dark:hover:text-indigo-900"
+        data-dismiss-target="#badge-dismiss-default"
+        aria-label="Remove"
+        onClick={onDelete}
+      >
+        <svg
+          aria-hidden="true"
+          className="w-3.5 h-3.5"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+            clip-rule="evenodd"
+          ></path>
+        </svg>
+        <span className="sr-only">Remove guest</span>
+      </button>
+      {tag.name}
+    </span>
+  );
+}
+
+function SuggestionComponent({ item, query }: any) {
+  return (
+    <span id={item.id} className={"bg-slate-300"}>
+      {item.name}
+    </span>
   );
 }
 
