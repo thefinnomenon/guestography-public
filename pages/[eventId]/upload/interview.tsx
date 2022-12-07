@@ -156,8 +156,9 @@ export default function Home(props: Props) {
             </div>
             <div className="mt-12">
               <form
-                action="#"
+                action="/api/interview"
                 method="POST"
+                encType="multipart/form-data"
                 className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
               >
                 <div className="sm:col-span-2">
