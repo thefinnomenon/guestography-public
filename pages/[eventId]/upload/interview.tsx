@@ -4,6 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import ReactTags, { Tag } from "react-tag-autocomplete";
 import { Guest } from "../../../types";
 import { getEvent, getEvents } from "../../../lib/firebase";
+import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
+import { BiError } from "react-icons/bi";
 
 interface Props {
   title: string;
@@ -16,6 +18,7 @@ export default function Home(props: Props) {
   const [videoSrc, setVideoSrc] = useState("");
   const [tags, setTags] = useState<Tag[]>([]);
   const [suggestions, setSuggestions] = useState(guests);
+  const [error, setError] = useState("");
   const reactTags = useRef<ReactTags>();
 
   const onDelete = useCallback(
@@ -40,15 +43,12 @@ export default function Home(props: Props) {
   };
 
   const checkVideoMetadata = (video: HTMLVideoElement) => {
-    if (video.videoWidth > video.videoHeight) {
-      console.log("Video is landscape");
-    } else {
-      console.log("Video is portrait");
-    }
-
-    if (video.duration > 60) {
-      console.log("Video is too long");
-    }
+    const videoOrientation =
+      video.videoWidth > video.videoHeight ? "landscape" : "portrait";
+    if (videoOrientation !== orientation)
+      setError(`${error}Video must be in ${orientation}. `);
+    if (video.duration >= 60)
+      setError(`${error} Video must be under 60 seconds. `);
   };
 
   return (
@@ -150,7 +150,19 @@ export default function Home(props: Props) {
                     Interview Video
                   </label>
                   <p className="block text-sm text-gray-500 mt-1 mb-2">
-                    Must be (landscape/portrait) and less than 1 minute.
+                    Must be{" "}
+                    {orientation === "landscape" ? (
+                      <>
+                        <IoPhoneLandscapeSharp className="ml-1 mr-2 inline text-2xl" />
+                        Landscape
+                      </>
+                    ) : (
+                      <>
+                        <IoPhonePortraitSharp className="ml-1 mr-2 inline text-2xl" />
+                        Portrait
+                      </>
+                    )}{" "}
+                    and less than 1 minute.
                   </p>
                   <input
                     type="file"
@@ -168,19 +180,30 @@ export default function Home(props: Props) {
     file:bg-indigo-50 file:text-indigo-500
     hover:file:bg-indigo-100"
                   />
-                  <div className="flex justify-center">
+                  <div className="flex flex-col justify-center gap-2">
                     <video
                       src={videoSrc}
                       className={`${
                         videoSrc ? "show" : "hide"
                       } mt-4 rounded-md`}
                       controls
-                      onLoadedMetadata={(metadata) =>
-                        checkVideoMetadata(metadata.currentTarget)
-                      }
+                      onLoadedMetadata={(metadata) => {
+                        setError("");
+                        checkVideoMetadata(metadata.currentTarget);
+                      }}
                     >
                       Your browser does not support the video tag.
                     </video>
+                    {error && (
+                      <div
+                        className="flex p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800"
+                        role="alert"
+                      >
+                        <BiError className="text-lg mr-2" />
+                        <span className="sr-only">Error</span>
+                        <div>{error}</div>
+                      </div>
+                    )}
                   </div>
                   <div className="sm:col-span-2 mt-4">
                     <label
