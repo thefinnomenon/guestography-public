@@ -18,7 +18,9 @@ export default function Home(props: Props) {
   let guestId = "";
   if (typeof window !== "undefined" && router.query.guestId)
     guestId = router.query.guestId as string;
-  const defaultTag = guests.find((guest) => guest.id === guestId);
+  const defaultTag = guests
+    ? guests.find((guest) => guest.id === guestId)
+    : null;
   console.log("defaultTag: ", defaultTag);
   const [videoSrc, setVideoSrc] = useState("");
   const [suggestions, setSuggestions] = useState(guests);
