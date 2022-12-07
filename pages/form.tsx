@@ -24,15 +24,20 @@ export default function Form() {
   >(undefined);
   const [interviewsReminderMessageTime, setInterviewsReminderMessageTime] =
     useState("");
-  const [mediaMessageTime, setMediaMessageTime] = useState("");
-  const [mediaMessage, setMediaMessage] = useState<string | undefined>(
-    undefined
-  );
+  const [mediaInitialMessage, setMediaInitialMessage] = useState<
+    string | undefined
+  >(undefined);
+  const [mediaInitialMessageTime, setMediaInitialMessageTime] = useState("");
+  const [mediaCollectionMessageTime, setMediaCollectionMessageTime] =
+    useState("");
+  const [mediaCollectionMessage, setMediaCollectionMessage] = useState<
+    string | undefined
+  >(undefined);
 
   const getEstimatedEventEnd = (start: string) => {
     if (!start) return "";
     let d = new Date(start);
-    // correct time zone offset for generating iso string
+    // Correct time zone offset for generating iso string
     d.setMinutes(d.getMinutes() + 60 * 4 - d.getTimezoneOffset());
     return d.toISOString().slice(0, -1);
   };
@@ -43,6 +48,14 @@ export default function Form() {
     d.setDate(d.getDate() + 1);
     d.setUTCHours(10);
     d.setMinutes(0);
+    return d.toISOString().slice(0, -1);
+  };
+
+  const getHourBefore = (start: string) => {
+    if (!start) return "";
+    let d = new Date(start);
+    // Correct time zone offset for generating iso string
+    d.setMinutes(d.getMinutes() - 60 - d.getTimezoneOffset());
     return d.toISOString().slice(0, -1);
   };
 
@@ -559,10 +572,65 @@ export default function Form() {
                 </div>
               </div>
               <div className={`${isMediaChecked ? "show" : "hide"} ml-6`}>
-                <h1 className="text-xl sm:col-span-2 mb-2">Message</h1>
+                <h1 className="text-xl sm:col-span-2 mb-2">Initial Message</h1>
                 <div className="sm:col-span-2 mb-4">
                   <label
-                    htmlFor="media-schedule"
+                    htmlFor="interviews-initial-schedule"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Schedule
+                  </label>
+                  <p className="text-gray-500 text-sm mt-1">
+                    We recommend scheduling the message before the start of the
+                    event.
+                  </p>
+                  <div className="mt-1">
+                    <input
+                      type="datetime-local"
+                      name="media-initial-schedule"
+                      id="media-initial-schedule"
+                      onChange={(e) => setMediaInitialMessageTime}
+                      value={
+                        mediaInitialMessageTime || getHourBefore(eventStart)
+                      }
+                      required={isMediaChecked}
+                      className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label
+                    htmlFor="media-initial-message"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Message
+                  </label>
+                  <p className="text-gray-500 text-sm mt-1">
+                    &#123;&#123;FirstName&#125;&#125; will be replaced with the
+                    first name of the guest for each message.
+                  </p>
+                  <div className="mt-1">
+                    <textarea
+                      id="media-initial-message"
+                      name="media-initial-message"
+                      rows={4}
+                      className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      onChange={(e) => setMediaInitialMessage(e.target.value)}
+                      value={
+                        mediaInitialMessage !== undefined
+                          ? mediaInitialMessage
+                          : `Hi {{FirstName}}, we hope you are excited for ${eventTitle}! We wanted to let you know that we are using Guestography to collect photos and videos from everyone so please snap away and tomorrow you will recieve a message asking you to upload your best shots!`
+                      }
+                      required={isMediaChecked}
+                    />
+                  </div>
+                </div>
+                <h1 className="text-xl sm:col-span-2 mt-6 mb-2">
+                  Collection Message
+                </h1>
+                <div className="sm:col-span-2 mb-4">
+                  <label
+                    htmlFor="media-collection-schedule"
                     className="block text-sm font-medium text-gray-700"
                   >
                     Schedule
@@ -574,10 +642,14 @@ export default function Form() {
                   <div className="mt-1">
                     <input
                       type="datetime-local"
-                      name="media-schedule"
-                      id="media-schedule"
-                      onChange={(e) => setMediaMessageTime(e.target.value)}
-                      value={mediaMessageTime || getNextMorning(eventStart)}
+                      name="media-collection-schedule"
+                      id="media-collection-schedule"
+                      onChange={(e) =>
+                        setMediaCollectionMessageTime(e.target.value)
+                      }
+                      value={
+                        mediaCollectionMessageTime || getNextMorning(eventStart)
+                      }
                       required={isMediaChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
@@ -585,7 +657,7 @@ export default function Form() {
                 </div>
                 <div className="sm:col-span-2">
                   <label
-                    htmlFor="media-message"
+                    htmlFor="media-collection-message"
                     className="block text-sm font-medium text-gray-700"
                   >
                     Message
@@ -600,14 +672,16 @@ export default function Form() {
                   </p>
                   <div className="mt-1">
                     <textarea
-                      id="media-message"
-                      name="media-message"
+                      id="media-collection-message"
+                      name="media-collection-message"
                       rows={5}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      onChange={(e) => setMediaMessage(e.target.value)}
+                      onChange={(e) =>
+                        setMediaCollectionMessage(e.target.value)
+                      }
                       value={
-                        mediaMessage !== undefined
-                          ? mediaMessage
+                        mediaCollectionMessage !== undefined
+                          ? mediaCollectionMessage
                           : `Good morning {{FirstName}}! Guestography here and we hope that you had fun at ${eventTitle} yesterday and invite you to share any photos and videos you took by uploading them using the link below.\n\n{{UploadLink}}`
                       }
                       required={isMediaChecked}

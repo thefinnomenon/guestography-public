@@ -105,9 +105,13 @@ export default async function handler(
     },
     media: {
       enabled: fields["media"] === "on" ? true : false,
-      message: {
-        message: fields["media-message"],
-        schedule: fields["media-schedule"],
+      initialMessage: {
+        message: fields["media-initial-message"],
+        schedule: fields["media-initial-schedule"],
+      },
+      collectionMessage: {
+        message: fields["media-collection-message"],
+        schedule: fields["media-collection-schedule"],
       },
     },
   };

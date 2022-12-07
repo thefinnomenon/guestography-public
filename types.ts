@@ -35,7 +35,8 @@ export interface InterviewsService {
 
 export interface MediaService {
   enabled: boolean;
-  message: Message;
+  initialMessage: Message;
+  collectionMessage: Message;
 }
 
 export interface Message {

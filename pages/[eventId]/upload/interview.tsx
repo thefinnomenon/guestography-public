@@ -188,6 +188,7 @@ export default function Home(props: Props) {
                     <ReactTags
                       id="guests"
                       name="guests"
+                      // @ts-ignore
                       ref={reactTags}
                       tags={tags}
                       suggestions={suggestions}
