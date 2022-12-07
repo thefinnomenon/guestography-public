@@ -21,11 +21,9 @@ export default function Home(props: Props) {
   const defaultTag = guests
     ? guests.find((guest) => guest.id === guestId)
     : null;
-  console.log("defaultTag: ", defaultTag);
   const [videoSrc, setVideoSrc] = useState("");
   const [suggestions, setSuggestions] = useState(guests);
   const [tags, setTags] = useState<Tag[]>([]);
-  console.log("tags: ", tags);
   const [error, setError] = useState("");
   const reactTags = useRef<ReactTags>();
 
@@ -60,12 +58,14 @@ export default function Home(props: Props) {
   };
 
   const checkVideoMetadata = (video: HTMLVideoElement) => {
+    let err = "";
     const videoOrientation =
       video.videoWidth > video.videoHeight ? "landscape" : "portrait";
     if (videoOrientation !== orientation)
-      setError(`${error}Video must be in ${orientation}. `);
-    if (video.duration >= 60)
-      setError(`${error} Video must be under 60 seconds. `);
+      err = `${err}Video must be in ${orientation}. `;
+    if (video.duration >= 60) err = `${err} Video must be under 60 seconds. `;
+
+    setError(err);
   };
 
   return (
@@ -209,7 +209,6 @@ export default function Home(props: Props) {
                       } mt-4 rounded-md`}
                       controls
                       onLoadedMetadata={(metadata) => {
-                        setError("");
                         checkVideoMetadata(metadata.currentTarget);
                       }}
                     >
