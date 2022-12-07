@@ -168,16 +168,20 @@ export default function Home(props: Props) {
     file:bg-indigo-50 file:text-indigo-500
     hover:file:bg-indigo-100"
                   />
-                  <video
-                    src={videoSrc}
-                    className={`${videoSrc ? "show" : "hide"} mt-4 rounded-md`}
-                    controls
-                    onLoadedMetadata={(metadata) =>
-                      checkVideoMetadata(metadata.currentTarget)
-                    }
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                  <div className="flex justify-center">
+                    <video
+                      src={videoSrc}
+                      className={`${
+                        videoSrc ? "show" : "hide"
+                      } mt-4 rounded-md`}
+                      controls
+                      onLoadedMetadata={(metadata) =>
+                        checkVideoMetadata(metadata.currentTarget)
+                      }
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
                   <div className="sm:col-span-2 mt-4">
                     <label
                       htmlFor="guests"
