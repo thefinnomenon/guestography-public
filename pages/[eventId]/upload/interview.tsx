@@ -105,7 +105,7 @@ export default function Home(props: Props) {
   return (
     <div>
       <Head>
-        <title>{title} | Interviews</title>
+        <title>{`${title} | Interviews`}</title>
         <meta name="description" content={`Interview upload for ${title}`} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -191,11 +191,7 @@ export default function Home(props: Props) {
               </p>
             </div>
             <div className="mt-12">
-              <form
-                action="/api/interview"
-                method="POST"
-                className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
-              >
+              <form className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8">
                 <div className="sm:col-span-2">
                   <label
                     htmlFor="interview"
@@ -344,7 +340,6 @@ export async function getStaticPaths() {
   try {
     const events = await getEvents();
 
-    console.log(events);
     if (!events)
       return {
         notFound: true,
