@@ -309,6 +309,7 @@ export async function getStaticPaths() {
   try {
     const events = await getEvents();
 
+    console.log(events);
     if (!events)
       return {
         notFound: true,
@@ -342,7 +343,8 @@ export async function getStaticProps(
   try {
     const event = await getEvent(eventId);
 
-    if (!event)
+    // If event doesn't exist or doesn't have interview service enabled -> 404
+    if (!event || !event.interviews.enabled)
       return {
         notFound: true,
       };
