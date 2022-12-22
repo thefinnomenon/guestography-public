@@ -25,6 +25,7 @@ export default function Home(props: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadUrl, setUploadUrl] = useState("");
   const [videoSrc, setVideoSrc] = useState("");
+  const [file, setFile] = useState<File>();
   const [fileExt, setFileExt] = useState("");
   const [suggestions, setSuggestions] = useState(guests);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -68,6 +69,7 @@ export default function Home(props: Props) {
 
     let blobURL = URL.createObjectURL(videoFile);
     setVideoSrc(blobURL);
+    setFile(videoFile);
   };
 
   const checkVideoMetadata = (video: HTMLVideoElement) => {
@@ -96,10 +98,25 @@ export default function Home(props: Props) {
   }, [eventId, guestId, fileExt]);
 
   // Handle Form Submission
-  const handleSubmit = () => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsSubmitting(true);
-    console.log("Submitting...");
-    setTimeout(() => setIsSubmitting(false), 2000);
+
+    if (!file) return;
+
+    let formData = new FormData();
+    formData.append("Content-Type", file.type);
+    formData.append("file", file);
+
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      body: formData,
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    setIsSubmitting(false);
   };
 
   return (
@@ -191,7 +208,10 @@ export default function Home(props: Props) {
               </p>
             </div>
             <div className="mt-12">
-              <form className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8">
+              <form
+                onSubmit={handleSubmit}
+                className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
+              >
                 <div className="sm:col-span-2">
                   <label
                     htmlFor="interview"
@@ -280,8 +300,12 @@ export default function Home(props: Props) {
 
                 <div className="sm:col-span-2">
                   <button
-                    onClick={() => handleSubmit()}
-                    className="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    disabled={!videoSrc || !uploadUrl}
+                    type="submit"
+                    className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                      (!videoSrc || !uploadUrl) &&
+                      "bg-indigo-200 text-indigo-400 hover:bg-indigo-200"
+                    }`}
                   >
                     {isSubmitting ? "LOADING" : "UPLOAD"}
                   </button>
