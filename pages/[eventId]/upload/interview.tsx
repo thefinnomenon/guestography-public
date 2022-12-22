@@ -112,7 +112,7 @@ export default function Home(props: Props) {
       method: "PUT",
       body: formData,
       headers: {
-        "Content-Type": "multipart/form-data",
+        "Content-Type": file.type,
       },
     });
 

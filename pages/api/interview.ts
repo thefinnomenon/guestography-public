@@ -73,7 +73,7 @@ export default async function handler(
     }
 
     const bucket = process.env.CLOUDFLARE_BUCKET_NAME;
-    const key = `${eventId}/interviews/${guestId}-${new ShortUniqueId({
+    const key = `events/${eventId}/interviews/${guestId}-${new ShortUniqueId({
       length: 4,
     })()}.${fileExt || ""}`;
 
@@ -83,7 +83,7 @@ export default async function handler(
 
     const url = await getSignedUrl(
       r2,
-      new PutObjectCommand({ Bucket: bucket, Key: key, ACL: "public-read" }),
+      new PutObjectCommand({ Bucket: bucket, Key: key }),
       { expiresIn: 3600 * 24 }
     );
 
