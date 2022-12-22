@@ -10,23 +10,28 @@ import { BiError } from "react-icons/bi";
 interface Props {
   title: string;
   orientation: "landscape" | "portrait";
+  eventId: string;
   guests: Tag[];
 }
 
 export default function Home(props: Props) {
-  const { title, orientation, guests } = props;
+  const { title, orientation, eventId, guests } = props;
   let guestId = "";
   if (typeof window !== "undefined" && router.query.guestId)
     guestId = router.query.guestId as string;
   const defaultTag = guests
     ? guests.find((guest) => guest.id === guestId)
     : null;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadUrl, setUploadUrl] = useState("");
   const [videoSrc, setVideoSrc] = useState("");
+  const [fileExt, setFileExt] = useState("");
   const [suggestions, setSuggestions] = useState(guests);
   const [tags, setTags] = useState<Tag[]>([]);
   const [error, setError] = useState("");
   const reactTags = useRef<ReactTags>();
 
+  // Handle Tags
   useEffect(() => {
     setTags(defaultTag ? [defaultTag] : []);
   }, [defaultTag]);
@@ -50,8 +55,16 @@ export default function Home(props: Props) {
     [tags]
   );
 
+  // Handle Video
   const handleInterviewSelection = (videoFile: File | null) => {
     if (!videoFile) return;
+
+    setFileExt(
+      videoFile.name.slice(
+        videoFile.name.lastIndexOf(".") + 1,
+        videoFile.name.length
+      )
+    );
 
     let blobURL = URL.createObjectURL(videoFile);
     setVideoSrc(blobURL);
@@ -66,6 +79,27 @@ export default function Home(props: Props) {
     if (video.duration >= 60) err = `${err} Video must be under 60 seconds. `;
 
     setError(err);
+  };
+
+  useEffect(() => {
+    const retrieveUploadUrl = async () => {
+      if (!fileExt) return;
+
+      const res = await fetch(
+        `/api/interview?eventId=${eventId}&guestId=${guestId}&fileExt=${fileExt}`
+      );
+      const { url } = await res.json();
+      setUploadUrl(url);
+      console.log("Presigned URL: ", url);
+    };
+    retrieveUploadUrl();
+  }, [eventId, guestId, fileExt]);
+
+  // Handle Form Submission
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    console.log("Submitting...");
+    setTimeout(() => setIsSubmitting(false), 2000);
   };
 
   return (
@@ -160,7 +194,6 @@ export default function Home(props: Props) {
               <form
                 action="/api/interview"
                 method="POST"
-                encType="multipart/form-data"
                 className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
               >
                 <div className="sm:col-span-2">
@@ -202,18 +235,20 @@ export default function Home(props: Props) {
     hover:file:bg-indigo-100"
                   />
                   <div className="flex flex-col justify-center gap-2">
-                    <video
-                      src={videoSrc}
-                      className={`${
-                        videoSrc ? "show" : "hide"
-                      } mt-4 rounded-md`}
-                      controls
-                      onLoadedMetadata={(metadata) => {
-                        checkVideoMetadata(metadata.currentTarget);
-                      }}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
+                    {videoSrc && (
+                      <video
+                        src={videoSrc}
+                        className={`${
+                          videoSrc ? "show" : "hide"
+                        } mt-4 rounded-md`}
+                        controls
+                        onLoadedMetadata={(metadata) => {
+                          checkVideoMetadata(metadata.currentTarget);
+                        }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    )}
                     {error && (
                       <div
                         className="flex p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800"
@@ -249,10 +284,10 @@ export default function Home(props: Props) {
 
                 <div className="sm:col-span-2">
                   <button
-                    type="submit"
+                    onClick={() => handleSubmit()}
                     className="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                   >
-                    UPLOAD
+                    {isSubmitting ? "LOADING" : "UPLOAD"}
                   </button>
                 </div>
               </form>
@@ -360,6 +395,7 @@ export async function getStaticProps(
       props: {
         title: event.title,
         orientation: event.interviews.orientation,
+        eventId,
         guests,
       },
     };
