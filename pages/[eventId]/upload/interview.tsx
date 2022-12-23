@@ -104,13 +104,9 @@ export default function Home(props: Props) {
 
     if (!file) return;
 
-    let formData = new FormData();
-    formData.append("Content-Type", file.type);
-    formData.append("file", file);
-
     const res = await fetch(uploadUrl, {
       method: "PUT",
-      body: formData,
+      body: file,
       headers: {
         "Content-Type": file.type,
       },
