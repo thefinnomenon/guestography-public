@@ -6,6 +6,7 @@ import ReactTags, { Tag, TagComponentProps } from "react-tag-autocomplete";
 import { getEvent, getEvents } from "../../../lib/firebase";
 import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { BiError } from "react-icons/bi";
+import { ClipLoader } from "react-spinners";
 
 interface Props {
   title: string;
@@ -104,13 +105,32 @@ export default function Home(props: Props) {
 
     if (!file) return;
 
-    const res = await fetch(uploadUrl, {
-      method: "PUT",
-      body: file,
-      headers: {
-        "Content-Type": file.type,
-      },
-    });
+    try {
+      // Upload video
+      const res = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      if (res.status != 200) throw Error("Upload failed.");
+
+      const url = uploadUrl.slice(0, uploadUrl.indexOf("?"));
+
+      // Add entry in database
+      const res2 = await fetch("/api/interview", {
+        method: "POST",
+        body: JSON.stringify({ eventId, guestId, url, guests: tags }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      setError("Upload failed!");
+    }
 
     setIsSubmitting(false);
   };
@@ -303,7 +323,11 @@ export default function Home(props: Props) {
                       "bg-indigo-200 text-indigo-400 hover:bg-indigo-200"
                     }`}
                   >
-                    {isSubmitting ? "LOADING" : "UPLOAD"}
+                    {isSubmitting ? (
+                      <ClipLoader size={24} color="white" />
+                    ) : (
+                      "UPLOAD"
+                    )}
                   </button>
                 </div>
               </form>

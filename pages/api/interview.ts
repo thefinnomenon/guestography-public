@@ -27,34 +27,6 @@ if (!admin.apps.length)
   });
 else admin.app();
 
-async function parseFormData(
-  req: NextApiRequest & { files?: any },
-  res: NextApiResponse
-) {
-  const storage = multer.memoryStorage();
-  const multerUpload = multer({ storage });
-  const multerFiles = multerUpload.any();
-  await new Promise((resolve, reject) => {
-    multerFiles(req as any, res as any, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-  return {
-    fields: req.body,
-    files: req.files,
-  };
-}
-
-// IMPORTANT: Prevents next from trying to parse the form
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -93,26 +65,27 @@ export default async function handler(
 
   if (req.method === "POST") {
     const { eventId, guestId, url, guests } = req.body;
+
+    const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}${
+      new URL(url).pathname
+    }`;
     console.log(
-      `Storing metadata for interview from guest ${guestId} for ${eventId}\n Url: ${url}\n Guests in video: ${guests}`
+      `Storing metadata for interview from guest ${guestId} for ${eventId}\nUrl: ${url}\nPublic Url: ${publicUrl}\nGuests in video: ${guests}`
     );
 
-    //const db = admin.firestore();
+    const db = admin.firestore();
+
+    try {
+      await db
+        .collection("events")
+        .doc(eventId)
+        .collection("interviews")
+        .add({ guestId, url, publicUrl, guests });
+      console.log("Created record for interview");
+    } catch (e) {
+      console.error(e);
+    }
   }
-
-  const db = admin.firestore();
-  const { fields, files } = await parseFormData(req, res);
-
-  // Map over guest list & add unique guest ids
-  const uid = new ShortUniqueId();
-
-  // Store event in db
-  // try {
-  //   await db.collection("events").doc(eventId).create(event);
-  //   console.log("Created record for event: ", event);
-  // } catch (e) {
-  //   console.error(e);
-  // }
 
   res.status(200).redirect("/success-page");
 }
