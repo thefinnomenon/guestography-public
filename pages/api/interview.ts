@@ -82,10 +82,14 @@ export default async function handler(
         .collection("interviews")
         .add({ guestId, url, publicUrl, guests });
       console.log("Created record for interview");
+      res.status(200).send("Success");
+      return;
     } catch (e) {
       console.error(e);
+      res.status(400).send(e);
+      return;
     }
   }
 
-  res.status(200).redirect("/success-page");
+  res.status(404).send("Invalid action");
 }

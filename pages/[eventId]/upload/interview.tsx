@@ -127,12 +127,13 @@ export default function Home(props: Props) {
           "Content-Type": "application/json",
         },
       });
+      setIsSubmitting(false);
+      router.push(`/success`);
     } catch (e) {
       console.error(e);
+      setIsSubmitting(false);
       setError("Upload failed!");
     }
-
-    setIsSubmitting(false);
   };
 
   return (
