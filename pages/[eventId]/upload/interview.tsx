@@ -317,10 +317,10 @@ export default function Home(props: Props) {
 
                 <div className="sm:col-span-2">
                   <button
-                    disabled={!videoSrc || !uploadUrl}
+                    disabled={!videoSrc || !uploadUrl || error}
                     type="submit"
                     className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                      (!videoSrc || !uploadUrl) &&
+                      (!videoSrc || !uploadUrl || error) &&
                       "bg-indigo-200 text-indigo-400 hover:bg-indigo-200"
                     }`}
                   >
