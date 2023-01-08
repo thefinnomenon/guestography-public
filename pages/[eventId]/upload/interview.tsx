@@ -7,6 +7,7 @@ import { getEvent, getEvents } from "../../../lib/firebase";
 import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { BiError } from "react-icons/bi";
 import { ClipLoader } from "react-spinners";
+import { Event } from "../../../types";
 
 interface Props {
   title: string;
@@ -383,20 +384,28 @@ function SuggestionComponent({ item, query }: any) {
 
 export async function getStaticPaths() {
   try {
+    // Fetch events from db
     const events = await getEvents();
 
+    // If no events return 404
     if (!events)
       return {
         notFound: true,
       };
 
-    const paths = events.map((event) => {
+    // Filter out events without interviews enabled
+    const eventsWithInterviews = events.filter(
+      (event) => (event.data() as Event).interviews.enabled
+    );
+
+    // Create paths from events
+    const paths = eventsWithInterviews.map((event) => {
       return { params: { eventId: event.id } };
     });
 
     return {
       paths,
-      fallback: true,
+      fallback: "blocking",
     };
   } catch (e) {
     console.error(e);
@@ -409,13 +418,17 @@ export async function getStaticPaths() {
 export async function getStaticProps(
   context: GetStaticPropsContext<{ eventId: string }>
 ) {
+  // Get eventId from URL
   const eventId = context?.params?.eventId;
+
+  // If no eventId, return 404
   if (!eventId)
     return {
       notFound: true,
     };
 
   try {
+    // Get event from db
     const event = await getEvent(eventId);
 
     // If event doesn't exist or doesn't have interview service enabled -> 404
@@ -424,6 +437,7 @@ export async function getStaticProps(
         notFound: true,
       };
 
+    // Create guests array for tags
     const guests = event.guests.map((guest) => {
       return {
         id: guest.id,
