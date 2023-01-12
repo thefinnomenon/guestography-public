@@ -2,13 +2,23 @@ import Head from "next/head";
 import { GetStaticPropsContext } from "next";
 import router from "next/router";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import ReactTags, { Tag, TagComponentProps } from "react-tag-autocomplete";
 import { getEvent, getEvents } from "../../../lib/firebase";
-import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
-import { BiError } from "react-icons/bi";
+import { ClipLoader } from "react-spinners";
+import { Event } from "../../../types";
+import { GoFileMedia } from "react-icons/go";
+import { MdOutlineCheckCircleOutline, MdErrorOutline } from "react-icons/md";
 
 interface Props {
   title: string;
+  eventId: string;
+}
+
+type MediaStatus = "queued" | "uploading" | "complete" | "error";
+
+interface MediaItem {
+  status: MediaStatus;
+  file: File;
+  signedUrl: string;
 }
 
 export default function Home(props: Props) {
@@ -16,15 +26,79 @@ export default function Home(props: Props) {
   let guestId = "";
   if (typeof window !== "undefined" && router.query.guestId)
     guestId = router.query.guestId as string;
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [error, setError] = useState("");
-  const [media, setMedia] = useState<FileList | null>();
+  // Handle Form Submission
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    if (!media) return;
+
+    try {
+      // Upload video
+      const res = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      if (res.status != 200) throw Error("Upload failed.");
+
+      const url = uploadUrl.slice(0, uploadUrl.indexOf("?"));
+
+      // Add entry in database
+      const res2 = await fetch("/api/interview", {
+        method: "POST",
+        body: JSON.stringify({ eventId, guestId, url, guests: tags }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      setIsSubmitting(false);
+      router.push(`/success`);
+    } catch (e) {
+      console.error(e);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleMediaSelection = (files: FileList | null) => {
+    if (!files) return;
+
+    const fileArr = Array.from(files);
+    // TODO: Get signed Urls
+    const mediaList: MediaItem[] = fileArr.map((file) => {
+      return {
+        file,
+        status: "queued",
+      };
+    });
+
+    setMedia(mediaList);
+  };
+
+  const getStatusIcon = (status: MediaStatus) => {
+    switch (status) {
+      case "queued":
+        return null;
+      case "uploading":
+        return <ClipLoader size="1.25rem" color="indigo" />;
+      case "complete":
+        return <MdOutlineCheckCircleOutline size="1.25rem" />;
+      case "error":
+        return <MdErrorOutline size="1.25rem" />;
+    }
+  };
 
   return (
     <div>
       <Head>
         <title>{title} | Media</title>
-        <meta name="description" content={`Interview upload for ${title}`} />
+        <meta name="description" content={`Media upload for ${title}`} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -110,9 +184,7 @@ export default function Home(props: Props) {
             </div>
             <div className="mt-12">
               <form
-                action="/api/interview"
-                method="POST"
-                encType="multipart/form-data"
+                onSubmit={handleSubmit}
                 className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
               >
                 <div className="sm:col-span-2">
@@ -127,7 +199,7 @@ export default function Home(props: Props) {
                     name="interview"
                     accept="image/*, video/*"
                     multiple
-                    onChange={(e) => setMedia(e.target.files)}
+                    onChange={(e) => handleMediaSelection(e.target.files)}
                     className="block w-full text-sm text-slate-500
     file:mr-4 file:py-2 file:px-4
     file:rounded-full file:border-0
@@ -135,14 +207,45 @@ export default function Home(props: Props) {
     file:bg-indigo-50 file:text-indigo-500
     hover:file:bg-indigo-100"
                   />
+                  <div>
+                    <ul role="list" className="divide-y divide-indigo-200">
+                      {media.map((item) => (
+                        <li
+                          key={item.file.name}
+                          className="flex w-full justify-between items-center py-4"
+                        >
+                          <span className="flex gap-2 items-center">
+                            <GoFileMedia
+                              size="1rem"
+                              className="text-indigo-700 mt-[1px]"
+                            />
+                            <span className="text-gray-500">
+                              {item.file.name}
+                            </span>
+                          </span>
+                          <span className="flex items-center text-indigo-500 fill-indigo-500">
+                            {getStatusIcon(item.status)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
 
                 <div className="sm:col-span-2">
                   <button
+                    disabled={!media}
                     type="submit"
-                    className="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                      !media &&
+                      "bg-indigo-200 text-indigo-400 hover:bg-indigo-200"
+                    }`}
                   >
-                    UPLOAD
+                    {isSubmitting ? (
+                      <ClipLoader size={24} color="white" />
+                    ) : (
+                      "UPLOAD"
+                    )}
                   </button>
                 </div>
               </form>
@@ -156,20 +259,28 @@ export default function Home(props: Props) {
 
 export async function getStaticPaths() {
   try {
+    // Fetch events from db
     const events = await getEvents();
 
+    // If no events return 404
     if (!events)
       return {
         notFound: true,
       };
 
-    const paths = events.map((event) => {
+    // Filter out events without media enabled
+    const eventsWithMedia = events.filter(
+      (event) => (event.data() as Event).media.enabled
+    );
+
+    // Create paths from events
+    const paths = eventsWithMedia.map((event) => {
       return { params: { eventId: event.id } };
     });
 
     return {
       paths,
-      fallback: true,
+      fallback: "blocking",
     };
   } catch (e) {
     console.error(e);
@@ -182,32 +293,29 @@ export async function getStaticPaths() {
 export async function getStaticProps(
   context: GetStaticPropsContext<{ eventId: string }>
 ) {
+  // Get eventId from URL
   const eventId = context?.params?.eventId;
+
+  // If no eventId, return 404
   if (!eventId)
     return {
       notFound: true,
     };
 
   try {
+    // Get event from db
     const event = await getEvent(eventId);
 
-    if (!event)
+    // If event doesn't exist or doesn't have media service enabled -> 404
+    if (!event || !event.media.enabled)
       return {
         notFound: true,
       };
 
-    const guests = event.guests.map((guest) => {
-      return {
-        id: guest.id,
-        name: `${guest.firstName} ${guest.lastName}`,
-      };
-    });
-
     return {
       props: {
         title: event.title,
-        orientation: event.interviews.orientation,
-        guests,
+        eventId,
       },
     };
   } catch (e) {
