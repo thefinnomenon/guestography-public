@@ -22,11 +22,11 @@ interface MediaItem {
 }
 
 export default function Home(props: Props) {
-  const { title } = props;
+  const { title, eventId } = props;
   let guestId = "";
   if (typeof window !== "undefined" && router.query.guestId)
     guestId = router.query.guestId as string;
-  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [media, setMedia] = useState<MediaItem[] | null>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Handle Form Submission
@@ -37,27 +37,50 @@ export default function Home(props: Props) {
     if (!media) return;
 
     try {
-      // Upload video
-      const res = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
+      // Upload media
+      await Promise.all(
+        media.map(async (m, index) => {
+          const uploadingMedia = [...media];
+          uploadingMedia[index].status = "uploading";
+          setMedia(uploadingMedia);
 
-      if (res.status != 200) throw Error("Upload failed.");
+          const res = await fetch(m.signedUrl, {
+            method: "PUT",
+            body: m.file,
+            headers: {
+              "Content-Type": m.file.type,
+            },
+          });
 
-      const url = uploadUrl.slice(0, uploadUrl.indexOf("?"));
+          if (res.status === 200) {
+            const resMedia = [...media];
+            resMedia[index].status = "complete";
+            setMedia(resMedia);
+          } else {
+            console.error(res.body);
+            const resMedia = [...media];
+            resMedia[index].status = "error";
+            setMedia(resMedia);
+          }
+        })
+      );
+
+      const successfulUploads = media.filter((m) => m.status === "complete");
+      const urls = successfulUploads.map((m) =>
+        m.signedUrl.slice(0, m.signedUrl.indexOf("?"))
+      );
+
+      console.log("Successful Uploads: ", successfulUploads, urls);
 
       // Add entry in database
-      const res2 = await fetch("/api/interview", {
-        method: "POST",
-        body: JSON.stringify({ eventId, guestId, url, guests: tags }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      // const res2 = await fetch("/api/media", {
+      //   method: "POST",
+      //   body: JSON.stringify({ eventId, guestId, urls }),
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      // });
+
       setIsSubmitting(false);
       router.push(`/success`);
     } catch (e) {
@@ -66,15 +89,29 @@ export default function Home(props: Props) {
     }
   };
 
-  const handleMediaSelection = (files: FileList | null) => {
+  const handleMediaSelection = async (files: FileList | null) => {
     if (!files) return;
 
     const fileArr = Array.from(files);
-    // TODO: Get signed Urls
-    const mediaList: MediaItem[] = fileArr.map((file) => {
+    const fileExtList = fileArr.map((file) =>
+      file.name.slice(file.name.lastIndexOf(".") + 1, file.name.length)
+    );
+
+    // TODO: Send filenames instead so that they will just overwrite if reuploaded
+
+    const res = await fetch(
+      `/api/media?eventId=${eventId}&guestId=${guestId}`,
+      { method: "PUT", body: JSON.stringify({ fileExtList }) }
+    );
+    const { urls } = await res.json();
+
+    console.log("Presigned URLs: ", urls);
+
+    const mediaList: MediaItem[] = fileArr.map((file, index) => {
       return {
         file,
         status: "queued",
+        signedUrl: urls[index],
       };
     });
 
@@ -97,7 +134,7 @@ export default function Home(props: Props) {
   return (
     <div>
       <Head>
-        <title>{title} | Media</title>
+        <title>{`${title} | Media`}</title>
         <meta name="description" content={`Media upload for ${title}`} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -209,25 +246,26 @@ export default function Home(props: Props) {
                   />
                   <div>
                     <ul role="list" className="divide-y divide-indigo-200">
-                      {media.map((item) => (
-                        <li
-                          key={item.file.name}
-                          className="flex w-full justify-between items-center py-4"
-                        >
-                          <span className="flex gap-2 items-center">
-                            <GoFileMedia
-                              size="1rem"
-                              className="text-indigo-700 mt-[1px]"
-                            />
-                            <span className="text-gray-500">
-                              {item.file.name}
+                      {media &&
+                        media.map((item) => (
+                          <li
+                            key={item.file.name}
+                            className="flex w-full justify-between items-center py-4"
+                          >
+                            <span className="flex gap-2 items-center">
+                              <GoFileMedia
+                                size="1rem"
+                                className="text-indigo-700 mt-[1px]"
+                              />
+                              <span className="text-gray-500">
+                                {item.file.name}
+                              </span>
                             </span>
-                          </span>
-                          <span className="flex items-center text-indigo-500 fill-indigo-500">
-                            {getStatusIcon(item.status)}
-                          </span>
-                        </li>
-                      ))}
+                            <span className="flex items-center text-indigo-500 fill-indigo-500">
+                              {getStatusIcon(item.status)}
+                            </span>
+                          </li>
+                        ))}
                     </ul>
                   </div>
                 </div>
