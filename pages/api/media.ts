@@ -33,9 +33,9 @@ export default async function handler(
 ) {
   if (req.method === "PUT") {
     const { eventId, guestId } = req.query;
-    const { fileExtList } = JSON.parse(req.body);
+    const { fileList } = JSON.parse(req.body);
 
-    console.log("fileExtList", fileExtList);
+    console.log("fileList", fileList);
 
     if (typeof eventId != "string") {
       res.status(400).json({ error: "Invalid eventId" });
@@ -48,11 +48,8 @@ export default async function handler(
     }
 
     const bucket = process.env.CLOUDFLARE_BUCKET_NAME;
-    const keys = fileExtList.map(
-      (fileExt: string) =>
-        `events/${eventId}/media/${guestId}-${new ShortUniqueId({
-          length: 4,
-        })()}.${fileExt || ""}`
+    const keys = fileList.map(
+      (fileName: string) => `events/${eventId}/media/${guestId}-${fileName}`
     );
 
     console.log(

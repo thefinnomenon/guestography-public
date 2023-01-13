@@ -93,15 +93,13 @@ export default function Home(props: Props) {
     if (!files) return;
 
     const fileArr = Array.from(files);
-    const fileExtList = fileArr.map((file) =>
-      file.name.slice(file.name.lastIndexOf(".") + 1, file.name.length)
-    );
+    const fileList = fileArr.map((file) => file.name);
 
     // TODO: Send filenames instead so that they will just overwrite if reuploaded
 
     const res = await fetch(
       `/api/media?eventId=${eventId}&guestId=${guestId}`,
-      { method: "PUT", body: JSON.stringify({ fileExtList }) }
+      { method: "PUT", body: JSON.stringify({ fileList }) }
     );
     const { urls } = await res.json();
 
