@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { GetStaticPropsContext } from "next";
 import router from "next/router";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { getEvent, getEvents } from "../../../lib/firebase";
 import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
@@ -70,16 +70,14 @@ export default function Home(props: Props) {
         m.signedUrl.slice(0, m.signedUrl.indexOf("?"))
       );
 
-      console.log("Successful Uploads: ", successfulUploads, urls);
-
-      // Add entry in database
-      // const res2 = await fetch("/api/media", {
-      //   method: "POST",
-      //   body: JSON.stringify({ eventId, guestId, urls }),
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      // });
+      // Add entries in database
+      const res2 = await fetch("/api/media", {
+        method: "POST",
+        body: JSON.stringify({ eventId, guestId, urls }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       setIsSubmitting(false);
       router.push(`/success`);
@@ -95,15 +93,11 @@ export default function Home(props: Props) {
     const fileArr = Array.from(files);
     const fileList = fileArr.map((file) => file.name);
 
-    // TODO: Send filenames instead so that they will just overwrite if reuploaded
-
     const res = await fetch(
       `/api/media?eventId=${eventId}&guestId=${guestId}`,
       { method: "PUT", body: JSON.stringify({ fileList }) }
     );
     const { urls } = await res.json();
-
-    console.log("Presigned URLs: ", urls);
 
     const mediaList: MediaItem[] = fileArr.map((file, index) => {
       return {
