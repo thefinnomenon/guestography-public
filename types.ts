@@ -43,3 +43,21 @@ export interface Message {
   message: string;
   schedule: string;
 }
+
+export interface GuestTag {
+  id: string;
+  name: string;
+}
+
+export interface Interview {
+  guestId: string;
+  guest: GuestTag[];
+  publicUrl: string;
+  url: string;
+}
+
+export interface Media {
+  guestId: string;
+  publicUrl: string;
+  url: string;
+}

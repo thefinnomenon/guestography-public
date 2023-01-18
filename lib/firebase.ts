@@ -1,6 +1,6 @@
 import * as admin from "firebase-admin";
 import serviceAccount from "../lib/serviceAccountKey.json";
-import { Event } from "../types";
+import { Event, Interview, Media } from "../types";
 
 if (!admin.apps.length)
   admin.initializeApp({
@@ -17,6 +17,7 @@ export const getEvents = async () => {
       await db.collection("events").get()
     ).docs;
   } catch (e) {
+    console.log(e);
     throw e;
   }
 };
@@ -28,6 +29,29 @@ export const getEvent = async (eventId: string) => {
       await db.collection("events").doc(eventId).get()
     ).data()) as Event;
   } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
+export const getInterviews = async (eventId: string) => {
+  try {
+    const db = admin.firestore();
+    const snapshot = await db.collection(`events/${eventId}/interviews`).get();
+    return snapshot.docs.map((doc) => doc.data());
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
+export const getMedia = async (eventId: string) => {
+  try {
+    const db = admin.firestore();
+    const snapshot = await db.collection(`events/${eventId}/media`).get();
+    return snapshot.docs.map((doc) => doc.data());
+  } catch (e) {
+    console.log(e);
     throw e;
   }
 };
