@@ -109,7 +109,6 @@ export default function Home(props: Props) {
       );
       const { url } = await res.json();
       setUploadUrl(url);
-      console.log("Presigned URL: ", url);
     };
     retrieveUploadUrl();
   }, [eventId, guestId, fileExt]);

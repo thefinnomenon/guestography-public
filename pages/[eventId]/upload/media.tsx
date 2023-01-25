@@ -19,7 +19,41 @@ interface MediaItem {
   status: MediaStatus;
   file: File;
   signedUrl: string;
+  metadata: {
+    fileExt: string;
+    type: "image" | "video";
+    height: number;
+    width: number;
+  };
 }
+
+const getImageSize = (dataURL: string) =>
+  new Promise<{ height: number; width: number }>((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve({
+        height: img.height,
+        width: img.width,
+      });
+    };
+    img.src = dataURL;
+  });
+
+const getVideoSize = (dataURL: string) =>
+  new Promise<{ height: number; width: number }>((resolve) => {
+    const video = document.createElement("video");
+    video.addEventListener(
+      "loadedmetadata",
+      () => {
+        resolve({
+          height: video.videoHeight,
+          width: video.videoWidth,
+        });
+      },
+      false
+    );
+    video.src = dataURL;
+  });
 
 export default function Home(props: Props) {
   const { title, eventId } = props;
@@ -66,14 +100,17 @@ export default function Home(props: Props) {
       );
 
       const successfulUploads = media.filter((m) => m.status === "complete");
-      const urls = successfulUploads.map((m) =>
-        m.signedUrl.slice(0, m.signedUrl.indexOf("?"))
-      );
+      const files = successfulUploads.map((m) => {
+        return {
+          url: m.signedUrl.slice(0, m.signedUrl.indexOf("?")),
+          metadata: m.metadata,
+        };
+      });
 
       // Add entries in database
       const res2 = await fetch("/api/media", {
         method: "POST",
-        body: JSON.stringify({ eventId, guestId, urls }),
+        body: JSON.stringify({ eventId, guestId, media: files }),
         headers: {
           "Content-Type": "application/json",
         },
@@ -99,13 +136,26 @@ export default function Home(props: Props) {
     );
     const { urls } = await res.json();
 
-    const mediaList: MediaItem[] = fileArr.map((file, index) => {
-      return {
-        file,
-        status: "queued",
-        signedUrl: urls[index],
-      };
-    });
+    const mediaList: MediaItem[] = await Promise.all(
+      fileArr.map(async (file, index) => {
+        const fileExt = file.name.slice(
+          file.name.lastIndexOf(".") + 1,
+          file.name.length
+        );
+        const type = file.type.includes("image") ? "image" : "video";
+        const fileAsDataURL = URL.createObjectURL(file);
+        const { height, width } =
+          type === "image"
+            ? await getImageSize(fileAsDataURL)
+            : await getVideoSize(fileAsDataURL);
+        return {
+          file,
+          status: "queued",
+          signedUrl: urls[index],
+          metadata: { fileExt, type, height, width },
+        };
+      })
+    );
 
     setMedia(mediaList);
   };

@@ -61,17 +61,23 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { eventId, guestId, urls } = req.body;
+    const { eventId, guestId, media } = req.body;
 
     const db = admin.firestore();
     const bulkWriter = db.bulkWriter();
 
-    urls.map((url: string) => {
-      const path = new URL(url).pathname;
+    media.map((m: any) => {
+      const path = new URL(m.url).pathname;
       const fileName = path.slice(path.lastIndexOf("/") + 1);
       const docRef = db.doc(`events/${eventId}/media/${fileName}`);
       const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}${path}`;
-      bulkWriter.set(docRef, { guestId, url, publicUrl });
+      bulkWriter.set(docRef, {
+        guestId,
+        url: m.url,
+        publicUrl,
+        metadata: m.metadata,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
     });
 
     try {
