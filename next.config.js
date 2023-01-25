@@ -3,6 +3,6 @@ module.exports = {
   swcMinify: true,
   images: {
     formats: ["image/avif", "image/webp"],
-    domains: ["res.cloudinary.com"],
+    domains: ["pub-bedeb084f89f4d399783f981c721c4c5.r2.dev"],
   },
 };

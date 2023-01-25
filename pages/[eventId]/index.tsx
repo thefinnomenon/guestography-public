@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function Home(props: Props) {
-  const { title, eventId, interviews, media } = props;
+  const { title, interviews, media } = props;
 
   return (
     <div>
@@ -107,45 +107,19 @@ export default function Home(props: Props) {
                 ))}
               </ul>
               <h2 className="mt-8 mb-4">Media</h2>
-              <ul>
-                {media?.map((m) => (
-                  <li key={m.publicUrl}>{m.publicUrl}</li>
-                ))}
-              </ul>
+              <div className="wrapper">
+                {media?.map((m) => {
+                  if (!m.publicUrl.includes("MOV"))
+                    return <img src={m.publicUrl} />;
+                  else return <video src={m.publicUrl} controls />;
+                })}
+              </div>
             </div>
           </div>
         </div>
       </main>
     </div>
   );
-}
-
-export async function getStaticPaths() {
-  try {
-    // Fetch events from db
-    const events = await getEvents();
-
-    // If no events return 404
-    if (!events)
-      return {
-        notFound: true,
-      };
-
-    // Create paths from events
-    const paths = events.map((event) => {
-      return { params: { eventId: event.id } };
-    });
-
-    return {
-      paths,
-      fallback: "blocking",
-    };
-  } catch (e) {
-    console.error(e);
-    return {
-      notFound: true,
-    };
-  }
 }
 
 export async function getStaticProps(
@@ -172,11 +146,19 @@ export async function getStaticProps(
 
     // Get interview from db
     const interviews = await getInterviews(eventId);
-    console.log("Interviews: ", interviews);
 
     // Get media from db
     const media = await getMedia(eventId);
-    console.log("Media: ", media);
+
+    // TODO: Generate blurhashes
+    // const blurImagePromises = results.resources.map((image: ImageProps) => {
+    //   return getBase64ImageUrl(image);
+    // });
+    // const imagesWithBlurDataUrls = await Promise.all(blurImagePromises);
+
+    // for (let i = 0; i < reducedResults.length; i++) {
+    //   reducedResults[i].blurDataUrl = imagesWithBlurDataUrls[i];
+    // }
 
     return {
       props: {
@@ -185,6 +167,34 @@ export async function getStaticProps(
         interviews,
         media,
       },
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      notFound: true,
+    };
+  }
+}
+
+export async function getStaticPaths() {
+  try {
+    // Fetch events from db
+    const events = await getEvents();
+
+    // If no events return 404
+    if (!events)
+      return {
+        notFound: true,
+      };
+
+    // Create paths from events
+    const paths = events.map((event) => {
+      return { params: { eventId: event.id } };
+    });
+
+    return {
+      paths,
+      fallback: "blocking",
     };
   } catch (e) {
     console.error(e);

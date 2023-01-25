@@ -37,8 +37,16 @@ export const getEvent = async (eventId: string) => {
 export const getInterviews = async (eventId: string) => {
   try {
     const db = admin.firestore();
-    const snapshot = await db.collection(`events/${eventId}/interviews`).get();
-    return snapshot.docs.map((doc) => doc.data());
+    const snapshot = await db
+      .collection(`events/${eventId}/interviews`)
+      .orderBy("createdAt", "asc")
+      .get();
+    return snapshot.docs.map((doc) => {
+      return {
+        id: doc.id,
+        ...doc.data(),
+      };
+    });
   } catch (e) {
     console.log(e);
     throw e;
@@ -48,8 +56,16 @@ export const getInterviews = async (eventId: string) => {
 export const getMedia = async (eventId: string) => {
   try {
     const db = admin.firestore();
-    const snapshot = await db.collection(`events/${eventId}/media`).get();
-    return snapshot.docs.map((doc) => doc.data());
+    const snapshot = await db
+      .collection(`events/${eventId}/media`)
+      .orderBy("createdAt", "asc")
+      .get();
+    return snapshot.docs.map((doc) => {
+      return {
+        id: doc.id,
+        ...doc.data(),
+      };
+    });
   } catch (e) {
     console.log(e);
     throw e;

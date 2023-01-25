@@ -29,6 +29,7 @@ export default function Home(props: Props) {
   const [videoSrc, setVideoSrc] = useState("");
   const [file, setFile] = useState<File>();
   const [fileExt, setFileExt] = useState("");
+  const [videoMetadata, setVideoMetadata] = useState({});
   const [suggestions, setSuggestions] = useState(guests);
   const [tags, setTags] = useState<Tag[]>([]);
   const [error, setError] = useState("");
@@ -72,6 +73,14 @@ export default function Home(props: Props) {
     let blobURL = URL.createObjectURL(videoFile);
     setVideoSrc(blobURL);
     setFile(videoFile);
+
+    setVideoMetadata({
+      type: "video",
+      fileExt: videoFile.name.slice(
+        videoFile.name.lastIndexOf(".") + 1,
+        videoFile.name.length
+      ),
+    });
   };
 
   const checkVideoMetadata = (video: HTMLVideoElement) => {
@@ -81,6 +90,12 @@ export default function Home(props: Props) {
     if (videoOrientation !== orientation)
       err = `${err}Video must be in ${orientation}. `;
     if (video.duration >= 60) err = `${err} Video must be under 60 seconds. `;
+
+    setVideoMetadata({
+      ...videoMetadata,
+      height: video.videoHeight,
+      width: video.videoWidth,
+    });
 
     setError(err);
   };
@@ -123,7 +138,13 @@ export default function Home(props: Props) {
       // Add entry in database
       const res2 = await fetch("/api/interview", {
         method: "POST",
-        body: JSON.stringify({ eventId, guestId, url, guests: tags }),
+        body: JSON.stringify({
+          eventId,
+          guestId,
+          url,
+          metadata: videoMetadata,
+          guests: tags,
+        }),
         headers: {
           "Content-Type": "application/json",
         },

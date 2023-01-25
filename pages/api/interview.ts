@@ -64,24 +64,23 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    const { eventId, guestId, url, guests } = req.body;
+    const { eventId, guestId, url, metadata, guests } = req.body;
 
     const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}${
       new URL(url).pathname
     }`;
-    console.log(
-      `Storing metadata for interview from guest ${guestId} for ${eventId}\nUrl: ${url}\nPublic Url: ${publicUrl}\nGuests in video: ${guests}`
-    );
 
     const db = admin.firestore();
 
     try {
-      await db
-        .collection("events")
-        .doc(eventId)
-        .collection("interviews")
-        .add({ guestId, url, publicUrl, guests });
-      console.log("Created record for interview");
+      await db.collection("events").doc(eventId).collection("interviews").add({
+        guestId,
+        url,
+        metadata,
+        publicUrl,
+        guests,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
       res.status(200).send("Success");
       return;
     } catch (e) {

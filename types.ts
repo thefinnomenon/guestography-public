@@ -50,6 +50,7 @@ export interface GuestTag {
 }
 
 export interface Interview {
+  id: string;
   guestId: string;
   guest: GuestTag[];
   publicUrl: string;
@@ -57,6 +58,7 @@ export interface Interview {
 }
 
 export interface Media {
+  id: string;
   guestId: string;
   publicUrl: string;
   url: string;
