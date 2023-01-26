@@ -109,7 +109,7 @@ export default function Home(props: Props) {
               <h2 className="mt-8 mb-4">Media</h2>
               <div className="wrapper">
                 {media?.map((m) => {
-                  if (!m.publicUrl.includes("MOV"))
+                  if (m.metadata.type === "image")
                     return <img src={m.publicUrl} />;
                   else return <video src={m.publicUrl} controls />;
                 })}
@@ -164,8 +164,8 @@ export async function getStaticProps(
       props: {
         title: event.title,
         eventId,
-        interviews,
-        media,
+        interviews: JSON.parse(JSON.stringify(interviews)),
+        media: JSON.parse(JSON.stringify(media)),
       },
     };
   } catch (e) {

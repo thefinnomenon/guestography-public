@@ -49,12 +49,20 @@ export interface GuestTag {
   name: string;
 }
 
+export interface Metadata {
+  fileExt: string;
+  type: "image" | "video";
+  height: number;
+  width: number;
+}
+
 export interface Interview {
   id: string;
   guestId: string;
   guest: GuestTag[];
   publicUrl: string;
   url: string;
+  metadata: Metadata;
 }
 
 export interface Media {
@@ -62,4 +70,5 @@ export interface Media {
   guestId: string;
   publicUrl: string;
   url: string;
+  metadata: Metadata;
 }
