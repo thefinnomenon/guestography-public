@@ -61,17 +61,12 @@ export const getStaticProps: GetStaticProps = async (context) => {
 };
 
 export async function getStaticPaths() {
-  // @ts-ignore
-  const results = await cloudinary.v2.search
-    .expression(`folder:${process.env.CLOUDINARY_FOLDER}/*`)
-    .sort_by("public_id", "desc")
-    .max_results(400)
-    .execute();
+  const results = [];
 
-  let fullPaths = [];
-  for (let i = 0; i < results.resources.length; i++) {
-    fullPaths.push({ params: { photoId: i.toString() } });
-  }
+  let fullPaths = null;
+  // for (let i = 0; i < results.resources.length; i++) {
+  //   fullPaths.push({ params: { photoId: i.toString() } });
+  // }
 
   return {
     paths: fullPaths,
