@@ -20,6 +20,7 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import Video from "yet-another-react-lightbox/plugins/video";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { useEffect, useState } from "react";
+import { relative } from "path";
 
 interface Props {
   title: string;
@@ -193,7 +194,9 @@ const renderPhoto: RenderPhoto = ({
 }) => {
   return (
     <div
+      className="gallery-item-wrapper"
       style={{
+        position: "relative",
         border: "2px solid #eee",
         borderRadius: "4px",
         boxSizing: "content-box",
@@ -204,16 +207,20 @@ const renderPhoto: RenderPhoto = ({
       }}
     >
       {type === "image" ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          alt=""
-          src={src}
-          style={{ ...style, width: "100%", padding: 0 }}
-          onClick={onClick}
-          {...restImageProps}
-        />
+        <>
+          <div className="gallery-item-overlay" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt=""
+            src={src}
+            style={{ ...style, width: "100%", padding: 0 }}
+            onClick={onClick}
+            {...restImageProps}
+          />
+        </>
       ) : (
         <div className="gallery-video" onClick={onClick}>
+          <div className="gallery-item-overlay" />
           <video
             preload="metadata"
             src={src}
@@ -230,17 +237,7 @@ const renderPhoto: RenderPhoto = ({
           </svg>
         </div>
       )}
-      <div
-        style={{
-          paddingTop: "8px",
-          paddingBottom: "8px",
-          overflow: "visible",
-          whiteSpace: "nowrap",
-          textAlign: "center",
-        }}
-      >
-        {guest}
-      </div>
+      <div className="gallery-guest-info">{guest}</div>
     </div>
   );
 };
