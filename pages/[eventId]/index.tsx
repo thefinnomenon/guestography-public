@@ -155,7 +155,11 @@ const renderPhoto: RenderPhoto = ({
         />
       ) : (
         <div className="gallery-video">
-          <video src={src} style={{ ...style, width: "100%", padding: 0 }} />
+          <video
+            preload="metadata"
+            src={src}
+            style={{ ...style, width: "100%", padding: 0 }}
+          />
 
           <svg
             className="play-btn"
