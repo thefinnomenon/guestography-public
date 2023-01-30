@@ -9,6 +9,17 @@ import {
 } from "../../lib/firebase";
 import { Interview, Media, GalleryMedia } from "../../types";
 import PhotoAlbum, { RenderPhoto } from "react-photo-album";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
+
+// import optional lightbox plugins
+import Fullscreen from "yet-another-react-lightbox/plugins/fullscreen";
+import Slideshow from "yet-another-react-lightbox/plugins/slideshow";
+import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import Video from "yet-another-react-lightbox/plugins/video";
+import "yet-another-react-lightbox/plugins/thumbnails.css";
+import { useEffect, useState } from "react";
 
 interface Props {
   title: string;
@@ -19,6 +30,40 @@ interface Props {
 
 export default function Home(props: Props) {
   const { title, interviews, media } = props;
+  const [slides, setSlides] = useState<any>();
+  const [index, setIndex] = useState(-1);
+
+  useEffect(() => {
+    if (!media) return;
+
+    const slides = media.map(
+      ({ alt: type, title: guest, src, width, height }) => {
+        if (type === "video") {
+          return {
+            type,
+            guest,
+            description: `Video by ${guest}`,
+            width,
+            height,
+            sources: [
+              {
+                src,
+              },
+            ],
+          };
+        } else {
+          return {
+            src,
+            width,
+            height,
+            alt: guest,
+          };
+        }
+      }
+    );
+
+    setSlides(slides);
+  }, [media]);
 
   return (
     <div>
@@ -112,14 +157,20 @@ export default function Home(props: Props) {
                 <PhotoAlbum
                   layout="rows"
                   photos={media}
+                  // @ts-ignore
                   renderPhoto={renderPhoto}
+                  onClick={({ index }) => setIndex(index)}
                 />
               )}
-              {/* {media?.map((m) => {
-                if (m.metadata.type === "image")
-                  return <img src={m.publicUrl} />;
-                else return <video src={m.publicUrl} controls />;
-              })} */}
+              {slides && (
+                <Lightbox
+                  slides={slides}
+                  open={index >= 0}
+                  index={index}
+                  close={() => setIndex(-1)}
+                  plugins={[Fullscreen, Slideshow, Thumbnails, Zoom, Video]}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -131,7 +182,14 @@ export default function Home(props: Props) {
 const renderPhoto: RenderPhoto = ({
   layout,
   layoutOptions,
-  imageProps: { alt: type, title: guest, src, style, ...restImageProps },
+  imageProps: {
+    alt: type,
+    title: guest,
+    src,
+    style,
+    onClick,
+    ...restImageProps
+  },
 }) => {
   return (
     <div
@@ -151,10 +209,11 @@ const renderPhoto: RenderPhoto = ({
           alt=""
           src={src}
           style={{ ...style, width: "100%", padding: 0 }}
+          onClick={onClick}
           {...restImageProps}
         />
       ) : (
-        <div className="gallery-video">
+        <div className="gallery-video" onClick={onClick}>
           <video
             preload="metadata"
             src={src}

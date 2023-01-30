@@ -206,6 +206,7 @@ a {
   top: 50%;
   transform: translate(-50%, -50%);
   @apply fill-indigo-100;
+  cursor: pointer;
 }
 
 @media screen and (max-width: 331px) {
