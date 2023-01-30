@@ -7,13 +7,14 @@ import {
   getInterviews,
   getMedia,
 } from "../../lib/firebase";
-import { Interview, Media } from "../../types";
+import { Interview, Media, GalleryMedia } from "../../types";
+import PhotoAlbum, { RenderPhoto } from "react-photo-album";
 
 interface Props {
   title: string;
   eventId: string;
   interviews?: Interview[];
-  media?: Media[];
+  media?: GalleryMedia[];
 }
 
 export default function Home(props: Props) {
@@ -107,13 +108,18 @@ export default function Home(props: Props) {
                 ))}
               </ul>
               <h2 className="mt-8 mb-4">Media</h2>
-              <div className="wrapper">
-                {media?.map((m) => {
-                  if (m.metadata.type === "image")
-                    return <img src={m.publicUrl} />;
-                  else return <video src={m.publicUrl} controls />;
-                })}
-              </div>
+              {media && (
+                <PhotoAlbum
+                  layout="rows"
+                  photos={media}
+                  renderPhoto={renderPhoto}
+                />
+              )}
+              {/* {media?.map((m) => {
+                if (m.metadata.type === "image")
+                  return <img src={m.publicUrl} />;
+                else return <video src={m.publicUrl} controls />;
+              })} */}
             </div>
           </div>
         </div>
@@ -121,6 +127,60 @@ export default function Home(props: Props) {
     </div>
   );
 }
+
+const renderPhoto: RenderPhoto = ({
+  layout,
+  layoutOptions,
+  imageProps: { alt: type, title: guest, src, style, ...restImageProps },
+}) => {
+  return (
+    <div
+      style={{
+        border: "2px solid #eee",
+        borderRadius: "4px",
+        boxSizing: "content-box",
+        alignItems: "center",
+        width: style?.width,
+        padding: `${layoutOptions.padding - 2}px`,
+        paddingBottom: 0,
+      }}
+    >
+      {type === "image" ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt=""
+          src={src}
+          style={{ ...style, width: "100%", padding: 0 }}
+          {...restImageProps}
+        />
+      ) : (
+        <div className="gallery-video">
+          <video src={src} style={{ ...style, width: "100%", padding: 0 }} />
+
+          <svg
+            className="play-btn"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 311.69 311.69"
+          >
+            <path d="M155.84,0A155.85,155.85,0,1,0,311.69,155.84,155.84,155.84,0,0,0,155.84,0Zm0,296.42A140.58,140.58,0,1,1,296.42,155.84,140.58,140.58,0,0,1,155.84,296.42Z"></path>
+            <polygon points="218.79 155.84 119.22 94.34 119.22 217.34 218.79 155.84"></polygon>
+          </svg>
+        </div>
+      )}
+      <div
+        style={{
+          paddingTop: "8px",
+          paddingBottom: "8px",
+          overflow: "visible",
+          whiteSpace: "nowrap",
+          textAlign: "center",
+        }}
+      >
+        {guest}
+      </div>
+    </div>
+  );
+};
 
 export async function getStaticProps(
   context: GetStaticPropsContext<{ eventId: string }>
@@ -145,10 +205,10 @@ export async function getStaticProps(
       };
 
     // Get interview from db
-    const interviews = await getInterviews(eventId);
+    let interviews = await getInterviews(eventId);
 
     // Get media from db
-    const media = await getMedia(eventId);
+    let media = await getMedia(eventId);
 
     // TODO: Generate blurhashes
     // const blurImagePromises = results.resources.map((image: ImageProps) => {
@@ -160,12 +220,28 @@ export async function getStaticProps(
     //   reducedResults[i].blurDataUrl = imagesWithBlurDataUrls[i];
     // }
 
+    // This is to make the Firestore timestamp object serializable
+    interviews = JSON.parse(JSON.stringify(interviews));
+    media = JSON.parse(JSON.stringify(media));
+
+    const galleryMedia = media.map((m) => {
+      return {
+        src: m.publicUrl,
+        height: m.metadata.height,
+        width: m.metadata.width,
+        // react-photo-gallery doesn't let us pass in custom props for render
+        // so we will just hijack these ones
+        alt: m.metadata.type,
+        title: m.guestId,
+      };
+    });
+
     return {
       props: {
         title: event.title,
         eventId,
-        interviews: JSON.parse(JSON.stringify(interviews)),
-        media: JSON.parse(JSON.stringify(media)),
+        interviews,
+        media: galleryMedia,
       },
     };
   } catch (e) {

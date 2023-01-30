@@ -27,6 +27,7 @@
     "react-hooks-global-state": "^2.0.0",
     "react-icons": "^4.7.1",
     "react-images": "^1.2.0-beta.7",
+    "react-photo-album": "^2.0.0",
     "react-photo-gallery": "^8.0.0",
     "react-spinners": "^0.13.7",
     "react-swipeable": "^7.0.0",

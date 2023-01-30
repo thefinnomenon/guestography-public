@@ -72,3 +72,11 @@ export interface Media {
   url: string;
   metadata: Metadata;
 }
+
+export interface GalleryMedia {
+  src: string;
+  height: number;
+  width: number;
+  type: "image" | "video";
+  guest: string;
+}

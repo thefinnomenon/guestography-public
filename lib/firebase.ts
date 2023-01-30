@@ -62,8 +62,8 @@ export const getMedia = async (eventId: string) => {
       .get();
     return snapshot.docs.map((doc) => {
       return {
+        ...(doc.data() as Media),
         id: doc.id,
-        ...doc.data(),
       };
     });
   } catch (e) {
