@@ -227,11 +227,7 @@ const renderPhoto: RenderPhoto = ({
         </>
       ) : (
         <div className="gallery-video">
-          <input
-            className="gallery-item-select"
-            type="checkbox"
-            onClick={() => console.log("Selected!")}
-          />
+          <input className="gallery-item-select" type="checkbox" />
           <div className="gallery-item-overlay" onClick={onClick} />
           <div onClick={onClick}>
             <video
