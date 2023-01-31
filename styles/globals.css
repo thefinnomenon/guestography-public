@@ -197,6 +197,7 @@ a {
 .gallery-item-overlay {
   display: none;
   position: absolute;
+  cursor: pointer;
   bottom: 0;
   left: 0;
   height: 50%; /* Overlay half of the image */
@@ -207,14 +208,29 @@ a {
 }
 
 .gallery-item-wrapper:hover .gallery-item-overlay,
-.gallery-item-wrapper:hover .gallery-guest-info {
+.gallery-item-wrapper:hover .gallery-item-info,
+.gallery-item-wrapper:hover .gallery-item-select {
   display: revert;
 }
 
-.gallery-guest-info {
+.gallery-item-select:not(:checked) {
+  display: none;
+}
+
+.gallery-item-select {
+  z-index: 100;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  @apply h-8 w-8 rounded-full shadow bg-white border-indigo-300 text-indigo-500 focus:ring-indigo-200;
+}
+
+.gallery-item-info {
   display: none;
   position: absolute;
+  width: 100%;
   left: 4px;
+  padding-right: 8px;
   bottom: 4px;
   overflow: visible;
   whitespace: nowrap;

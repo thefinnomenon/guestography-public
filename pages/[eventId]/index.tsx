@@ -19,7 +19,7 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import Video from "yet-another-react-lightbox/plugins/video";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { relative } from "path";
 
 interface Props {
@@ -33,11 +33,13 @@ export default function Home(props: Props) {
   const { title, interviews, media } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
+  const [downloadList, setDownloadList] = useState([]);
 
   useEffect(() => {
     if (!media) return;
 
     const slides = media.map(
+      // @ts-ignore
       ({ alt: type, title: guest, src, width, height }) => {
         if (type === "video") {
           return {
@@ -208,7 +210,12 @@ const renderPhoto: RenderPhoto = ({
     >
       {type === "image" ? (
         <>
-          <div className="gallery-item-overlay" />
+          <input
+            data-href={src}
+            className="gallery-item-select"
+            type="checkbox"
+          />
+          <div className="gallery-item-overlay" onClick={onClick} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt=""
@@ -219,13 +226,20 @@ const renderPhoto: RenderPhoto = ({
           />
         </>
       ) : (
-        <div className="gallery-video" onClick={onClick}>
-          <div className="gallery-item-overlay" />
-          <video
-            preload="metadata"
-            src={src}
-            style={{ ...style, width: "100%", padding: 0 }}
+        <div className="gallery-video">
+          <input
+            className="gallery-item-select"
+            type="checkbox"
+            onClick={() => console.log("Selected!")}
           />
+          <div className="gallery-item-overlay" onClick={onClick} />
+          <div onClick={onClick}>
+            <video
+              preload="metadata"
+              src={src}
+              style={{ ...style, width: "100%", padding: 0 }}
+            />
+          </div>
 
           <svg
             className="play-btn"
@@ -237,7 +251,14 @@ const renderPhoto: RenderPhoto = ({
           </svg>
         </div>
       )}
-      <div className="gallery-guest-info">{guest}</div>
+      <div className="gallery-item-info">
+        <div className="flex justify-between">
+          {guest}
+          <a href={src} target="_blank" rel="noreferrer">
+            Download
+          </a>
+        </div>
+      </div>
     </div>
   );
 };
