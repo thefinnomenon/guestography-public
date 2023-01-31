@@ -79,7 +79,7 @@ export default async function handler(
   // Map over guest list & add unique guest ids
   const uid = new ShortUniqueId();
   fields["guest-list"] = fields["guest-list"].map((guest: any) => {
-    return { ...guest, id: uid() };
+    return { ...guest, id: `${guest.firstName}-${guest.lastName}-${uid()}` };
   });
 
   const event: Event = {
@@ -129,5 +129,5 @@ export default async function handler(
     console.error(e);
   }
 
-  res.status(200).redirect("/success-page");
+  res.status(200).redirect("/success");
 }

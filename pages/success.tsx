@@ -80,7 +80,7 @@ export default function SuccessPage() {
             </svg>
             <div className="flex justify-center items-center h-full">
               <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Upload Successful!
+                Success!
               </h1>
             </div>
           </div>
