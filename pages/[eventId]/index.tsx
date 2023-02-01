@@ -251,7 +251,7 @@ const renderPhoto: RenderPhoto = ({
       )}
       <div className="gallery-item-info">
         <div className="flex justify-between">
-          {guest}
+          {getGuestNameFromId(guest ? guest : "")}
           <a href={src} target="_blank" rel="noreferrer">
             Download
           </a>
@@ -259,6 +259,10 @@ const renderPhoto: RenderPhoto = ({
       </div>
     </div>
   );
+};
+
+const getGuestNameFromId = (guestId: string) => {
+  return guestId.slice(0, guestId.lastIndexOf("-")).replace("-", " ").trim();
 };
 
 export async function getStaticProps(
