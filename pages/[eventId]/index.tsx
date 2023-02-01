@@ -252,16 +252,33 @@ const renderPhoto: RenderPhoto = ({
       <div className="gallery-item-info">
         <div className="flex justify-between">
           {getGuestNameFromId(guest ? guest : "")}
-          <a href={src} target="_blank" rel="noreferrer">
+          <button onClick={() => downloadMedia(src)}>
             <MdOutlineFileDownload
               size="1.2rem"
               className="mt-1 text-white hover:text-indigo-200"
             />
-          </a>
+          </button>
         </div>
       </div>
     </div>
   );
+};
+
+const downloadMedia = async (src: string) => {
+  const image = await fetch(src, { cache: "no-store" });
+  const imageBlob = await image.blob();
+  const imageURL = URL.createObjectURL(imageBlob);
+
+  const link = document.createElement("a");
+  link.href = imageURL;
+  link.download = getFilenameFromSource(src);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const getFilenameFromSource = (src: string) => {
+  return src.slice(src.lastIndexOf("/") + 1, src.length);
 };
 
 const getGuestNameFromId = (guestId: string) => {

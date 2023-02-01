@@ -1,3 +1,5 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 import { PutBucketCorsCommand, S3Client } from "@aws-sdk/client-s3";
 
 const r2 = new S3Client({
@@ -17,7 +19,7 @@ async function main() {
       CORSConfiguration: {
         CORSRules: new Array({
           AllowedHeaders: ["content-type"],
-          AllowedMethods: ["GET", "PUT", "HEAD"],
+          AllowedMethods: ["GET", "POST", "PUT", "DELETE", "HEAD"],
           AllowedOrigins: ["*"],
           ExposeHeaders: [],
           MaxAgeSeconds: 3000,
