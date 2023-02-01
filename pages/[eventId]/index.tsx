@@ -20,7 +20,7 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import Video from "yet-another-react-lightbox/plugins/video";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { useEffect, useRef, useState } from "react";
-import { relative } from "path";
+import { MdOutlineFileDownload } from "react-icons/md";
 
 interface Props {
   title: string;
@@ -253,7 +253,10 @@ const renderPhoto: RenderPhoto = ({
         <div className="flex justify-between">
           {getGuestNameFromId(guest ? guest : "")}
           <a href={src} target="_blank" rel="noreferrer">
-            Download
+            <MdOutlineFileDownload
+              size="1.2rem"
+              className="mt-1 text-white hover:text-indigo-200"
+            />
           </a>
         </div>
       </div>
