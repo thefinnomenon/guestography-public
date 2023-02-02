@@ -210,11 +210,11 @@ const renderPhoto: RenderPhoto = ({
     >
       {type === "image" ? (
         <>
-          <input
+          {/* <input
             data-href={src}
             className="gallery-item-select"
             type="checkbox"
-          />
+          /> */}
           <div className="gallery-item-overlay" onClick={onClick} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -227,7 +227,7 @@ const renderPhoto: RenderPhoto = ({
         </>
       ) : (
         <div className="gallery-video">
-          <input className="gallery-item-select" type="checkbox" />
+          {/* <input className="gallery-item-select" type="checkbox" /> */}
           <div className="gallery-item-overlay" onClick={onClick} />
           <div onClick={onClick}>
             <video
