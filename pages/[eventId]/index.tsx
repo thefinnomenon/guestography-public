@@ -265,16 +265,28 @@ const renderPhoto: RenderPhoto = ({
 };
 
 const downloadMedia = async (src: string) => {
-  const image = await fetch(src, { cache: "no-store" });
-  const imageBlob = await image.blob();
-  const imageURL = URL.createObjectURL(imageBlob);
+  const media = await fetch(src, { cache: "no-store" });
+  const mediaBlob = await media.blob();
+  const mediaURL = URL.createObjectURL(mediaBlob);
+  const mediaFilename = getFilenameFromSource(src);
+  const mediaShare = {
+    files: [new File([mediaBlob], mediaFilename)],
+  };
 
-  const link = document.createElement("a");
-  link.href = imageURL;
-  link.download = getFilenameFromSource(src);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  if (navigator.canShare && navigator.canShare(mediaShare)) {
+    try {
+      await navigator.share(mediaShare);
+    } catch (error) {
+      console.error(error);
+    }
+  } else {
+    const link = document.createElement("a");
+    link.href = mediaURL;
+    link.download = mediaFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 };
 
 const getFilenameFromSource = (src: string) => {
