@@ -78,7 +78,7 @@ export default function Home(props: Props) {
 
       <main>
         <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
-          <div className="relative mx-auto max-w-xl">
+          <div className="relative mx-auto max-w-5xl">
             <svg
               className="absolute left-full translate-x-1/2 transform"
               width={404}
@@ -158,8 +158,13 @@ export default function Home(props: Props) {
               <h2 className="mt-8 mb-4">Media</h2>
               {media && (
                 <PhotoAlbum
-                  layout="rows"
+                  layout="masonry"
                   photos={media}
+                  columns={(containerWidth) => {
+                    if (containerWidth < 400) return 2;
+                    if (containerWidth < 800) return 3;
+                    return 4;
+                  }}
                   // @ts-ignore
                   renderPhoto={renderPhoto}
                   onClick={({ index }) => setIndex(index)}

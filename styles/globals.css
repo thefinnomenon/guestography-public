@@ -213,6 +213,12 @@ a {
   display: revert;
 }
 
+/* Fix bottom margin in masonry layout */
+.gallery-item-wrapper video,
+.gallery-item-wrapper img {
+  margin-bottom: 0 !important;
+}
+
 /* For mobile always show overlays */
 @media only screen and (hover: none) and (pointer: coarse) {
   .gallery-item-overlay,
