@@ -26,6 +26,7 @@ export default function Home(props: Props) {
     : null;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadUrl, setUploadUrl] = useState("");
+  const [googleUploadUrl, setGoogleUploadUrl] = useState("");
   const [videoSrc, setVideoSrc] = useState("");
   const [file, setFile] = useState<File>();
   const [fileExt, setFileExt] = useState("");
@@ -101,16 +102,18 @@ export default function Home(props: Props) {
   };
 
   useEffect(() => {
-    const retrieveUploadUrl = async () => {
+    const retrieveUploadUrls = async () => {
       if (!fileExt) return;
 
       const res = await fetch(
         `/api/interview?eventId=${eventId}&guestId=${guestId}&fileExt=${fileExt}`
       );
-      const { url } = await res.json();
+      const { url, googleUrl } = await res.json();
       setUploadUrl(url);
+      setGoogleUploadUrl(googleUrl);
+      console.log("Retrieved upload urls", eventId, guestId, url, googleUrl);
     };
-    retrieveUploadUrl();
+    retrieveUploadUrls();
   }, [eventId, guestId, fileExt]);
 
   // Handle Form Submission
@@ -130,12 +133,21 @@ export default function Home(props: Props) {
         },
       });
 
-      if (res.status != 200) throw Error("Upload failed.");
+      const res2 = await fetch(googleUploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      if (res.status !== 200 || res2.status !== 200)
+        throw Error("Upload failed.");
 
       const url = uploadUrl.slice(0, uploadUrl.indexOf("?"));
 
       // Add entry in database
-      const res2 = await fetch("/api/interview", {
+      const res3 = await fetch("/api/interview", {
         method: "POST",
         body: JSON.stringify({
           eventId,

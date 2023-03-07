@@ -1,14 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import serviceAccount from "../../lib/serviceAccountKey.json";
-import multer from "multer";
 import ShortUniqueId from "short-unique-id";
-import {
-  S3Client,
-  PutObjectCommand,
-  PutBucketCorsCommand,
-} from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Storage, GetSignedUrlConfig } from "@google-cloud/storage";
+const path = require("path");
+
+// Creates a client
+const credential = JSON.parse(
+  Buffer.from(process.env.GOOGLE_SERVICE_KEY || "", "base64").toString()
+);
+
+const storage = new Storage({
+  projectId: "guestography-37df8",
+  credentials: {
+    client_email: credential.client_email,
+    private_key: credential.private_key,
+  },
+});
 
 const r2 = new S3Client({
   region: "auto",
@@ -59,7 +69,20 @@ export default async function handler(
       { expiresIn: 3600 * 24 }
     );
 
-    res.status(200).json({ url });
+    // Generate Google Storage Presigned URL
+    const options: GetSignedUrlConfig = {
+      version: "v4",
+      action: "write",
+      expires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    };
+
+    // Get a v4 signed URL for reading the file
+    const [googleUrl] = await storage
+      .bucket(bucket || "")
+      .file(key)
+      .getSignedUrl(options);
+
+    res.status(200).json({ url, googleUrl });
     return;
   }
 
