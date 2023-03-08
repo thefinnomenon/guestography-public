@@ -59,9 +59,9 @@ export default async function handler(
       length: 4,
     })()}.${fileExt || ""}`;
 
-    console.log(
-      `Generating presigned post for storing interview from guest ${guestId} for event ${eventId}\nBucket: ${bucket}\nKey: ${key}`
-    );
+    // console.log(
+    //   `Generating presigned post for storing interview from guest ${guestId} for event ${eventId}\nBucket: ${bucket}\nKey: ${key}`
+    // );
 
     const url = await getSignedUrl(
       r2,

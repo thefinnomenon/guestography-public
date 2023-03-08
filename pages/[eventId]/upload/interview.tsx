@@ -111,7 +111,7 @@ export default function Home(props: Props) {
       const { url, googleUrl } = await res.json();
       setUploadUrl(url);
       setGoogleUploadUrl(googleUrl);
-      console.log("Retrieved upload urls", eventId, guestId, url, googleUrl);
+      // console.log("Retrieved upload urls", eventId, guestId, url, googleUrl);
     };
     retrieveUploadUrls();
   }, [eventId, guestId, fileExt]);
