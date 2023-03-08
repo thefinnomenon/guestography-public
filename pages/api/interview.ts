@@ -54,13 +54,7 @@ export default async function handler(
       { expiresIn: 3600 * 24 }
     );
 
-    const s3Url = await getSignedUrl(
-      s3,
-      new PutObjectCommand({ Bucket: bucket, Key: key }),
-      { expiresIn: 3600 * 24 }
-    );
-
-    res.status(200).json({ url, s3Url });
+    res.status(200).json({ url });
     return;
   }
 
