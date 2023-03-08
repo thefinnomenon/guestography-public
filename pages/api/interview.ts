@@ -4,21 +4,6 @@ import serviceAccount from "../../lib/serviceAccountKey.json";
 import ShortUniqueId from "short-unique-id";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Storage, GetSignedUrlConfig } from "@google-cloud/storage";
-const path = require("path");
-
-// Creates a client
-const credential = JSON.parse(
-  Buffer.from(process.env.GOOGLE_SERVICE_KEY || "", "base64").toString()
-);
-
-const storage = new Storage({
-  projectId: "guestography-37df8",
-  credentials: {
-    client_email: credential.client_email,
-    private_key: credential.private_key,
-  },
-});
 
 const r2 = new S3Client({
   region: "auto",
@@ -27,6 +12,10 @@ const r2 = new S3Client({
     accessKeyId: process.env.CLOUDFLARE_ACCESS_KEY_ID || "",
     secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY || "",
   },
+});
+
+const s3 = new S3Client({
+  region: process.env.S3_REGION,
 });
 
 if (!admin.apps.length)
@@ -59,30 +48,19 @@ export default async function handler(
       length: 4,
     })()}.${fileExt || ""}`;
 
-    // console.log(
-    //   `Generating presigned post for storing interview from guest ${guestId} for event ${eventId}\nBucket: ${bucket}\nKey: ${key}`
-    // );
-
     const url = await getSignedUrl(
       r2,
       new PutObjectCommand({ Bucket: bucket, Key: key }),
       { expiresIn: 3600 * 24 }
     );
 
-    // Generate Google Storage Presigned URL
-    const options: GetSignedUrlConfig = {
-      version: "v4",
-      action: "write",
-      expires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-    };
+    const s3Url = await getSignedUrl(
+      s3,
+      new PutObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: 3600 * 24 }
+    );
 
-    // Get a v4 signed URL for reading the file
-    const [googleUrl] = await storage
-      .bucket(bucket || "")
-      .file(key)
-      .getSignedUrl(options);
-
-    res.status(200).json({ url, googleUrl });
+    res.status(200).json({ url, s3Url });
     return;
   }
 

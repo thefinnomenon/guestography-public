@@ -26,7 +26,7 @@ export default function Home(props: Props) {
     : null;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadUrl, setUploadUrl] = useState("");
-  const [googleUploadUrl, setGoogleUploadUrl] = useState("");
+  const [s3UploadUrl, setS3UploadUrl] = useState("");
   const [videoSrc, setVideoSrc] = useState("");
   const [file, setFile] = useState<File>();
   const [fileExt, setFileExt] = useState("");
@@ -108,10 +108,9 @@ export default function Home(props: Props) {
       const res = await fetch(
         `/api/interview?eventId=${eventId}&guestId=${guestId}&fileExt=${fileExt}`
       );
-      const { url, googleUrl } = await res.json();
+      const { url, s3Url } = await res.json();
       setUploadUrl(url);
-      setGoogleUploadUrl(googleUrl);
-      // console.log("Retrieved upload urls", eventId, guestId, url, googleUrl);
+      setS3UploadUrl(s3Url);
     };
     retrieveUploadUrls();
   }, [eventId, guestId, fileExt]);
@@ -133,7 +132,7 @@ export default function Home(props: Props) {
         },
       });
 
-      const res2 = await fetch(googleUploadUrl, {
+      const res2 = await fetch(s3UploadUrl, {
         method: "PUT",
         body: file,
         headers: {
