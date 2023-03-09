@@ -1,6 +1,25 @@
-import AWS from "aws-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
-const s3 = new AWS.S3({ apiVersion: "2006-03-01" });
+import * as admin from "firebase-admin";
+import serviceAccount from "../../lib/serviceAccountKey.json";
+import {
+  MediaConvertClient,
+  CreateJobCommand,
+} from "@aws-sdk/client-mediaconvert";
+
+const ENDPOINT = {
+  endpoint: "https://mqm13wgra.mediaconvert.us-east-2.amazonaws.com",
+  region: "us-east-2",
+};
+
+const mediaConvert = new MediaConvertClient(ENDPOINT);
+
+if (!admin.apps.length)
+  admin.initializeApp({
+    /* @ts-ignore */
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: "https://guestography-37df8.firebaseio.com",
+  });
+else admin.app();
 
 export default async function handler(
   req: NextApiRequest,
@@ -8,21 +27,143 @@ export default async function handler(
 ) {
   const { eventId } = req.query;
 
-  var params = {
-    Bucket: process.env.S3_BUCKET || "",
+  const db = admin.firestore();
+  const interviews = await (
+    await db.collection(`events/${eventId}/interviews`).get()
+  ).docs.map((doc) => doc.data());
+  console.log(interviews);
+
+  const params = {
+    // Queue: "JOB_QUEUE_ARN",
+    Role: "arn:aws:iam::177450493151:role/service-role/MediaConvert_Default_Role",
+    Settings: {
+      OutputGroups: [
+        {
+          Name: "File Group",
+          OutputGroupSettings: {
+            Type: "FILE_GROUP_SETTINGS",
+            FileGroupSettings: {
+              Destination: `s3://${process.env.S3_BUCKET}/events/${eventId}/`,
+            },
+          },
+          Outputs: [
+            {
+              VideoDescription: {
+                ScalingBehavior: "DEFAULT",
+                TimecodeInsertion: "DISABLED",
+                AntiAlias: "ENABLED",
+                Sharpness: 50,
+                CodecSettings: {
+                  Codec: "H_264",
+                  H264Settings: {
+                    InterlaceMode: "PROGRESSIVE",
+                    NumberReferenceFrames: 3,
+                    Syntax: "DEFAULT",
+                    Softness: 0,
+                    GopClosedCadence: 1,
+                    GopSize: 90,
+                    Slices: 1,
+                    GopBReference: "DISABLED",
+                    SlowPal: "DISABLED",
+                    SpatialAdaptiveQuantization: "ENABLED",
+                    TemporalAdaptiveQuantization: "ENABLED",
+                    FlickerAdaptiveQuantization: "DISABLED",
+                    EntropyEncoding: "CABAC",
+                    Bitrate: 5000000,
+                    FramerateControl: "SPECIFIED",
+                    RateControlMode: "CBR",
+                    CodecProfile: "MAIN",
+                    Telecine: "NONE",
+                    MinIInterval: 0,
+                    AdaptiveQuantization: "HIGH",
+                    CodecLevel: "AUTO",
+                    FieldEncoding: "PAFF",
+                    SceneChangeDetect: "ENABLED",
+                    QualityTuningLevel: "SINGLE_PASS",
+                    FramerateConversionAlgorithm: "DUPLICATE_DROP",
+                    UnregisteredSeiTimecode: "DISABLED",
+                    GopSizeUnits: "FRAMES",
+                    ParControl: "SPECIFIED",
+                    NumberBFramesBetweenReferenceFrames: 2,
+                    RepeatPps: "DISABLED",
+                    FramerateNumerator: 30,
+                    FramerateDenominator: 1,
+                    ParNumerator: 1,
+                    ParDenominator: 1,
+                  },
+                },
+                AfdSignaling: "NONE",
+                DropFrameTimecode: "ENABLED",
+                RespondToAfd: "NONE",
+                ColorMetadata: "INSERT",
+              },
+              AudioDescriptions: [
+                {
+                  AudioTypeControl: "FOLLOW_INPUT",
+                  CodecSettings: {
+                    Codec: "AAC",
+                    AacSettings: {
+                      AudioDescriptionBroadcasterMix: "NORMAL",
+                      RateControlMode: "CBR",
+                      CodecProfile: "LC",
+                      CodingMode: "CODING_MODE_2_0",
+                      RawFormat: "NONE",
+                      SampleRate: 48000,
+                      Specification: "MPEG4",
+                      Bitrate: 64000,
+                    },
+                  },
+                  LanguageCodeControl: "FOLLOW_INPUT",
+                  AudioSourceName: "Audio Selector 1",
+                },
+              ],
+              ContainerSettings: {
+                Container: "MP4",
+                Mp4Settings: {
+                  CslgAtom: "INCLUDE",
+                  FreeSpaceBox: "EXCLUDE",
+                  MoovPlacement: "PROGRESSIVE_DOWNLOAD",
+                },
+              },
+              NameModifier: "-interview",
+            },
+          ],
+        },
+      ],
+      AdAvailOffset: 0,
+      Inputs: interviews.map((interview) => {
+        return {
+          AudioSelectors: {
+            "Audio Selector 1": {
+              Offset: 0,
+              DefaultSelection: "NOT_DEFAULT",
+              ProgramSelection: 1,
+              SelectorType: "TRACK",
+            },
+          },
+          VideoSelector: {
+            ColorSpace: "FOLLOW",
+          },
+          FilterEnable: "AUTO",
+          PsiControl: "USE_PSI",
+          FilterStrength: 0,
+          DeblockFilter: "DISABLED",
+          DenoiseFilter: "DISABLED",
+          TimecodeSource: "EMBEDDED",
+          FileInput: interview.publicUrl,
+        };
+      }),
+      TimecodeConfig: {
+        Source: "EMBEDDED",
+      },
+    },
   };
 
-  let s3Objects;
   try {
-    s3Objects = await s3.listObjects(params).promise();
-    console.log(s3Objects);
-  } catch (e) {
-    console.log(e);
+    const data = await mediaConvert.send(new CreateJobCommand(params));
+    res.status(200).send("okay");
+  } catch (err) {
+    console.error("Error", err);
+    res.status(500).send(err);
   }
-
-  res
-    .status(200)
-    .send(
-      JSON.stringify(s3Objects || { message: "No objects found in s3 bucket" })
-    );
 }

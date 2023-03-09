@@ -14,10 +14,6 @@ const r2 = new S3Client({
   },
 });
 
-const s3 = new S3Client({
-  region: process.env.S3_REGION,
-});
-
 if (!admin.apps.length)
   admin.initializeApp({
     /* @ts-ignore */
