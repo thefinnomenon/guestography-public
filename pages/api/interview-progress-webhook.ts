@@ -23,26 +23,10 @@ const r2 = new S3({
   },
 });
 
-async function getObject(params: any) {
-  const s3ResponseStream = (await s3.getObject(params)).Body;
-  if (!s3ResponseStream) return;
-
-  const chunks = [];
-  /* @ts-ignore */
-  for await (const chunk of s3ResponseStream) {
-    chunks.push(chunk);
-  }
-
-  const responseBuffer = Buffer.concat(chunks);
-  return JSON.parse(responseBuffer.toString());
-}
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log("Received MediaConvert interview progress update!");
-
   const status = req.body.detail.status;
   if (status === "ERROR") {
     res.status(500).send("Failed to create interview video");
@@ -56,11 +40,6 @@ export default async function handler(
   const Bucket = filePath.split("/")[2];
   const Key = filePath.replace(`s3://${Bucket}/`, "");
   const eventId = filePath.split("/")[4];
-
-  console.log(filePath);
-  console.log(
-    `Interview video creation complete!\nBucket: ${Bucket}\nKey: ${Key}`
-  );
 
   // Download interview from s3
   let interviewVideo;
