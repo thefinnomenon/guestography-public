@@ -31,7 +31,6 @@ export default async function handler(
   const interviews = await (
     await db.collection(`events/${eventId}/interviews`).get()
   ).docs.map((doc) => doc.data());
-  console.log(interviews);
 
   const params = {
     // Queue: "JOB_QUEUE_ARN",
