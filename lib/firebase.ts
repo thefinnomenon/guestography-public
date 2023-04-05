@@ -53,6 +53,20 @@ export const getInterviews = async (eventId: string) => {
   }
 };
 
+export const getInterview = async (eventId: string) => {
+  try {
+    const db = admin.firestore();
+    const snapshot = await db
+      .collection(`events/${eventId}/interviews`)
+      .doc("interview")
+      .get();
+    return snapshot.data();
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
 export const getMedia = async (eventId: string) => {
   try {
     const db = admin.firestore();

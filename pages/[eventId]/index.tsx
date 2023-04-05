@@ -4,7 +4,7 @@ import Image from "next/image";
 import {
   getEvent,
   getEvents,
-  getInterviews,
+  getInterview,
   getMedia,
 } from "../../lib/firebase";
 import { Interview, Media, GalleryMedia } from "../../types";
@@ -25,12 +25,12 @@ import { MdOutlineFileDownload } from "react-icons/md";
 interface Props {
   title: string;
   eventId: string;
-  interviews?: Interview[];
+  interview?: Interview;
   media?: GalleryMedia[];
 }
 
 export default function Home(props: Props) {
-  const { title, interviews, media } = props;
+  const { title, interview, media } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
   const [downloadList, setDownloadList] = useState([]);
@@ -149,12 +149,16 @@ export default function Home(props: Props) {
               {title} Gallery
             </h1>
             <div className="mt-12">
-              <h2 className="mb-4">Interview</h2>
-              <ul>
-                {interviews?.map((interview) => (
-                  <li key={interview.publicUrl}>{interview.publicUrl}</li>
-                ))}
-              </ul>
+              {interview && (
+                <>
+                  <h2 className="mb-4">Interview</h2>
+                  <video
+                    className="rounded-md"
+                    src={interview.publicUrl}
+                    controls
+                  />
+                </>
+              )}
               <h2 className="mt-8 mb-4">Media</h2>
               {media && (
                 <PhotoAlbum
@@ -226,6 +230,7 @@ const renderPhoto: RenderPhoto = ({
             alt=""
             src={src}
             style={{ ...style, width: "100%", padding: 0 }}
+            className="rounded-md"
             onClick={onClick}
             {...restImageProps}
           />
@@ -236,6 +241,7 @@ const renderPhoto: RenderPhoto = ({
           <div className="gallery-item-overlay" onClick={onClick} />
           <div onClick={onClick}>
             <video
+              className="rounded-md"
               preload="metadata"
               src={src}
               style={{ ...style, width: "100%", padding: 0 }}
@@ -325,7 +331,7 @@ export async function getStaticProps(
       };
 
     // Get interview from db
-    let interviews = await getInterviews(eventId);
+    let interview = await getInterview(eventId);
 
     // Get media from db
     let media = await getMedia(eventId);
@@ -341,7 +347,7 @@ export async function getStaticProps(
     // }
 
     // This is to make the Firestore timestamp object serializable
-    interviews = JSON.parse(JSON.stringify(interviews));
+    interview = JSON.parse(JSON.stringify(interview));
     media = JSON.parse(JSON.stringify(media));
 
     const galleryMedia = media.map((m) => {
@@ -360,7 +366,7 @@ export async function getStaticProps(
       props: {
         title: event.title,
         eventId,
-        interviews,
+        interview,
         media: galleryMedia,
       },
     };
