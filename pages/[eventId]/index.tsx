@@ -154,7 +154,8 @@ export default function Home(props: Props) {
                   <h2 className="mb-4">Interview</h2>
                   <video
                     className="rounded-md"
-                    src={interview.publicUrl}
+                    src={`${interview.publicUrl}#t=0.001`}
+                    preload="metadata"
                     controls
                   />
                 </>
@@ -243,7 +244,7 @@ const renderPhoto: RenderPhoto = ({
             <video
               className="rounded-md"
               preload="metadata"
-              src={src}
+              src={`${src}#t=0.001`}
               style={{ ...style, width: "100%", padding: 0 }}
             />
           </div>
