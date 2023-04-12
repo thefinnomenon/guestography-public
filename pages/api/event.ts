@@ -1,11 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
+import Stripe from "stripe";
 import serviceAccount from "../../lib/serviceAccountKey.json";
-import multer from "multer";
-import { parse } from "csv-parse/sync";
 import { slugify } from "../../utils/format";
-import { Event } from "../../types";
 import ShortUniqueId from "short-unique-id";
+import { Event } from "../../types";
 
 if (!admin.apps.length)
   admin.initializeApp({
@@ -15,119 +14,87 @@ if (!admin.apps.length)
   });
 else admin.app();
 
-async function parseFormData(
-  req: NextApiRequest & { files?: any },
-  res: NextApiResponse
-) {
-  const storage = multer.memoryStorage();
-  const multerUpload = multer({ storage });
-  const multerFiles = multerUpload.any();
-  await new Promise((resolve, reject) => {
-    multerFiles(req as any, res as any, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-  return {
-    fields: req.body,
-    files: req.files,
-  };
-}
-
-// IMPORTANT: Prevents next from trying to parse the form
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-const columns = [
-  "firstName",
-  "lastName",
-  null,
-  "phone",
-  "email",
-  "address1",
-  "address2",
-  "city",
-  "state",
-  "zipcode",
-  "country",
-  null,
-  "rsvp",
-  null,
-  null,
-  null,
-  null,
-];
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2022-11-15",
+});
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   const db = admin.firestore();
-  const { fields, files } = await parseFormData(req, res);
+  const event: Event = req.body;
 
-  // TODO: Validate event info and create event entry
-
-  // Parse guest list CSV and add to event
-  if (files[0])
-    fields["guest-list"] = await parse(files[0].buffer, { columns, from: 2 });
+  // TODO: Validate event info
 
   // Map over guest list & add unique guest ids
   const uid = new ShortUniqueId();
-  fields["guest-list"] = fields["guest-list"].map((guest: any) => {
-    return { ...guest, id: `${guest.firstName}-${guest.lastName}-${uid()}` };
+  event.guests = event.guests.map((guest: any) => {
+    return {
+      ...guest,
+      id: `${guest["First Name"]}-${guest["Last Name"]}-${uid()}`,
+    };
   });
 
-  const event: Event = {
-    firstName: fields["first-name"],
-    lastName: fields["last-name"],
-    email: fields["email"],
-    phone: fields["phone"],
-    title: fields["title"],
-    date: fields["date"],
-    location: fields["location"],
-    guests: fields["guest-list"],
-    interviews: {
-      enabled: fields["interviews"] === "on" ? true : false,
-      orientation: fields["interviews-orientation"],
-      initialMessage: {
-        message: fields["interviews-initial-message"],
-        schedule: fields["interviews-initial-schedule"],
-      },
-      reminderMessage: {
-        message: fields["interviews-reminder-message"],
-        schedule: fields["interviews-reminder-schedule"],
-      },
-    },
-    media: {
-      enabled: fields["media"] === "on" ? true : false,
-      initialMessage: {
-        message: fields["media-initial-message"],
-        schedule: fields["media-initial-schedule"],
-      },
-      collectionMessage: {
-        message: fields["media-collection-message"],
-        schedule: fields["media-collection-schedule"],
-      },
-    },
-  };
+  event.status = "PENDING";
 
   // Generate URL safe event ids
-  const eventId = `${slugify(fields.title)}-${new ShortUniqueId({
+  const eventId = `${slugify(event.title)}-${new ShortUniqueId({
     length: 4,
   })()}`;
+
+  console.log("Generating Stripe Checkout Session for event ", eventId);
+
+  // Generate Stripe Checkout Session
+  let checkoutSession: Stripe.Checkout.Session;
+  const line_items = [];
+  if (event.interviews.enabled)
+    line_items.push({
+      price: process.env.STRIPE_INTERVIEW_SERVICE_PRICE_ID,
+      quantity: event.guests.length,
+    });
+  if (event.media.enabled)
+    line_items.push({
+      price: process.env.STRIPE_INTERVIEW_SERVICE_PRICE_ID,
+      quantity: event.guests.length,
+    });
+
+  console.log("Line items: ", line_items);
+
+  try {
+    const params: Stripe.Checkout.SessionCreateParams = {
+      mode: "payment",
+      payment_method_types: ["card"],
+      customer_email: event.email,
+      line_items,
+      metadata: { eventId },
+      success_url: `${req.headers.origin}/checkout/success?eventId=${eventId}`,
+      cancel_url: `${req.headers.origin}/form?eventId=${eventId}`,
+    };
+
+    checkoutSession = await stripe.checkout.sessions.create(params);
+  } catch (e: any) {
+    res.status(500).json(e.message);
+    return;
+  }
+
+  console.log("Created checkout session: ", checkoutSession.id);
 
   // Store event in db
   try {
     await db.collection("events").doc(eventId).create(event);
-    console.log("Created record for event: ", event);
+    console.log("Created record for event: ", eventId);
   } catch (e) {
     console.error(e);
+    res.status(500).json(e);
+    return;
   }
 
-  res.status(200).redirect("/success");
+  // Redirect to Stripe checkout page
+  if (checkoutSession.url)
+    res.status(200).json({ checkoutUrl: checkoutSession.url });
+  else
+    res.status(500).json({
+      message: "Failed to generate checkout session",
+    });
 }

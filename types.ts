@@ -1,4 +1,12 @@
 export interface Event {
+  /**
+   * PENDING: Checkout not completed
+   * UNPAID: Checkout completed but payment hasn't finished
+   * PAID: Payment received
+   * SCHEDULED: In task queue
+   * COMPLETED: Event completed
+   */
+  status: "PENDING" | "UNPAID" | "PAID" | "SCHEDULED" | "COMPLETED";
   firstName: string;
   lastName: string;
   email: string;

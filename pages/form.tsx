@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
-import { Switch } from "@headlessui/react";
+import { FormEvent, useEffect, useState } from "react";
+import { ClipLoader } from "react-spinners";
 import Link from "next/link";
 import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
+import { csvToJson } from "../utils/csv";
 
 export default function Form() {
-  const [agreed, setAgreed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [eventStart, setEventStart] = useState("");
+  const [location, setLocation] = useState("");
+  const [guestList, setGuestList] = useState<FileList | null>();
   const [isInterviewsChecked, setIsInterviewsChecked] = useState(true);
   const [isMediaChecked, setIsMediaChecked] = useState(true);
   const [interviewOrientation, setInterviewOrientation] = useState("landscape");
@@ -33,6 +36,13 @@ export default function Form() {
   const [mediaCollectionMessage, setMediaCollectionMessage] = useState<
     string | undefined
   >(undefined);
+
+  const interviewsInitialDefaultMessage = `Hi {{FirstName}}! We are collecting guest interviews using Guestography for ${eventTitle} and it’s your turn!\n\nPlease record a short video message (<10 seconds per person) using your smartphone (in ${
+    interviewOrientation === "landscape" ? "landscape ↔️" : "portrait ↕️"
+  }!) and upload it using the link below.\n{{UploadLink}}\n\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`;
+  const interviewsReminderDefaultMessage = `Hi {{FirstName}}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n\n{{UploadLink}}`;
+  const mediaInitialDefaultMessage = `Hi {{FirstName}}, we hope you are excited for ${eventTitle}! We wanted to let you know that we are using Guestography to collect photos and videos from everyone so please snap away and tomorrow you will recieve a message asking you to upload your best shots!`;
+  const mediaCollectionDefaultMessage = `Good morning {{FirstName}}! Guestography here and we hope that you had fun at ${eventTitle} yesterday and invite you to share any photos and videos you took by uploading them using the link below.\n\n{{UploadLink}}`;
 
   const getEstimatedEventEnd = (start: string) => {
     if (!start) return "";
@@ -57,6 +67,71 @@ export default function Form() {
     // Correct time zone offset for generating iso string
     d.setMinutes(d.getMinutes() - 60 - d.getTimezoneOffset());
     return d.toISOString().slice(0, -1);
+  };
+
+  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setIsSubmitting(true);
+
+    let guestListJson;
+    if (guestList && guestList[0])
+      guestListJson = await csvToJson(guestList[0]);
+
+    const eventData = {
+      firstName,
+      lastName,
+      email,
+      phone,
+      title: eventTitle,
+      date: eventStart,
+      location,
+      guests: guestListJson,
+      interviews: {
+        enabled: isInterviewsChecked,
+        orientation: interviewOrientation,
+        initialMessage: {
+          message: interviewsInitialMessage || interviewsInitialDefaultMessage,
+          schedule: interviewsInitialMessageTime || eventStart,
+        },
+        reminderMessage: {
+          message:
+            interviewsReminderMessage || interviewsReminderDefaultMessage,
+          schedule:
+            interviewsReminderMessageTime || getEstimatedEventEnd(eventStart),
+        },
+      },
+      media: {
+        enabled: isMediaChecked,
+        initialMessage: {
+          message: mediaInitialMessage || mediaInitialDefaultMessage,
+          schedule: mediaInitialMessageTime || getHourBefore(eventStart),
+        },
+        collectionMessage: {
+          message: mediaCollectionMessage || mediaCollectionDefaultMessage,
+          schedule: mediaCollectionMessageTime || getNextMorning(eventStart),
+        },
+      },
+    };
+
+    try {
+      const res = await fetch("/api/event", {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify(eventData),
+      });
+      const resData = await res.json();
+
+      if (res.status === 200 && resData && resData.checkoutUrl)
+        window.location.href = resData.checkoutUrl;
+      else throw Error(resData);
+    } catch (error) {
+      console.error("Failed to submit event form", error);
+    }
+
+    setIsSubmitting(false);
   };
 
   return (
@@ -139,9 +214,7 @@ export default function Form() {
         </div>
         <div className="mt-12">
           <form
-            action="/api/event"
-            method="POST"
-            encType="multipart/form-data"
+            onSubmit={handleFormSubmit}
             className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
           >
             <h1 className="text-2xl sm:col-span-2">Personal Information</h1>
@@ -159,6 +232,8 @@ export default function Form() {
                   id="first-name"
                   autoComplete="given-name"
                   placeholder="Jim"
+                  onChange={(e) => setFirstName(e.target.value)}
+                  value={firstName}
                   required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
@@ -178,6 +253,8 @@ export default function Form() {
                   id="last-name"
                   autoComplete="family-name"
                   placeholder="Halpert"
+                  onChange={(e) => setLastName(e.target.value)}
+                  value={lastName}
                   required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
@@ -197,6 +274,8 @@ export default function Form() {
                   type="email"
                   autoComplete="email"
                   placeholder="jim@dundermifflinpaper.com"
+                  onChange={(e) => setEmail(e.target.value)}
+                  value={email}
                   required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
@@ -210,20 +289,6 @@ export default function Form() {
                 Phone
               </label>
               <div className="relative mt-1 rounded-md shadow-sm">
-                {/* <div className="absolute inset-y-0 left-0 flex items-center">
-                  <label htmlFor="country" className="sr-only">
-                    Country
-                  </label>
-                  <select
-                    id="country"
-                    name="country"
-                    className="h-full rounded-md border-transparent bg-transparent py-0 pl-4 pr-8 text-gray-500 focus:border-indigo-500 focus:ring-indigo-500"
-                  >
-                    <option>US</option>
-                    <option>CA</option>
-                    <option>EU</option>
-                  </select>
-                </div> */}
                 <input
                   type="text"
                   name="phone"
@@ -231,6 +296,8 @@ export default function Form() {
                   autoComplete="tel"
                   className="block w-full rounded-md border-gray-300 py-3 px-4 focus:border-indigo-500 focus:ring-indigo-500" // pl-20
                   placeholder="555-987-6543"
+                  onChange={(e) => setPhone(e.target.value)}
+                  value={phone}
                   required
                 />
               </div>
@@ -287,6 +354,8 @@ export default function Form() {
                   name="location"
                   id="location"
                   placeholder="10 Rainbow Blvd., Niagara Falls, NY 14303"
+                  onChange={(e) => setLocation(e.target.value)}
+                  value={location}
                   required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
@@ -325,6 +394,7 @@ export default function Form() {
                   accept=".csv"
                   name="guest-list"
                   id="guest-list"
+                  onChange={(e) => setGuestList(e.target.files)}
                   required
                   className="block w-full text-sm text-slate-500
       file:mr-4 file:py-2 file:px-4
@@ -444,7 +514,9 @@ export default function Form() {
                       type="datetime-local"
                       name="interviews-initial-schedule"
                       id="interviews-initial-schedule"
-                      onChange={(e) => setInterviewsInitialMessageTime}
+                      onChange={(e) =>
+                        setInterviewsInitialMessageTime(e.target.value)
+                      }
                       value={interviewsInitialMessageTime || eventStart}
                       required={isInterviewsChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -478,11 +550,7 @@ export default function Form() {
                       value={
                         interviewsInitialMessage !== undefined
                           ? interviewsInitialMessage
-                          : `Hi {{FirstName}}! We are collecting guest interviews using Guestography for ${eventTitle} and it’s your turn!\n\nPlease record a short video message (<10 seconds per person) using your smartphone (in ${
-                              interviewOrientation === "landscape"
-                                ? "landscape ↔️"
-                                : "portrait ↕️"
-                            }!) and upload it using the link below.\n{{UploadLink}}\n\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`
+                          : interviewsInitialDefaultMessage
                       }
                       required={isInterviewsChecked}
                     />
@@ -543,7 +611,7 @@ export default function Form() {
                       value={
                         interviewsReminderMessage !== undefined
                           ? interviewsReminderMessage
-                          : `Hi {{FirstName}}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n\n{{UploadLink}}`
+                          : interviewsReminderDefaultMessage
                       }
                       required={isInterviewsChecked}
                     />
@@ -589,7 +657,9 @@ export default function Form() {
                       type="datetime-local"
                       name="media-initial-schedule"
                       id="media-initial-schedule"
-                      onChange={(e) => setMediaInitialMessageTime}
+                      onChange={(e) =>
+                        setMediaInitialMessageTime(e.target.value)
+                      }
                       value={
                         mediaInitialMessageTime || getHourBefore(eventStart)
                       }
@@ -619,7 +689,7 @@ export default function Form() {
                       value={
                         mediaInitialMessage !== undefined
                           ? mediaInitialMessage
-                          : `Hi {{FirstName}}, we hope you are excited for ${eventTitle}! We wanted to let you know that we are using Guestography to collect photos and videos from everyone so please snap away and tomorrow you will recieve a message asking you to upload your best shots!`
+                          : mediaInitialDefaultMessage
                       }
                       required={isMediaChecked}
                     />
@@ -682,7 +752,7 @@ export default function Form() {
                       value={
                         mediaCollectionMessage !== undefined
                           ? mediaCollectionMessage
-                          : `Good morning {{FirstName}}! Guestography here and we hope that you had fun at ${eventTitle} yesterday and invite you to share any photos and videos you took by uploading them using the link below.\n\n{{UploadLink}}`
+                          : mediaCollectionDefaultMessage
                       }
                       required={isMediaChecked}
                     />
@@ -690,48 +760,19 @@ export default function Form() {
                 </div>
               </div>
             </fieldset>
-            {/* <div className="sm:col-span-2">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <Switch
-                    checked={agreed}
-                    onChange={setAgreed}
-                    className={classNames(
-                      agreed ? "bg-indigo-600" : "bg-gray-200",
-                      "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    )}
-                  >
-                    <span className="sr-only">Agree to policies</span>
-                    <span
-                      aria-hidden="true"
-                      className={classNames(
-                        agreed ? "translate-x-5" : "translate-x-0",
-                        "inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                      )}
-                    />
-                  </Switch>
-                </div>
-                <div className="ml-3">
-                  <p className="text-base text-gray-500">
-                    By selecting this, you agree to the{" "}
-                    <a href="#" className="font-medium text-gray-700 underline">
-                      Privacy Policy
-                    </a>{" "}
-                    and{" "}
-                    <a href="#" className="font-medium text-gray-700 underline">
-                      Cookie Policy
-                    </a>
-                    .
-                  </p>
-                </div>
-              </div>
-            </div> */}
             <div className="sm:col-span-2">
               <button
                 type="submit"
-                className="inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-700 px-6 py-3 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  !isSubmitting && "hover:bg-indigo-600"
+                }`}
+                disabled={isSubmitting}
               >
-                SCHEDULE
+                {!isSubmitting ? (
+                  "SCHEDULE"
+                ) : (
+                  <ClipLoader size={24} color="white" />
+                )}
               </button>
             </div>
           </form>
