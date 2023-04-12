@@ -1,9 +1,20 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import * as admin from "firebase-admin";
+import serviceAccount from "../../../lib/serviceAccountKey.json";
 import { buffer } from "micro";
 import Stripe from "stripe";
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2022-11-15",
 });
+
+if (!admin.apps.length)
+  admin.initializeApp({
+    /* @ts-ignore */
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: "https://guestography-37df8.firebaseio.com",
+  });
+else admin.app();
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -34,6 +45,7 @@ export default async function handler(
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  const db = admin.firestore();
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as any;
@@ -41,12 +53,27 @@ export default async function handler(
 
       console.log("Checkout completed for event ", eventId);
 
+      let status;
       if (session.payment_status === "paid") {
-        // TODO: Update event to paid
+        status = "PAID";
         console.log("Payment received");
       } else {
-        // TODO: Update event to unpaid
+        status = "UNPAID";
         console.log("Payment not received");
+      }
+
+      try {
+        await db.collection("events").doc(eventId).set(
+          {
+            status,
+          },
+          { merge: true }
+        );
+        console.log(`Updated event ${eventId} status to ${status}`);
+      } catch (e) {
+        console.error(e);
+        res.status(500).json(e);
+        return;
       }
 
       break;
@@ -55,16 +82,43 @@ export default async function handler(
     case "checkout.session.async_payment_succeeded": {
       const session = event.data.object as any;
       const { eventId } = session.metadata;
-      // TODO: Update event to paid
       console.log("Payment received for event ", eventId);
+
+      try {
+        await db.collection("events").doc(eventId).set(
+          {
+            status: "PAID",
+          },
+          { merge: true }
+        );
+        console.log(`Updated event ${eventId} status to PAID`);
+      } catch (e) {
+        console.error(e);
+        res.status(500).json(e);
+        return;
+      }
+
       break;
     }
 
     case "checkout.session.async_payment_failed": {
       const session = event.data.object as any;
       const { eventId } = session.metadata;
-      // TODO: Send email to customer about payment failure
+
       console.log("Payment failed for event ", eventId);
+      try {
+        await db.collection("events").doc(eventId).set(
+          {
+            status: "PAYMENT_FAILURE",
+          },
+          { merge: true }
+        );
+        console.log(`Updated event ${eventId} status to PAYMENT_FAILURE`);
+      } catch (e) {
+        console.error(e);
+        res.status(500).json(e);
+        return;
+      }
       break;
     }
 
