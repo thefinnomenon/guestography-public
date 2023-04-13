@@ -12,6 +12,7 @@ export default function Form() {
   const [phone, setPhone] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [eventStart, setEventStart] = useState("");
+  const [eventEnd, setEventEnd] = useState("");
   const [location, setLocation] = useState("");
   const [guestList, setGuestList] = useState<FileList | null>();
   const [isInterviewsChecked, setIsInterviewsChecked] = useState(true);
@@ -85,6 +86,7 @@ export default function Form() {
       phone,
       title: eventTitle,
       date: eventStart,
+      dateEnd: eventEnd || getEstimatedEventEnd(eventStart),
       location,
       guests: guestListJson,
       interviews: {
@@ -328,7 +330,7 @@ export default function Form() {
                 htmlFor="date"
                 className="block text-sm font-medium text-gray-700"
               >
-                Date & Time
+                Start Date & Time
               </label>
               <div className="mt-1">
                 <input
@@ -336,6 +338,25 @@ export default function Form() {
                   name="date"
                   id="date"
                   onChange={(e) => setEventStart(e.target.value)}
+                  required
+                  className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="date"
+                className="block text-sm font-medium text-gray-700"
+              >
+                End Date & Time
+              </label>
+              <div className="mt-1">
+                <input
+                  type="datetime-local"
+                  name="date"
+                  id="date"
+                  onChange={(e) => setEventEnd(e.target.value)}
+                  value={eventEnd || getEstimatedEventEnd(eventStart)}
                   required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />

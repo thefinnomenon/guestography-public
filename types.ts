@@ -13,6 +13,7 @@ export interface Event {
   phone: string;
   title: string;
   date: string;
+  endDate: string;
   location: string;
   guests: Guest[];
   interviews: InterviewsService;
