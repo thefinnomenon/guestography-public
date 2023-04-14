@@ -30,7 +30,7 @@ export const handleEventStatusChange = functions.firestore
     const parent = client.queuePath(
       "guestography-37df8",
       "us-east4",
-      "guestography"
+      "guestography-tasks"
     );
 
     switch (event.status) {
