@@ -4,22 +4,32 @@
     "lint": "eslint --ext .js,.ts .",
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "serve": "npm run build && firebase emulators:start --only functions",
+    "serve": "npm run build && firebase emulators:start --import=./data --export-on-exit=./data",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
+    "kill": "kill -9 $(lsof -ti:8080)",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "db:export": "firestore-export -a ../lib/serviceAccountKey.json -b ./data/firestore.json",
+    "db:import": "firestore-import -a ../lib/serviceAccountKey.json -b ./data/firestore.json",
+    "db:emulator:export": "export FIRESTORE_EMULATOR_HOST=localhost:8080 && yarn db:export",
+    "db:emulator:import": "export FIRESTORE_EMULATOR_HOST=localhost:8080 && yarn db:import",
+    "db:backup": "cp ./data/firestore.json ./data/firestore-$(date +%d-%m-%Y-%H-%M).json"
   },
   "engines": {
     "node": "16"
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@google-cloud/tasks": "^3.1.1",
     "@google-cloud/video-transcoder": "^2.5.0",
+    "async": "^3.2.4",
     "firebase-admin": "^11.5.0",
-    "firebase-functions": "^4.2.0"
+    "firebase-functions": "^4.3.0",
+    "node-firestore-import-export": "^1.1.0"
   },
   "devDependencies": {
+    "@types/async": "^3.2.18",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "eslint": "^8.9.0",
