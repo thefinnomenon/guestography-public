@@ -33,29 +33,39 @@ export const handleEventStatusChange = functions.firestore
       "guestography-tasks"
     );
 
+    const db = admin.firestore();
+
     switch (event.status) {
       case "PAID":
         console.log(`Event ${eventId} has been paid. Scheduling...`);
 
-        const now = new Date();
-        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-        if (
-          new Date(event.date).getMilliseconds() - now.getTime() >=
-          thirtyDaysInMs
-        ) {
+        // If event is >24 hours away,
+        // set event status to WAITING to be scheduled later
+        const nowSeconds = new Date().getTime() / 1000;
+        const secondsTillEvent =
+          new Date(event.date).getTime() / 1000 - nowSeconds;
+        if (secondsTillEvent >= 60 * 60 * 24) {
           console.log(
-            `Event ${eventId} is ${
-              (new Date(event.date).getMilliseconds() - now.getTime()) /
-              (1000 * 60 * 60 * 24)
-            } days away so setting to WAITING.`
+            `Event ${eventId} is ${Math.floor(
+              secondsTillEvent / (60 * 60)
+            )} hours away so setting to WAITING.`
           );
-          // TODO: if event is >30 days away, update event status to WAITING and return
+
+          try {
+            await db
+              .collection("events")
+              .doc(eventId)
+              .update({ status: "WAITING" });
+            console.log(`Updated event ${eventId} with status WAITING`);
+          } catch (e) {
+            console.error(e);
+          }
           return;
         }
 
         // TODO: schedule events
         const tasks = createTasks(eventId, event);
-        console.log("Tasks: ", tasks);
+        // console.log("Tasks: ", tasks);
         // const schedulingRes = await async.eachLimit(
         //   tasks,
         //   20,
@@ -71,7 +81,6 @@ export const handleEventStatusChange = functions.firestore
     }
   });
 
-/* @ts-ignore */
 const scheduleTask = async (parent: any, task: any) => {
   try {
     const [response] = await client.createTask({ parent, task });
@@ -123,7 +132,7 @@ const createTasks = (eventId: string, event: any) => {
             "Content-Type": "text/json",
           },
           httpMethod: "POST",
-          url: `https://guestography.net/api/sendSMS`,
+          url: "https://guestography.net/api/sendSMS",
           body: formatBody({
             eventId,
             guest,
@@ -143,7 +152,7 @@ const createTasks = (eventId: string, event: any) => {
             "Content-Type": "text/json",
           },
           httpMethod: "POST",
-          url: `https://guestography.net/api/sendSMS`,
+          url: "https://guestography.net/api/sendSMS",
           body: formatBody({
             eventId,
             guest,
@@ -182,7 +191,7 @@ const createTasks = (eventId: string, event: any) => {
             "Content-Type": "text/json",
           },
           httpMethod: "POST",
-          url: `https://guestography.net/api/sendSMS`,
+          url: "https://guestography.net/api/sendSMS",
           body: formatBody({
             eventId,
             guest,
@@ -202,7 +211,7 @@ const createTasks = (eventId: string, event: any) => {
             "Content-Type": "text/json",
           },
           httpMethod: "POST",
-          url: `https://guestography.net/api/sendSMS`,
+          url: "https://guestography.net/api/sendSMS",
           body: formatBody({
             eventId,
             guest,
@@ -223,7 +232,7 @@ const createTasks = (eventId: string, event: any) => {
           "Content-Type": "text/json",
         },
         httpMethod: "POST",
-        url: `https://guestography.net/api/sendSMS`,
+        url: "https://guestography.net/api/sendSMS",
         body: formatBody({
           eventId,
           guest,
@@ -246,7 +255,7 @@ const formatBody = (payload: { [key: string]: any }) => {
 
 const getNextMorning = (start: string) => {
   if (!start) return "";
-  let d = new Date(start);
+  const d = new Date(start);
   d.setDate(d.getDate() + 1);
   d.setUTCHours(10);
   d.setMinutes(0);
