@@ -348,8 +348,8 @@ export async function getStaticProps(
     // }
 
     // This is to make the Firestore timestamp object serializable
-    interview = JSON.parse(JSON.stringify(interview));
-    media = JSON.parse(JSON.stringify(media));
+    interview = JSON.parse(JSON.stringify(interview) || "{}");
+    media = JSON.parse(JSON.stringify(media) || "{}");
 
     const galleryMedia = media.map((m) => {
       return {

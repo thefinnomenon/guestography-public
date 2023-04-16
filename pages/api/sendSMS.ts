@@ -21,7 +21,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { type, eventId, guestId } = JSON.parse(req.body || "");
+  const { type, eventId, guestId } = JSON.parse(req.body || "{}");
 
   console.log(type, eventId, guestId);
 
