@@ -57,10 +57,9 @@ export default async function handler(
   /* @ts-ignore */
   const firstName = guest["First Name"];
   const eventTitle = event.title;
-  //const interviewLink = `https://guestography.net/${eventId}/upload/interview?guestId=${guestId}`;
-  const interviewLink = `https://de58-201-140-237-154.ngrok-free.app/${eventId}/upload/interview?guestId=${guestId}`;
-  const mediaLink = `https://de58-201-140-237-154.ngrok-free.app/${eventId}/upload/media?guestId=${guestId}`;
-  const galleryLink = `https://de58-201-140-237-154.ngrok-free.app/${eventId}`;
+  const interviewLink = `https://guestography.net/${eventId}/upload/interview?guestId=${guestId}`;
+  const mediaLink = `https://guestography.net/${eventId}/upload/media?guestId=${guestId}`;
+  const galleryLink = `https://guestography.net/${eventId}`;
   let msg;
   switch (type) {
     case "interviewInitialMessage":
