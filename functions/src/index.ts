@@ -1,4 +1,3 @@
-import async from "async";
 import admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { CloudTasksClient } from "@google-cloud/tasks";
@@ -79,8 +78,7 @@ export const handleEventStatusChange = functions.firestore
 // Every day at midnight find and schedule events with
 // status WAITING and that start within 30 days
 exports.scheduledWaitingEvents = functions.pubsub
-  .schedule("* * * * *")
-  // .schedule("0 0 * * *")
+  .schedule("0 0 * * *")
   .timeZone("America/New_York")
   .onRun(async () => {
     console.log("Scheduling waiting events...");
@@ -92,18 +90,14 @@ exports.scheduledWaitingEvents = functions.pubsub
     const eventsToBeScheduledRes = await db
       .collection("events")
       .where("status", "==", "WAITING")
-      .where("date", "<", thirtyDaysFromNow.toTimeString())
+      .where("date", "<", thirtyDaysFromNow.toISOString())
       .get();
 
     const events = eventsToBeScheduledRes.docs.map((event: any) => {
-      console.log(event);
       return { eventId: event.id, event: event.data() };
     });
 
-    console.log("events: ", events);
-
-    const schedulingRes = await scheduleEvents(events);
-    console.log("Scheduling results: ", schedulingRes);
+    await scheduleEvents(events);
   });
 
 const scheduleEvents = async (events: any) => {
