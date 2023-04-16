@@ -24,10 +24,11 @@ module.exports = {
   rules: {
     quotes: ["error", "double"],
     "import/no-unresolved": 0,
-    indent: ["error", 2],
     "object-curly-spacing": 0,
     "require-jsdoc": 0,
     indent: 0,
     "no-case-declarations": 0,
+    "@typescript-eslint/no-explicit-any": 0,
+    "quote-props": 0,
   },
 };

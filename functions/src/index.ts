@@ -118,7 +118,7 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
         eventObj.event
       );
       const tasksFuncArr = await tasks.map((task) => {
-        return () => scheduleTask(webhookSecret, parent, task);
+        return () => scheduleTask(parent, task);
       });
       const scheduleTasksRes = await limit(tasksFuncArr, 10);
       console.log("Tasks scheduling results: ", scheduleTasksRes);
@@ -170,8 +170,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             type: "interviewInitialMessage",
           }),
           scheduleTime: {
-            seconds: 10 + Date.now() / 1000,
-            // formatTime(event.interviews.initialMessage.schedule),
+            seconds: formatTime(event.interviews.initialMessage.schedule),
           },
         },
       };
@@ -192,8 +191,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             type: "interviewReminderMessage",
           }),
           scheduleTime: {
-            seconds: 10 + Date.now() / 1000,
-            // seconds: formatTime(event.interviews.reminderMessage.schedule),
+            seconds: formatTime(event.interviews.reminderMessage.schedule),
           },
         },
       };
@@ -217,8 +215,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             type: "mediaInitialMessage",
           }),
           scheduleTime: {
-            seconds: 10 + Date.now() / 1000,
-            // seconds: formatTime(event.media.initialMessage.schedule),
+            seconds: formatTime(event.media.initialMessage.schedule),
           },
         },
       };
@@ -239,8 +236,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             type: "mediaCollectionMessage",
           }),
           scheduleTime: {
-            seconds: 10 + Date.now() / 1000,
-            // seconds: formatTime(event.media.collectionMessage.schedule),
+            seconds: formatTime(event.media.collectionMessage.schedule),
           },
         },
       };
@@ -262,8 +258,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
           type: "galleryReadyMessage",
         }),
         scheduleTime: {
-          seconds: 300 + Date.now() / 1000,
-          // seconds: formatTime(getNextMorning(event.dateEnd)),
+          seconds: formatTime(getNextMorning(event.dateEnd)),
         },
       },
     };
@@ -280,10 +275,9 @@ const createTasks = (secret: string, eventId: string, event: any) => {
         },
         httpMethod: "POST",
         url: `https://guestography.net/api/createInterviewVideo?eventId=${eventId}`,
-        body: { secret },
+        body: formatBody({ secret }),
         scheduleTime: {
-          seconds: 10 + Date.now() / 1000,
-          // seconds: formatTime(getEarlyNextMorning(event.dateEnd)),
+          seconds: formatTime(getEarlyNextMorning(event.dateEnd)),
         },
       },
     };
