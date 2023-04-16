@@ -1,7 +1,8 @@
+import async from "async";
 import admin from "firebase-admin";
 import * as functions from "firebase-functions";
-// import * as async from "async";
-const { CloudTasksClient } = require("@google-cloud/tasks");
+import { CloudTasksClient } from "@google-cloud/tasks";
+import { limit } from "./parallel";
 
 admin.initializeApp();
 
@@ -26,7 +27,6 @@ export const handleEventStatusChange = functions.firestore
     );
 
     // Configure queue
-    /* @ts-ignore */
     const parent = client.queuePath(
       "guestography-37df8",
       "us-east4",
@@ -39,16 +39,16 @@ export const handleEventStatusChange = functions.firestore
       case "PAID":
         console.log(`Event ${eventId} has been paid. Scheduling...`);
 
-        // If event is >24 hours away,
+        // If event is >30 days away (Google tasks limit),
         // set event status to WAITING to be scheduled later
         const nowSeconds = new Date().getTime() / 1000;
         const secondsTillEvent =
           new Date(event.date).getTime() / 1000 - nowSeconds;
-        if (secondsTillEvent >= 60 * 60 * 24) {
+        if (secondsTillEvent >= 60 * 60 * 24 * 30) {
           console.log(
             `Event ${eventId} is ${Math.floor(
-              secondsTillEvent / (60 * 60)
-            )} hours away so setting to WAITING.`
+              secondsTillEvent / (60 * 60 * 24)
+            )} days away so setting to WAITING.`
           );
 
           try {
@@ -63,33 +63,80 @@ export const handleEventStatusChange = functions.firestore
           return;
         }
 
-        // TODO: schedule events
-        const tasks = createTasks(eventId, event);
-        // console.log("Tasks: ", tasks);
-        // const schedulingRes = await async.eachLimit(
-        //   tasks,
-        //   20,
-        //   (task) => console.log("Scheduled task: ", task)
-        //   //scheduleTask(parent, task)
-        // );
-        // console.log("Scheduling results: ", schedulingRes);
-
-        // TODO: update event status to SCHEDULED
+        // For events within 30 days, we can just schedule them now
+        await scheduleEvents([
+          {
+            eventId,
+            event,
+          },
+        ]);
         break;
       default:
         console.log(`Event ${eventId} has unhandled status ${event.status}`);
     }
   });
 
-const scheduleTask = async (parent: any, task: any) => {
-  try {
-    const [response] = await client.createTask({ parent, task });
-    console.log(`Created task ${response.name}`);
-    return { error: false, data: response.name };
-  } catch (error: any) {
-    console.error(Error(error.message));
-    return { error: true, message: error.message };
-  }
+// Every day at midnight find and schedule events with
+// status WAITING and that start within 30 days
+exports.scheduledWaitingEvents = functions.pubsub
+  .schedule("* * * * *")
+  // .schedule("0 0 * * *")
+  .timeZone("America/New_York")
+  .onRun(async () => {
+    console.log("Scheduling waiting events...");
+    const db = admin.firestore();
+
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+    const eventsToBeScheduledRes = await db
+      .collection("events")
+      .where("status", "==", "WAITING")
+      .where("date", "<", thirtyDaysFromNow.toTimeString())
+      .get();
+
+    const events = eventsToBeScheduledRes.docs.map((event: any) => {
+      console.log(event);
+      return { eventId: event.id, event: event.data() };
+    });
+
+    console.log("events: ", events);
+
+    const schedulingRes = await scheduleEvents(events);
+    console.log("Scheduling results: ", schedulingRes);
+  });
+
+const scheduleEvents = async (events: any) => {
+  const db = admin.firestore();
+  console.log(
+    "Scheduling events: ",
+    events.map((event: any) => event.eventId)
+  );
+
+  const eventsFuncArr = await events.map((eventObj: any) => {
+    return async () => {
+      const tasks = createTasks(eventObj.eventId, eventObj.event);
+      const tasksFuncArr = await tasks.map((task) => {
+        // scheduleTask(parent, task)
+        return () => console.log("Scheduled task: ", task);
+      });
+      const scheduleTasksRes = await limit(tasksFuncArr, 10);
+      console.log("Tasks scheduling results: ", scheduleTasksRes);
+
+      try {
+        await db
+          .collection("events")
+          .doc(eventObj.eventId)
+          .update({ status: "SCHEDULED" });
+        console.log(`Updated event ${eventObj.eventId} with status SCHEDULED`);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+  });
+  const scheduleEventsRes = await limit(eventsFuncArr, 10);
+
+  console.log("Events Scheduling results: ", scheduleEventsRes);
 };
 
 const formatTime = (date: string) => {
@@ -100,19 +147,19 @@ const formatTime = (date: string) => {
   if (convertedDate < currentDate) {
     console.error("Scheduled date in the past.");
   } else if (convertedDate > currentDate) {
-    const date_diff_in_seconds =
+    const dateDiffInSeconds =
       convertedDate.getSeconds() - currentDate.getSeconds();
     // Restrict schedule time to the 30 day maximum.
-    if (date_diff_in_seconds > MAX_SCHEDULE_LIMIT) {
+    if (dateDiffInSeconds > MAX_SCHEDULE_LIMIT) {
       console.error("Schedule time is over 30 day maximum.");
     }
     // Construct future date in Unix time.
-    const date_in_seconds =
-      Math.min(date_diff_in_seconds, MAX_SCHEDULE_LIMIT) + Date.now() / 1000;
+    const dateInSeconds =
+      Math.min(dateDiffInSeconds, MAX_SCHEDULE_LIMIT) + Date.now() / 1000;
     // Add schedule time to request in Unix time using Timestamp structure.
     // https://googleapis.dev/nodejs/tasks/latest/google.protobuf.html#.Timestamp
     return {
-      seconds: date_in_seconds,
+      seconds: dateInSeconds,
     };
   }
 
@@ -122,6 +169,8 @@ const formatTime = (date: string) => {
 const createTasks = (eventId: string, event: any) => {
   // Iterate through guests & create tasks
   const tasks: any[] = [];
+
+  // Add guest tasks
   event.guests.map((guest: any) => {
     // Interview Service Tasks
     if (event.interviews.enabled) {
@@ -164,22 +213,6 @@ const createTasks = (eventId: string, event: any) => {
         },
       };
       tasks.push(interviewReminderMessageTask);
-
-      // Video Generation Task
-      const videoGenerationTask = {
-        httpRequest: {
-          headers: {
-            "Content-Type": "text/json",
-          },
-          httpMethod: "POST",
-          url: `https://guestography.net/api/createInterviewVideo?eventId=${eventId}`,
-          body: "",
-          scheduleTime: {
-            seconds: formatTime(event.endDate),
-          },
-        },
-      };
-      tasks.push(videoGenerationTask);
     }
 
     // Media Service Tasks
@@ -239,12 +272,31 @@ const createTasks = (eventId: string, event: any) => {
           type: "galleryReadyMessage",
         }),
         scheduleTime: {
-          seconds: formatTime(getNextMorning(event.endDate)),
+          seconds: formatTime(getNextMorning(event.dateEnd)),
         },
       },
     };
     tasks.push(galleryReadyMessageTask);
   });
+
+  // Add event tasks
+  if (event.interviews.enabled) {
+    // Video Generation Task
+    const videoGenerationTask = {
+      httpRequest: {
+        headers: {
+          "Content-Type": "text/json",
+        },
+        httpMethod: "POST",
+        url: `https://guestography.net/api/createInterviewVideo?eventId=${eventId}`,
+        body: "",
+        scheduleTime: {
+          seconds: formatTime(event.dateEnd),
+        },
+      },
+    };
+    tasks.push(videoGenerationTask);
+  }
 
   return tasks;
 };

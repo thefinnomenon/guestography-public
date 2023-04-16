@@ -5,6 +5,7 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --import=./data --export-on-exit=./data",
+    "emulateScheduledFunctions": "cat ./src/emulateScheduledFunctions.sh /dev/stdin | firebase functions:shell",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "kill": "kill -9 $(lsof -ti:8080)",
