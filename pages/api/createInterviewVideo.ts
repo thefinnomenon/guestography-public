@@ -26,6 +26,14 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const { eventId } = req.query;
+  const { secret } = JSON.parse(req.body || {});
+
+  // Verify secret
+  if (secret !== process.env.WEBHOOK_SECRET) {
+    console.error("Invalid webhook secret");
+    res.status(401).send("Invalid webhook secret");
+    return;
+  }
 
   const db = admin.firestore();
   const interviews = await (

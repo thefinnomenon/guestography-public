@@ -2,6 +2,8 @@ import admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { limit } from "./parallel";
+import { defineSecret } from "firebase-functions/params";
+const webhookSecret = defineSecret("WEBHOOK_SECRET");
 
 admin.initializeApp();
 
@@ -11,8 +13,9 @@ const client = new CloudTasksClient();
 const MAX_SCHEDULE_LIMIT = 30 * 60 * 60 * 24;
 
 // Handle event status change
-export const handleEventStatusChange = functions.firestore
-  .document("events/{eventId}")
+export const handleEventStatusChange = functions
+  .runWith({ secrets: [webhookSecret] })
+  .firestore.document("events/{eventId}")
   .onUpdate(async (change, context) => {
     const { eventId } = context.params;
     const oldEvent = change.before.data() as any;
@@ -56,7 +59,7 @@ export const handleEventStatusChange = functions.firestore
         }
 
         // For events within 30 days, we can just schedule them now
-        await scheduleEvents([
+        await scheduleEvents(webhookSecret.value(), [
           {
             eventId,
             event,
@@ -70,8 +73,9 @@ export const handleEventStatusChange = functions.firestore
 
 // Every day at midnight find and schedule events with
 // status WAITING and that start within 30 days
-exports.scheduledWaitingEvents = functions.pubsub
-  .schedule("0 0 * * *")
+exports.scheduledWaitingEvents = functions
+  .runWith({ secrets: [webhookSecret] })
+  .pubsub.schedule("0 0 * * *")
   .timeZone("America/New_York")
   .onRun(async () => {
     console.log("Scheduling waiting events...");
@@ -90,10 +94,10 @@ exports.scheduledWaitingEvents = functions.pubsub
       return { eventId: event.id, event: event.data() };
     });
 
-    await scheduleEvents(events);
+    await scheduleEvents(webhookSecret.value(), events);
   });
 
-const scheduleEvents = async (events: any) => {
+const scheduleEvents = async (webhookSecret: string, events: any) => {
   console.log(
     "Scheduling events: ",
     events.map((event: any) => event.eventId)
@@ -108,9 +112,13 @@ const scheduleEvents = async (events: any) => {
 
   const eventsFuncArr = await events.map((eventObj: any) => {
     return async () => {
-      const tasks = createTasks(eventObj.eventId, eventObj.event);
+      const tasks = createTasks(
+        webhookSecret,
+        eventObj.eventId,
+        eventObj.event
+      );
       const tasksFuncArr = await tasks.map((task) => {
-        return () => scheduleTask(parent, task);
+        return () => scheduleTask(webhookSecret, parent, task);
       });
       const scheduleTasksRes = await limit(tasksFuncArr, 10);
       console.log("Tasks scheduling results: ", scheduleTasksRes);
@@ -137,7 +145,7 @@ const scheduleTask = async (parent: any, task: any) => {
   return response.name;
 };
 
-const createTasks = (eventId: string, event: any) => {
+const createTasks = (secret: string, eventId: string, event: any) => {
   // Iterate through guests & create tasks
   const tasks: any[] = [];
 
@@ -156,6 +164,7 @@ const createTasks = (eventId: string, event: any) => {
           httpMethod: "POST",
           url: "https://guestography.net/api/sendSMS",
           body: formatBody({
+            secret,
             eventId,
             guestId,
             type: "interviewInitialMessage",
@@ -177,6 +186,7 @@ const createTasks = (eventId: string, event: any) => {
           httpMethod: "POST",
           url: "https://guestography.net/api/sendSMS",
           body: formatBody({
+            secret,
             eventId,
             guestId,
             type: "interviewReminderMessage",
@@ -201,6 +211,7 @@ const createTasks = (eventId: string, event: any) => {
           httpMethod: "POST",
           url: "https://guestography.net/api/sendSMS",
           body: formatBody({
+            secret,
             eventId,
             guestId,
             type: "mediaInitialMessage",
@@ -222,6 +233,7 @@ const createTasks = (eventId: string, event: any) => {
           httpMethod: "POST",
           url: "https://guestography.net/api/sendSMS",
           body: formatBody({
+            secret,
             eventId,
             guestId,
             type: "mediaCollectionMessage",
@@ -244,6 +256,7 @@ const createTasks = (eventId: string, event: any) => {
         httpMethod: "POST",
         url: "https://guestography.net/api/sendSMS",
         body: formatBody({
+          secret,
           eventId,
           guestId,
           type: "galleryReadyMessage",
@@ -267,7 +280,7 @@ const createTasks = (eventId: string, event: any) => {
         },
         httpMethod: "POST",
         url: `https://guestography.net/api/createInterviewVideo?eventId=${eventId}`,
-        body: "",
+        body: { secret },
         scheduleTime: {
           seconds: 10 + Date.now() / 1000,
           // seconds: formatTime(getEarlyNextMorning(event.dateEnd)),

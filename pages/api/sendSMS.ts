@@ -21,9 +21,16 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { type, eventId, guestId } = JSON.parse(req.body || "{}");
+  const { type, eventId, guestId, secret } = JSON.parse(req.body || "{}");
 
   console.log(type, eventId, guestId);
+
+  // Verify secret
+  if (secret !== process.env.WEBHOOK_SECRET) {
+    console.error("Invalid webhook secret");
+    res.status(401).send("Invalid webhook secret");
+    return;
+  }
 
   // Verify body is valid
   if (!type || !eventId || !guestId) {
