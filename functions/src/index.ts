@@ -281,7 +281,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
         },
       },
     };
-    tasks.push(videoGenerationTask);
+    // tasks.push(videoGenerationTask);
   }
 
   return tasks;
@@ -289,6 +289,8 @@ const createTasks = (secret: string, eventId: string, event: any) => {
 
 const formatTime = (date: string) => {
   const convertedDate = new Date(date);
+  console.log("Date string from db: ", date);
+  console.log("Converted Date from db: ", convertedDate);
   const currentDate = new Date();
 
   // Schedule time can not be in the past.
@@ -296,22 +298,25 @@ const formatTime = (date: string) => {
     console.error("Scheduled date in the past.");
   } else if (convertedDate > currentDate) {
     const dateDiffInSeconds =
-      convertedDate.getSeconds() - currentDate.getSeconds();
+      (convertedDate.getTime() - currentDate.getTime()) / 1000;
     // Restrict schedule time to the 30 day maximum.
     if (dateDiffInSeconds > MAX_SCHEDULE_LIMIT) {
       console.error("Schedule time is over 30 day maximum.");
+      return null;
     }
+    console.log();
     // Construct future date in Unix time.
-    const dateInSeconds =
-      Math.min(dateDiffInSeconds, MAX_SCHEDULE_LIMIT) + Date.now() / 1000;
-    // Add schedule time to request in Unix time using Timestamp structure.
-    // https://googleapis.dev/nodejs/tasks/latest/google.protobuf.html#.Timestamp
-    return {
-      seconds: dateInSeconds,
-    };
+    const dateInSeconds = dateDiffInSeconds + Date.now() / 1000;
+    console.log(`Scheduling task for ${dateDiffInSeconds} from now`);
+    console.log(
+      `Time now: ${new Date(Date.now())} \nScheduling task for: ${new Date(
+        dateInSeconds * 1000
+      )}\n\n`
+    );
+    return dateInSeconds;
   }
 
-  return {};
+  return null;
 };
 
 const formatBody = (payload: { [key: string]: any }) => {

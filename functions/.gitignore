@@ -9,3 +9,6 @@ typings/
 node_modules/
 
 .env
+
+pubsub-debug.log
+firestore-debug.log
