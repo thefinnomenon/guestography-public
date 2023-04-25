@@ -169,9 +169,9 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             guestId,
             type: "interviewInitialMessage",
           }),
-          scheduleTime: {
-            seconds: formatTime(event.interviews.initialMessage.schedule),
-          },
+        },
+        scheduleTime: {
+          seconds: formatTime(event.interviews.initialMessage.schedule),
         },
       };
       tasks.push(interviewInitialMessageTask);
@@ -190,9 +190,9 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             guestId,
             type: "interviewReminderMessage",
           }),
-          scheduleTime: {
-            seconds: formatTime(event.interviews.reminderMessage.schedule),
-          },
+        },
+        scheduleTime: {
+          seconds: formatTime(event.interviews.reminderMessage.schedule),
         },
       };
       tasks.push(interviewReminderMessageTask);
@@ -214,9 +214,9 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             guestId,
             type: "mediaInitialMessage",
           }),
-          scheduleTime: {
-            seconds: formatTime(event.media.initialMessage.schedule),
-          },
+        },
+        scheduleTime: {
+          seconds: formatTime(event.media.initialMessage.schedule),
         },
       };
       tasks.push(mediaInitialMessageTask);
@@ -235,9 +235,9 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             guestId,
             type: "mediaCollectionMessage",
           }),
-          scheduleTime: {
-            seconds: formatTime(event.media.collectionMessage.schedule),
-          },
+        },
+        scheduleTime: {
+          seconds: formatTime(event.media.collectionMessage.schedule),
         },
       };
       tasks.push(mediaCollectionMessageTask);
@@ -257,9 +257,9 @@ const createTasks = (secret: string, eventId: string, event: any) => {
           guestId,
           type: "galleryReadyMessage",
         }),
-        scheduleTime: {
-          seconds: formatTime(getNextMorning(event.dateEnd)),
-        },
+      },
+      scheduleTime: {
+        seconds: formatTime(getNextMorning(event.dateEnd)),
       },
     };
     tasks.push(galleryReadyMessageTask);
@@ -276,12 +276,12 @@ const createTasks = (secret: string, eventId: string, event: any) => {
         httpMethod: "POST",
         url: `https://guestography.net/api/createInterviewVideo?eventId=${eventId}`,
         body: formatBody({ secret }),
-        scheduleTime: {
-          seconds: formatTime(getEarlyNextMorning(event.dateEnd)),
-        },
+      },
+      scheduleTime: {
+        seconds: formatTime(getEarlyNextMorning(event.dateEnd)),
       },
     };
-    // tasks.push(videoGenerationTask);
+    tasks.push(videoGenerationTask);
   }
 
   return tasks;
@@ -289,8 +289,6 @@ const createTasks = (secret: string, eventId: string, event: any) => {
 
 const formatTime = (date: string) => {
   const convertedDate = new Date(date);
-  console.log("Date string from db: ", date);
-  console.log("Converted Date from db: ", convertedDate);
   const currentDate = new Date();
 
   // Schedule time can not be in the past.
@@ -299,21 +297,14 @@ const formatTime = (date: string) => {
   } else if (convertedDate > currentDate) {
     const dateDiffInSeconds =
       (convertedDate.getTime() - currentDate.getTime()) / 1000;
+
     // Restrict schedule time to the 30 day maximum.
     if (dateDiffInSeconds > MAX_SCHEDULE_LIMIT) {
       console.error("Schedule time is over 30 day maximum.");
       return null;
     }
-    console.log();
-    // Construct future date in Unix time.
-    const dateInSeconds = dateDiffInSeconds + Date.now() / 1000;
-    console.log(`Scheduling task for ${dateDiffInSeconds} from now`);
-    console.log(
-      `Time now: ${new Date(Date.now())} \nScheduling task for: ${new Date(
-        dateInSeconds * 1000
-      )}\n\n`
-    );
-    return dateInSeconds;
+
+    return dateDiffInSeconds + Date.now() / 1000;
   }
 
   return null;

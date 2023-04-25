@@ -37,4 +37,5 @@ yarn-error.log*
 next-env.d.ts
 
 functions/firebase-debug.log
+functions/pubsub-debug.log
 functions/firestore-debug.log
