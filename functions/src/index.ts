@@ -37,8 +37,7 @@ export const handleEventStatusChange = functions
         // If event is >30 days away (Google tasks limit),
         // set event status to WAITING to be scheduled later
         const nowSeconds = new Date().getTime() / 1000;
-        const secondsTillEvent =
-          new Date(event.date).getTime() / 1000 - nowSeconds;
+        const secondsTillEvent = event.date.toMillis / 1000 - nowSeconds;
         if (secondsTillEvent >= 60 * 60 * 24 * 30) {
           console.log(
             `Event ${eventId} is ${Math.floor(
