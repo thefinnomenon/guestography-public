@@ -86,8 +86,10 @@ export default function Form() {
       email,
       phone,
       title: eventTitle,
-      date: Timestamp.fromDate(eventStart),
-      dateEnd: Timestamp.fromDate(eventEnd || getEstimatedEventEnd(eventStart)),
+      date: new Date(eventStart).toISOString(),
+      dateEnd: new Date(
+        eventEnd || getEstimatedEventEnd(eventStart)
+      ).toISOString(),
       location,
       guests: guestListJson,
       interviews: {
@@ -95,31 +97,31 @@ export default function Form() {
         orientation: interviewOrientation,
         initialMessage: {
           message: interviewsInitialMessage || interviewsInitialDefaultMessage,
-          schedule: Timestamp.fromDate(
+          schedule: new Date(
             interviewsInitialMessageTime || eventStart
-          ),
+          ).toISOString(),
         },
         reminderMessage: {
           message:
             interviewsReminderMessage || interviewsReminderDefaultMessage,
-          schedule: Timestamp.fromDate(
+          schedule: new Date(
             interviewsReminderMessageTime || getEstimatedEventEnd(eventStart)
-          ),
+          ).toISOString(),
         },
       },
       media: {
         enabled: isMediaChecked,
         initialMessage: {
           message: mediaInitialMessage || mediaInitialDefaultMessage,
-          schedule: Timestamp.fromDate(
+          schedule: new Date(
             mediaInitialMessageTime || getHourBefore(eventStart)
-          ),
+          ).toISOString(),
         },
         collectionMessage: {
           message: mediaCollectionMessage || mediaCollectionDefaultMessage,
-          schedule: Timestamp.fromDate(
+          schedule: new Date(
             mediaCollectionMessageTime || getNextMorning(eventStart)
-          ),
+          ).toISOString(),
         },
       },
     };
