@@ -3,6 +3,7 @@ import { ClipLoader } from "react-spinners";
 import Link from "next/link";
 import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { csvToJson } from "../utils/csv";
+const { Timestamp } = require("firebase/firestore");
 
 export default function Form() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,8 +86,8 @@ export default function Form() {
       email,
       phone,
       title: eventTitle,
-      date: eventStart,
-      dateEnd: eventEnd || getEstimatedEventEnd(eventStart),
+      date: Timestamp.fromDate(eventStart),
+      dateEnd: Timestamp.fromDate(eventEnd || getEstimatedEventEnd(eventStart)),
       location,
       guests: guestListJson,
       interviews: {
@@ -94,24 +95,31 @@ export default function Form() {
         orientation: interviewOrientation,
         initialMessage: {
           message: interviewsInitialMessage || interviewsInitialDefaultMessage,
-          schedule: interviewsInitialMessageTime || eventStart,
+          schedule: Timestamp.fromDate(
+            interviewsInitialMessageTime || eventStart
+          ),
         },
         reminderMessage: {
           message:
             interviewsReminderMessage || interviewsReminderDefaultMessage,
-          schedule:
-            interviewsReminderMessageTime || getEstimatedEventEnd(eventStart),
+          schedule: Timestamp.fromDate(
+            interviewsReminderMessageTime || getEstimatedEventEnd(eventStart)
+          ),
         },
       },
       media: {
         enabled: isMediaChecked,
         initialMessage: {
           message: mediaInitialMessage || mediaInitialDefaultMessage,
-          schedule: mediaInitialMessageTime || getHourBefore(eventStart),
+          schedule: Timestamp.fromDate(
+            mediaInitialMessageTime || getHourBefore(eventStart)
+          ),
         },
         collectionMessage: {
           message: mediaCollectionMessage || mediaCollectionDefaultMessage,
-          schedule: mediaCollectionMessageTime || getNextMorning(eventStart),
+          schedule: Timestamp.fromDate(
+            mediaCollectionMessageTime || getNextMorning(eventStart)
+          ),
         },
       },
     };
