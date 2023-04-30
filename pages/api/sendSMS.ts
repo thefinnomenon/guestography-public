@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 //import serviceAccount from "../../lib/serviceAccountKey.json";
 import { Event } from "../../types";
+import { MessageInstance } from "twilio/lib/rest/api/v2010/account/message";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -93,14 +94,13 @@ export default async function handler(
   }
 
   try {
-    client.messages
-      .create({
-        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
-        /* @ts-ignore */
-        to: guest.Phone,
-        body: msg,
-      })
-      .then((message) => console.log(message.sid));
+    const twilioMsgRes = await client.messages.create({
+      messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+      /* @ts-ignore */
+      to: guest.Phone,
+      body: msg,
+    });
+    console.log("Send SMS: ", twilioMsgRes.sid);
   } catch (error) {
     console.error("Failed to send SMS", error);
     res.status(500).send("Failed to send SMS");
