@@ -286,7 +286,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
         seconds: formatTime(getEarlyNextMorning(event.dateEnd)),
       },
     };
-    // tasks.push(videoGenerationTask);
+    tasks.push(videoGenerationTask);
   }
 
   return tasks;
