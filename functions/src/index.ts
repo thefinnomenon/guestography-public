@@ -12,6 +12,11 @@ const client = new CloudTasksClient();
 // Represents 30 days in seconds
 const MAX_SCHEDULE_LIMIT = 30 * 60 * 60 * 24;
 
+// Get random offset into message window
+const MESSAGE_WINDOW_SECONDS = 5 * 60;
+const getSecondsOffsetInMessageWindow = () =>
+  Math.floor(Math.random() * (MESSAGE_WINDOW_SECONDS + 1));
+
 // Handle event status change
 export const handleEventStatusChange = functions
   .runWith({ secrets: [webhookSecret] })
@@ -281,7 +286,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
         seconds: formatTime(getEarlyNextMorning(event.dateEnd)),
       },
     };
-    tasks.push(videoGenerationTask);
+    // tasks.push(videoGenerationTask);
   }
 
   return tasks;
@@ -304,7 +309,9 @@ const formatTime = (date: string) => {
       return null;
     }
 
-    return dateDiffInSeconds + Date.now() / 1000;
+    return (
+      dateDiffInSeconds + Date.now() / 1000 + getSecondsOffsetInMessageWindow()
+    );
   }
 
   return null;

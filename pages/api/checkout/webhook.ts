@@ -1,12 +1,14 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import serviceAccount from "../../../lib/serviceAccountKey.json";
+//import serviceAccount from "../../../lib/serviceAccountKey.json";
 import { buffer } from "micro";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2022-11-15",
 });
+
+const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
 if (!admin.apps.length)
   admin.initializeApp({

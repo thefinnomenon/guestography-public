@@ -1,8 +1,10 @@
 import { Twilio } from "twilio";
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import serviceAccount from "../../lib/serviceAccountKey.json";
+//import serviceAccount from "../../lib/serviceAccountKey.json";
 import { Event } from "../../types";
+
+const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
 if (!admin.apps.length)
   admin.initializeApp({

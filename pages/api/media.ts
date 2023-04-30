@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import serviceAccount from "../../lib/serviceAccountKey.json";
+//import serviceAccount from "../../lib/serviceAccountKey.json";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -12,6 +12,8 @@ const r2 = new S3Client({
     secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY || "",
   },
 });
+
+const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
 if (!admin.apps.length)
   admin.initializeApp({

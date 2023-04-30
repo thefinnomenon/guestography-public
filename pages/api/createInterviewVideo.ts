@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import serviceAccount from "../../lib/serviceAccountKey.json";
+//import serviceAccount from "../../lib/serviceAccountKey.json";
 import {
   MediaConvertClient,
   CreateJobCommand,
@@ -12,6 +12,8 @@ const ENDPOINT = {
 };
 
 const mediaConvert = new MediaConvertClient(ENDPOINT);
+
+const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
 if (!admin.apps.length)
   admin.initializeApp({

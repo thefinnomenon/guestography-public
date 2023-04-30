@@ -1,10 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
-import serviceAccount from "../../lib/serviceAccountKey.json";
+//import serviceAccount from "../../lib/serviceAccountKey.json";
 import { slugify } from "../../utils/format";
 import ShortUniqueId from "short-unique-id";
 import { Event } from "../../types";
+
+const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
 if (!admin.apps.length)
   admin.initializeApp({
