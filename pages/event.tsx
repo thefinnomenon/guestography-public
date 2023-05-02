@@ -96,14 +96,14 @@ export default function Form() {
         enabled: isInterviewsChecked,
         orientation: interviewOrientation,
         initialMessage: {
-          message: interviewsInitialMessage || interviewsInitialDefaultMessage,
+          // message: interviewsInitialMessage || interviewsInitialDefaultMessage,
           schedule: new Date(
             interviewsInitialMessageTime || eventStart
           ).toISOString(),
         },
         reminderMessage: {
-          message:
-            interviewsReminderMessage || interviewsReminderDefaultMessage,
+          // message:
+          //   interviewsReminderMessage || interviewsReminderDefaultMessage,
           schedule: new Date(
             interviewsReminderMessageTime || getEstimatedEventEnd(eventStart)
           ).toISOString(),
@@ -112,13 +112,13 @@ export default function Form() {
       media: {
         enabled: isMediaChecked,
         initialMessage: {
-          message: mediaInitialMessage || mediaInitialDefaultMessage,
+          // message: mediaInitialMessage || mediaInitialDefaultMessage,
           schedule: new Date(
             mediaInitialMessageTime || getHourBefore(eventStart)
           ).toISOString(),
         },
         collectionMessage: {
-          message: mediaCollectionMessage || mediaCollectionDefaultMessage,
+          // message: mediaCollectionMessage || mediaCollectionDefaultMessage,
           schedule: new Date(
             mediaCollectionMessageTime || getNextMorning(eventStart)
           ).toISOString(),
@@ -554,7 +554,7 @@ export default function Form() {
                     />
                   </div>
                 </div>
-                <div className="sm:col-span-2">
+                {/* <div className="sm:col-span-2">
                   <label
                     htmlFor="interviews-initial-message"
                     className="block text-sm font-medium text-gray-700"
@@ -586,7 +586,7 @@ export default function Form() {
                       required={isInterviewsChecked}
                     />
                   </div>
-                </div>
+                </div> */}
                 <h1 className="text-xl sm:col-span-2 mt-6 mb-2">Reminder</h1>
                 <div className="sm:col-span-2 mb-4">
                   <label
@@ -615,7 +615,7 @@ export default function Form() {
                     />
                   </div>
                 </div>
-                <div className="sm:col-span-2">
+                {/* <div className="sm:col-span-2">
                   <label
                     htmlFor="interviews-reminder-message"
                     className="block text-sm font-medium text-gray-700"
@@ -647,7 +647,7 @@ export default function Form() {
                       required={isInterviewsChecked}
                     />
                   </div>
-                </div>
+                </div> */}
               </div>
               <div className="relative flex items-start">
                 <div className="flex h-5 items-center">
@@ -699,7 +699,7 @@ export default function Form() {
                     />
                   </div>
                 </div>
-                <div className="sm:col-span-2">
+                {/* <div className="sm:col-span-2">
                   <label
                     htmlFor="media-initial-message"
                     className="block text-sm font-medium text-gray-700"
@@ -725,7 +725,7 @@ export default function Form() {
                       required={isMediaChecked}
                     />
                   </div>
-                </div>
+                </div> */}
                 <h1 className="text-xl sm:col-span-2 mt-6 mb-2">
                   Collection Message
                 </h1>
@@ -756,7 +756,7 @@ export default function Form() {
                     />
                   </div>
                 </div>
-                <div className="sm:col-span-2">
+                {/* <div className="sm:col-span-2">
                   <label
                     htmlFor="media-collection-message"
                     className="block text-sm font-medium text-gray-700"
@@ -788,7 +788,7 @@ export default function Form() {
                       required={isMediaChecked}
                     />
                   </div>
-                </div>
+                </div> */}
               </div>
             </fieldset>
             <div className="sm:col-span-2">
