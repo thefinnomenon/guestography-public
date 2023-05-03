@@ -258,6 +258,10 @@ export default function Home(props: Props) {
                     Interview Video
                   </label>
                   <p className="block text-sm text-gray-500 mt-1 mb-2">
+                    Record with your phone camera and choose to upload from
+                    photo gallery.
+                  </p>
+                  <p className="block text-sm text-gray-500 mt-1 mb-4">
                     Must be{" "}
                     {orientation === "landscape" ? (
                       <>
@@ -272,6 +276,7 @@ export default function Home(props: Props) {
                     )}{" "}
                     and less than 1 minute.
                   </p>
+
                   <input
                     type="file"
                     name="interview"

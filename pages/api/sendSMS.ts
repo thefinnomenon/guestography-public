@@ -65,15 +65,19 @@ export default async function handler(
 
   // Format message
   /* @ts-ignore */
-  const firstName = guest["First Name"];
+  const firstName = guest.firstName;
   const eventTitle = event.title;
+  const orientation = event.interviews.orientation;
   const interviewLink = `https://guestography.net/${eventId}/upload/interview?guestId=${guestId}`;
   const mediaLink = `https://guestography.net/${eventId}/upload/media?guestId=${guestId}`;
   const galleryLink = `https://guestography.net/${eventId}`;
   let msg;
   switch (type) {
     case "interviewInitialMessage":
-      msg = `Hi ${firstName}! We're collecting video messages using Guestography for ${eventTitle} and it’s your turn!\n${interviewLink}`;
+      // msg = `Hi ${firstName}! We're collecting video messages using Guestography for ${eventTitle} and it’s your turn!\n${interviewLink}`;
+      msg = `Hi ${firstName}! We're collecting guest interviews using Guestography for ${eventTitle} and it’s your turn!\nPlease record a short video message (<1 minute) using your smartphone (in ${
+        orientation === "landscape" ? "landscape ↔️" : "portrait ↕️"
+      }!) and upload it using the link below.\n${interviewLink}\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`;
       break;
     case "interviewReminderMessage":
       msg = `Hi ${firstName}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n${interviewLink}`;
