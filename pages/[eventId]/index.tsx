@@ -213,10 +213,9 @@ const renderPhoto: RenderPhoto = ({
       className="gallery-item-wrapper"
       style={{
         position: "relative",
-        border: "2px solid #eee",
-        borderRadius: "4px",
         boxSizing: "content-box",
         alignItems: "center",
+        marginBottom: "8px",
         width: style?.width,
         padding: `${layoutOptions.padding - 2}px`,
         paddingBottom: 0,
