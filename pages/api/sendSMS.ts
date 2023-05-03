@@ -70,7 +70,7 @@ export default async function handler(
   const orientation = event.interviews.orientation;
   const interviewLink = `https://guestography.net/${eventId}/upload/interview?guestId=${guestId}`;
   const mediaLink = `https://guestography.net/${eventId}/upload/media?guestId=${guestId}`;
-  const galleryLink = `https://guestography.net/${eventId}`;
+  const galleryLink = `https://guestography.net/${eventId}?guestId=${guestId}`;
   let msg;
   switch (type) {
     case "interviewInitialMessage":
