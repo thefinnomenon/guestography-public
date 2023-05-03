@@ -22,7 +22,6 @@ import Video from "yet-another-react-lightbox/plugins/video";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { useEffect, useRef, useState } from "react";
 import { MdOutlineFileDownload } from "react-icons/md";
-import { sleep } from "../../utils/random";
 
 interface Props {
   title: string;
