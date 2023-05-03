@@ -89,7 +89,7 @@ export default function Home(props: Props) {
       video.videoWidth > video.videoHeight ? "landscape" : "portrait";
     if (videoOrientation !== orientation)
       err = `${err}Video must be in ${orientation}. `;
-    if (video.duration >= 60) err = `${err} Video must be under 60 seconds. `;
+    if (video.duration > 60) err = `${err} Video must be under 60 seconds. `;
 
     setVideoMetadata({
       ...videoMetadata,
