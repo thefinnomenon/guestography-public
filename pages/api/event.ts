@@ -34,7 +34,7 @@ export default async function handler(
   event.guests = event.guests.map((guest: any) => {
     return {
       ...guest,
-      id: `${guest["First Name"]}-${guest["Last Name"]}-${uid()}`,
+      id: `${guest.firstName}-${guest.lastName}-${uid()}`,
     };
   });
 
@@ -71,7 +71,7 @@ export default async function handler(
       line_items,
       metadata: { eventId },
       success_url: `${req.headers.origin}/checkout/success?eventId=${eventId}`,
-      cancel_url: `${req.headers.origin}/form?eventId=${eventId}`,
+      cancel_url: `${req.headers.origin}/event?eventId=${eventId}`,
     };
 
     checkoutSession = await stripe.checkout.sessions.create(params);

@@ -19,32 +19,32 @@ export default function Form() {
   const [isInterviewsChecked, setIsInterviewsChecked] = useState(true);
   const [isMediaChecked, setIsMediaChecked] = useState(true);
   const [interviewOrientation, setInterviewOrientation] = useState("landscape");
-  const [interviewsInitialMessage, setInterviewsInitialMessage] = useState<
-    string | undefined
-  >(undefined);
+  // const [interviewsInitialMessage, setInterviewsInitialMessage] = useState<
+  //   string | undefined
+  // >(undefined);
   const [interviewsInitialMessageTime, setInterviewsInitialMessageTime] =
     useState("");
-  const [interviewsReminderMessage, setInterviewsReminderMessage] = useState<
-    string | undefined
-  >(undefined);
+  // const [interviewsReminderMessage, setInterviewsReminderMessage] = useState<
+  //   string | undefined
+  // >(undefined);
   const [interviewsReminderMessageTime, setInterviewsReminderMessageTime] =
     useState("");
-  const [mediaInitialMessage, setMediaInitialMessage] = useState<
-    string | undefined
-  >(undefined);
+  // const [mediaInitialMessage, setMediaInitialMessage] = useState<
+  //   string | undefined
+  // >(undefined);
   const [mediaInitialMessageTime, setMediaInitialMessageTime] = useState("");
   const [mediaCollectionMessageTime, setMediaCollectionMessageTime] =
     useState("");
-  const [mediaCollectionMessage, setMediaCollectionMessage] = useState<
-    string | undefined
-  >(undefined);
+  // const [mediaCollectionMessage, setMediaCollectionMessage] = useState<
+  //   string | undefined
+  // >(undefined);
 
-  const interviewsInitialDefaultMessage = `Hi {{FirstName}}! We are collecting guest interviews using Guestography for ${eventTitle} and it’s your turn!\n\nPlease record a short video message (<10 seconds per person) using your smartphone (in ${
-    interviewOrientation === "landscape" ? "landscape ↔️" : "portrait ↕️"
-  }!) and upload it using the link below.\n{{UploadLink}}\n\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`;
-  const interviewsReminderDefaultMessage = `Hi {{FirstName}}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n\n{{UploadLink}}`;
-  const mediaInitialDefaultMessage = `Hi {{FirstName}}, we hope you are excited for ${eventTitle}! We wanted to let you know that we are using Guestography to collect photos and videos from everyone so please snap away and tomorrow you will recieve a message asking you to upload your best shots!`;
-  const mediaCollectionDefaultMessage = `Good morning {{FirstName}}! Guestography here and we hope that you had fun at ${eventTitle} yesterday and invite you to share any photos and videos you took by uploading them using the link below.\n\n{{UploadLink}}`;
+  // const interviewsInitialDefaultMessage = `Hi {{FirstName}}! We are collecting guest interviews using Guestography for ${eventTitle} and it’s your turn!\n\nPlease record a short video message (<10 seconds per person) using your smartphone (in ${
+  //   interviewOrientation === "landscape" ? "landscape ↔️" : "portrait ↕️"
+  // }!) and upload it using the link below.\n{{UploadLink}}\n\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`;
+  // const interviewsReminderDefaultMessage = `Hi {{FirstName}}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n\n{{UploadLink}}`;
+  // const mediaInitialDefaultMessage = `Hi {{FirstName}}, we hope you are excited for ${eventTitle}! We wanted to let you know that we are using Guestography to collect photos and videos from everyone so please snap away and tomorrow you will recieve a message asking you to upload your best shots!`;
+  // const mediaCollectionDefaultMessage = `Good morning {{FirstName}}! Guestography here and we hope that you had fun at ${eventTitle} yesterday and invite you to share any photos and videos you took by uploading them using the link below.\n\n{{UploadLink}}`;
 
   const getEstimatedEventEnd = (start: string) => {
     if (!start) return "";
@@ -77,8 +77,43 @@ export default function Form() {
     setIsSubmitting(true);
 
     let guestListJson;
-    if (guestList && guestList[0])
-      guestListJson = await csvToJson(guestList[0]);
+    if (guestList && guestList[0]) {
+      // Convert CSV to JSON
+      guestListJson = (await csvToJson(guestList[0])) as [any];
+      // Filter out guests with no phone number
+      guestListJson = guestListJson.filter((guest) => guest.phone);
+      // Filter out extra properties
+      guestListJson = guestListJson.map((guest) => {
+        const {
+          firstName,
+          lastName,
+          phone,
+          email,
+          address1,
+          address2,
+          city,
+          state,
+          zip,
+          country,
+          rsvp,
+        } = guest;
+        return {
+          firstName,
+          lastName,
+          phone,
+          email,
+          address: {
+            line1: address1,
+            line2: address2,
+            city,
+            state,
+            zip,
+            country,
+          },
+          rsvp,
+        };
+      });
+    }
 
     const eventData = {
       firstName,
@@ -142,8 +177,6 @@ export default function Form() {
     } catch (error) {
       console.error("Failed to submit event form", error);
     }
-
-    setIsSubmitting(false);
   };
 
   return (

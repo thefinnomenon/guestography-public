@@ -20,19 +20,23 @@ export interface Event {
   media: MediaService;
 }
 
+export interface Address {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+}
+
 export interface Guest {
   id: string;
-  address1: string;
-  address2: string;
-  city: string;
-  country: string;
+  address: Address;
   email: string;
   phone: string;
   firstName: string;
   lastName: string;
-  rsvp: string;
-  state: string;
-  zipcode: string;
+  rsvp: boolean;
 }
 
 export interface InterviewsService {
