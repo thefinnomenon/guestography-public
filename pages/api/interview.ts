@@ -47,7 +47,7 @@ export default async function handler(
     const url = await getSignedUrl(
       r2,
       new PutObjectCommand({ Bucket: bucket, Key: key }),
-      { expiresIn: 3600 * 24 }
+      { expiresIn: 3600 * 24 * 7 }
     );
 
     res.status(200).json({ url });
