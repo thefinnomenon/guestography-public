@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 import ShortUniqueId from "short-unique-id";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Guest } from "../../types";
 
 const r2 = new S3Client({
   region: "auto",
@@ -61,6 +62,12 @@ export default async function handler(
       new URL(url).pathname
     }`;
 
+    // Remap guest array to map so it is queryable
+    let guestMap: { [key: string]: any } = {};
+    guests.forEach((guest: any) => {
+      guestMap[guest.id as string] = { id: guest.id, name: guest.name };
+    });
+
     const db = admin.firestore();
 
     try {
@@ -74,7 +81,7 @@ export default async function handler(
           url,
           metadata,
           publicUrl,
-          guests,
+          guests: guestMap,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       res.status(200).send("Success");

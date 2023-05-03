@@ -1,15 +1,12 @@
 import { Twilio } from "twilio";
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-//import serviceAccount from "../../lib/serviceAccountKey.json";
 import { Event } from "../../types";
-import { MessageInstance } from "twilio/lib/rest/api/v2010/account/message";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
 if (!admin.apps.length)
   admin.initializeApp({
-    /* @ts-ignore */
     credential: admin.credential.cert(serviceAccount),
     databaseURL: "https://guestography-37df8.firebaseio.com",
   });
@@ -24,9 +21,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { type, eventId, guestId, secret } = JSON.parse(req.body || "{}");
-
-  console.log(type, eventId, guestId);
+  const { type, eventId, guestId, secret } = req.body; // JSON.parse(req.body);
 
   // Verify secret
   if (secret !== process.env.WEBHOOK_SECRET) {
@@ -37,8 +32,8 @@ export default async function handler(
 
   // Verify body is valid
   if (!type || !eventId || !guestId) {
-    console.error("Missing required params: type, eventId, and guestId");
-    res.status(500).send("Missing required params: type, eventId, and guestId");
+    console.error("Missing required body: type, eventId, and guestId");
+    res.status(500).send("Missing required body: type, eventId, and guestId");
     return;
   }
 
@@ -64,7 +59,6 @@ export default async function handler(
   }
 
   // Format message
-  /* @ts-ignore */
   const firstName = guest.firstName;
   const eventTitle = event.title;
   const orientation = event.interviews.orientation;
@@ -80,6 +74,27 @@ export default async function handler(
       }!) and upload it using the link below.\n${interviewLink}\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`;
       break;
     case "interviewReminderMessage":
+      // Don't send reminder if guest already uploaded interview
+      const guestUploadSnapshot = await db
+        .collection(`events/${eventId}/interviews`)
+        .doc(guestId)
+        .get();
+      if (guestUploadSnapshot.exists) {
+        res.status(200).send("okay");
+        return;
+      }
+
+      // Don't send reminder if guest is tagged in uploaded interview
+      const guestTaggedQuerySnapshot = await db
+        .collection(`events/${eventId}/interviews`)
+        .where(`guests.${guestId}`, "!=", null)
+        .get();
+      console.log(guestTaggedQuerySnapshot.size);
+      if (guestTaggedQuerySnapshot.size !== 0) {
+        res.status(200).send("okay");
+        return;
+      }
+
       msg = `Hi ${firstName}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n${interviewLink}`;
       break;
     case "mediaInitialMessage":
@@ -100,8 +115,7 @@ export default async function handler(
   try {
     const twilioMsgRes = await client.messages.create({
       messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
-      /* @ts-ignore */
-      to: guest.Phone,
+      to: guest.phone,
       body: msg,
     });
     console.log("Send SMS: ", twilioMsgRes.sid);
