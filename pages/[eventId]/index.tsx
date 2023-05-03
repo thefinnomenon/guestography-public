@@ -1,6 +1,7 @@
 import { GetStaticPropsContext } from "next";
 import Head from "next/head";
 import Image from "next/image";
+import { ClipLoader } from "react-spinners";
 import {
   getEvent,
   getEvents,
@@ -21,6 +22,7 @@ import Video from "yet-another-react-lightbox/plugins/video";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { useEffect, useRef, useState } from "react";
 import { MdOutlineFileDownload } from "react-icons/md";
+import { sleep } from "../../utils/random";
 
 interface Props {
   title: string;
@@ -204,6 +206,8 @@ const renderPhoto: RenderPhoto = ({
     ...restImageProps
   },
 }) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [loading, setLoading] = useState(false);
   return (
     <div
       className="gallery-item-wrapper"
@@ -225,7 +229,10 @@ const renderPhoto: RenderPhoto = ({
             className="gallery-item-select"
             type="checkbox"
           /> */}
-          <div className="gallery-item-overlay" onClick={onClick} />
+          <div
+            className={`gallery-item-overlay ${loading && "force-display"}`}
+            onClick={onClick}
+          />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt=""
@@ -239,7 +246,10 @@ const renderPhoto: RenderPhoto = ({
       ) : (
         <div className="gallery-video">
           {/* <input className="gallery-item-select" type="checkbox" /> */}
-          <div className="gallery-item-overlay" onClick={onClick} />
+          <div
+            className={`gallery-item-overlay ${loading && "force-display"}`}
+            onClick={onClick}
+          />
           <div onClick={onClick}>
             <video
               className="rounded-md"
@@ -261,14 +271,25 @@ const renderPhoto: RenderPhoto = ({
           </div>
         </div>
       )}
-      <div className="gallery-item-info">
+      <div className={`gallery-item-info ${loading && "force-display"}`}>
         <div className="flex justify-between">
           {getGuestNameFromId(guest ? guest : "")}
-          <button onClick={() => downloadMedia(src)}>
-            <MdOutlineFileDownload
-              size="1.2rem"
-              className="mt-1 text-white hover:text-indigo-200"
-            />
+          <button
+            onClick={async () => {
+              setLoading(true);
+              await downloadMedia(src);
+              setLoading(false);
+            }}
+            disabled={loading}
+          >
+            {loading ? (
+              <ClipLoader className="mr-1" size={16} color="white" />
+            ) : (
+              <MdOutlineFileDownload
+                size="1.2rem"
+                className="mt-1 text-white hover:text-indigo-200 cursor-pointer"
+              />
+            )}
           </button>
         </div>
       </div>
