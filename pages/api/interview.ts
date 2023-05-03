@@ -42,9 +42,7 @@ export default async function handler(
     }
 
     const bucket = process.env.CLOUDFLARE_BUCKET_NAME;
-    const key = `events/${eventId}/interviews/${guestId}-${new ShortUniqueId({
-      length: 4,
-    })()}.${fileExt || ""}`;
+    const key = `events/${eventId}/interviews/${guestId}.${fileExt || ""}`;
 
     const url = await getSignedUrl(
       r2,
@@ -66,14 +64,19 @@ export default async function handler(
     const db = admin.firestore();
 
     try {
-      await db.collection("events").doc(eventId).collection("interviews").add({
-        guestId,
-        url,
-        metadata,
-        publicUrl,
-        guests,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      await db
+        .collection("events")
+        .doc(eventId)
+        .collection("interviews")
+        .doc(guestId)
+        .set({
+          guestId,
+          url,
+          metadata,
+          publicUrl,
+          guests,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
       res.status(200).send("Success");
       return;
     } catch (e) {
