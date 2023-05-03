@@ -38,9 +38,12 @@ export default async function handler(
   }
 
   const db = admin.firestore();
+  // Retrieve interview records (excluding a previously generated interview in the case of a rerun)
   const interviews = await (
     await db.collection(`events/${eventId}/interviews`).get()
-  ).docs.map((doc) => doc.data());
+  ).docs
+    .filter((doc) => doc.id !== "interview")
+    .map((doc) => doc.data());
 
   const params = {
     // Queue: "JOB_QUEUE_ARN",
