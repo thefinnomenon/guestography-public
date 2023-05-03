@@ -218,6 +218,7 @@ a {
 .gallery-item-wrapper video,
 .gallery-item-wrapper img {
   margin-bottom: 0 !important;
+  @apply rounded-md;
 }
 
 /* For mobile always show overlays */
