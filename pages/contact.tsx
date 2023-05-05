@@ -13,7 +13,7 @@ export default function Home(props: Props) {
 
       <main>
         <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
-          Email us at support@guestography.net
+          Email us at support@guestography.com
         </div>
       </main>
     </div>

@@ -167,7 +167,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             "Content-Type": "text/json",
           },
           httpMethod: "POST",
-          url: "https://guestography.net/api/sendSMS",
+          url: "https://guestography.com/api/sendSMS",
           body: formatBody({
             secret,
             eventId,
@@ -188,7 +188,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             "Content-Type": "text/json",
           },
           httpMethod: "POST",
-          url: "https://guestography.net/api/sendSMS",
+          url: "https://guestography.com/api/sendSMS",
           body: formatBody({
             secret,
             eventId,
@@ -212,7 +212,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             "Content-Type": "text/json",
           },
           httpMethod: "POST",
-          url: "https://guestography.net/api/sendSMS",
+          url: "https://guestography.com/api/sendSMS",
           body: formatBody({
             secret,
             eventId,
@@ -233,7 +233,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
             "Content-Type": "text/json",
           },
           httpMethod: "POST",
-          url: "https://guestography.net/api/sendSMS",
+          url: "https://guestography.com/api/sendSMS",
           body: formatBody({
             secret,
             eventId,
@@ -255,7 +255,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
           "Content-Type": "text/json",
         },
         httpMethod: "POST",
-        url: "https://guestography.net/api/sendSMS",
+        url: "https://guestography.com/api/sendSMS",
         body: formatBody({
           secret,
           eventId,
@@ -279,7 +279,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
           "Content-Type": "text/json",
         },
         httpMethod: "POST",
-        url: `https://guestography.net/api/createInterviewVideo?eventId=${eventId}`,
+        url: `https://guestography.com/api/createInterviewVideo?eventId=${eventId}`,
         body: formatBody({ secret }),
       },
       scheduleTime: {

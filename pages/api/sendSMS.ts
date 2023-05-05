@@ -62,9 +62,9 @@ export default async function handler(
   const firstName = guest.firstName;
   const eventTitle = event.title;
   const orientation = event.interviews.orientation;
-  const interviewLink = `https://guestography.net/${eventId}/upload/interview?guestId=${guestId}`;
-  const mediaLink = `https://guestography.net/${eventId}/upload/media?guestId=${guestId}`;
-  const galleryLink = `https://guestography.net/${eventId}?guestId=${guestId}`;
+  const interviewLink = `https://guestography.com/${eventId}/upload/interview?guestId=${guestId}`;
+  const mediaLink = `https://guestography.com/${eventId}/upload/media?guestId=${guestId}`;
+  const galleryLink = `https://guestography.com/${eventId}?guestId=${guestId}`;
   let msg;
   switch (type) {
     case "interviewInitialMessage":
