@@ -95,6 +95,11 @@ export default function Home(props: Props) {
     if (videoOrientation !== orientation)
       err = `${err}Video must be in ${orientation}. `;
     if (video.duration > 60) err = `${err} Video must be under 60 seconds. `;
+    if (
+      (orientation === "landscape" && video.videoWidth < 1280) ||
+      (orientation === "portrait" && video.videoHeight < 1280)
+    )
+      err = `${err} Video resolution is too low. Did you record using the camera initiated from the 'Choose File' button on this page? Please record using your native phone camera app instead and return here to upload the video.`;
 
     setVideoMetadata({
       ...videoMetadata,
@@ -315,11 +320,13 @@ export default function Home(props: Props) {
                     )}
                     {error && (
                       <div
-                        className="flex p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800"
+                        className="flex justify-start p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800"
                         role="alert"
                       >
-                        <BiError className="text-lg mr-2" />
-                        <span className="sr-only">Error</span>
+                        <div>
+                          <BiError className="mr-2" size={24} />
+                          <span className="sr-only">Error</span>
+                        </div>
                         <div>{error}</div>
                       </div>
                     )}
