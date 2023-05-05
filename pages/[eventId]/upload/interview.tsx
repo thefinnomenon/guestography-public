@@ -30,7 +30,7 @@ export default function Home(props: Props) {
   const [file, setFile] = useState<File>();
   const [fileExt, setFileExt] = useState("");
   const [videoMetadata, setVideoMetadata] = useState({});
-  const [suggestions, setSuggestions] = useState(guests);
+  const [suggestions, setSuggestions] = useState<Tag[]>(guests);
   const [tags, setTags] = useState<Tag[]>([]);
   const [error, setError] = useState("");
   const reactTags = useRef<ReactTags>();
@@ -42,6 +42,8 @@ export default function Home(props: Props) {
 
   const onDelete = useCallback(
     (tagIndex: number) => {
+      if (tagIndex < 0) return;
+      setSuggestions([...suggestions, tags[tagIndex]]);
       setTags(
         tags.filter((tag, i) => {
           if (tag.id === guestId) return true;
@@ -49,14 +51,17 @@ export default function Home(props: Props) {
         })
       );
     },
-    [guestId, tags]
+    [guestId, suggestions, tags]
   );
 
   const onAddition = useCallback(
     (newTag: any) => {
       setTags([...tags, newTag]);
+      setSuggestions(
+        suggestions.filter((suggestion) => newTag.id !== suggestion.id)
+      );
     },
-    [tags]
+    [suggestions, tags]
   );
 
   // Handle Video
