@@ -362,7 +362,7 @@ export const handleMediaUpload = functions
           const { base64 } = await getPlaiceholder(media.publicUrl);
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
-            .update({ "metadata.blurDataURL": base64 });
+            .update({ "blurDataURL": base64 });
         } catch (error) {
           console.log('Failed to generate and store blurhash', error);
         }
