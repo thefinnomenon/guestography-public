@@ -297,6 +297,7 @@ const renderPhoto: RenderPhoto = ({
                 videoRef.current.pause();
                 setIsPlaying(false);
               }
+              // @ts-ignore
               if (onClick) onClick(e);
             }}
           >
