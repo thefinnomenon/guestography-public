@@ -19,6 +19,7 @@ import Slideshow from "yet-another-react-lightbox/plugins/slideshow";
 import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import Video from "yet-another-react-lightbox/plugins/video";
+import Download from "yet-another-react-lightbox/plugins/download";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { useEffect, useRef, useState } from "react";
 import { MdOutlineFileDownload } from "react-icons/md";
@@ -203,7 +204,15 @@ export default function Home(props: Props) {
                   open={index >= 0}
                   index={index}
                   close={() => setIndex(-1)}
-                  plugins={[Fullscreen, Slideshow, Thumbnails, Zoom, Video]}
+                  plugins={[
+                    Fullscreen,
+                    Slideshow,
+                    Thumbnails,
+                    Zoom,
+                    Video,
+                    Download,
+                  ]}
+                  thumbnails={{ imageFit: "cover", padding: 0, showToggle: true }}
                 />
               )}
             </div>
