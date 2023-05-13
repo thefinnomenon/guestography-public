@@ -204,15 +204,13 @@ export default function Home(props: Props) {
                   open={index >= 0}
                   index={index}
                   close={() => setIndex(-1)}
-                  plugins={[
-                    Fullscreen,
-                    Slideshow,
-                    Thumbnails,
-                    Zoom,
-                    Video,
-                    Download,
-                  ]}
-                  thumbnails={{ imageFit: "cover", padding: 0, showToggle: true }}
+                  plugins={[Fullscreen, Slideshow, Thumbnails, Zoom, Video]}
+                  render={{ buttonZoom: () => <div />}}
+                  thumbnails={{
+                    imageFit: "cover",
+                    padding: 0,
+                    showToggle: true,
+                  }}
                 />
               )}
             </div>
