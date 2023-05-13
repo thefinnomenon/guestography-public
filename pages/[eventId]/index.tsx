@@ -34,6 +34,7 @@ export default function Home(props: Props) {
   const { title, interview, media } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
+  const [isDownloadingInterview, setIsDownloadingInterview] = useState(false);
   const [downloadList, setDownloadList] = useState([]);
 
   useEffect(() => {
@@ -153,12 +154,32 @@ export default function Home(props: Props) {
               {interview && (
                 <>
                   <h2 className="mb-4">Interview</h2>
-                  <video
-                    className="rounded-md"
-                    src={`${interview.publicUrl}#t=0.001`}
-                    preload="metadata"
-                    controls
-                  />
+                  <div className="relative">
+                    <video
+                      className="rounded-md"
+                      src={`${interview.publicUrl}#t=0.001`}
+                      preload="metadata"
+                      controls
+                    />
+                    <button
+                      className="absolute top-2 right-2"
+                      onClick={async () => {
+                        setIsDownloadingInterview(true);
+                        await downloadMedia(interview.publicUrl);
+                        setIsDownloadingInterview(false);
+                      }}
+                      disabled={isDownloadingInterview}
+                    >
+                      {isDownloadingInterview ? (
+                        <ClipLoader className="mr-1" size={16} color="white" />
+                      ) : (
+                        <MdOutlineFileDownload
+                          size="1.5rem"
+                          className="mt-1 text-white hover:text-indigo-200 cursor-pointer"
+                        />
+                      )}
+                    </button>
+                  </div>
                 </>
               )}
               <h2 className="mt-8 mb-4">Media</h2>
