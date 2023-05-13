@@ -168,6 +168,7 @@ export default function Home(props: Props) {
                       controls
                     />
                     <button
+                      aria-label="Download"
                       className="absolute top-2 right-2"
                       onClick={async () => {
                         setIsDownloadingInterview(true);
@@ -357,6 +358,7 @@ const renderPhoto: RenderPhoto = ({
         <div className="flex justify-between">
           {getGuestNameFromId(guest ? guest : "")}
           <button
+            aria-label="Download"
             onClick={async () => {
               setLoading(true);
               await downloadMedia(src);
