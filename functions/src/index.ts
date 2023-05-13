@@ -3,6 +3,12 @@ import * as functions from "firebase-functions";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { limit } from "./parallel";
 import { defineSecret } from "firebase-functions/params";
+import path from "path";
+import os from "os";
+import fs from 'fs';
+import { Readable } from 'stream';
+import { finished } from 'stream/promises';
+import { getPlaiceholder } from "plaiceholder";
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 
 admin.initializeApp();
@@ -338,3 +344,45 @@ const getEarlyNextMorning = (start: string) => {
   d.setMinutes(0);
   return d.toISOString().slice(0, -1);
 };
+
+// Handle event status change
+export const handleMediaUpload = functions
+  .firestore.document("events/{eventId}/media/{mediaId}")
+  .onCreate(async (mediaSnapshot, context) => {
+    const { eventId, mediaId } = context.params;
+    const media = mediaSnapshot.data() as any;
+
+    console.log(`New media ${mediaId} created for event ${eventId}`, media)
+
+    const db = admin.firestore();
+    const tempFilePath = path.join(os.tmpdir(), mediaId);
+    switch (media.metadata.type) {
+      case 'image':
+        try {
+          const { base64 } = await getPlaiceholder(media.publicUrl);
+          await db
+            .doc(`events/${eventId}/media/${mediaId}`)
+            .update({ "metadata.blurDataURL": base64 });
+        } catch (error) {
+          console.log('Failed to generate and store blurhash', error);
+        }
+        break
+      case 'video':
+        // TODO: Generate and upload video poster and store url in video metadata
+        // await downloadFile(media.publicUrl, tempFilePath);
+
+        // await fs.unlinkSync(tempFilePath);
+        break
+      default: 
+        console.error('Unhandled media type')
+    }
+  })
+
+  const downloadFile = async (fileUrl: string, destination: string) => {
+    const stream = fs.createWriteStream(destination);
+    const { body } = await fetch(fileUrl);
+    if (!body) throw Error("Response body is null");
+    /* @ts-ignore */
+    await finished(Readable.fromWeb(body).pipe(stream));
+    console.log(`Media file downladed to ${destination}`);
+  }
