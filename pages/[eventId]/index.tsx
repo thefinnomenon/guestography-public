@@ -10,7 +10,7 @@ import {
 } from "../../lib/firebase";
 import { Interview, Media, GalleryMedia } from "../../types";
 import PhotoAlbum, { RenderPhoto } from "react-photo-album";
-import Lightbox from "yet-another-react-lightbox";
+import Lightbox, { isImageFitCover, isImageSlide, useLightboxProps } from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 
 // import optional lightbox plugins
@@ -43,7 +43,7 @@ export default function Home(props: Props) {
 
     const slides = media.map(
       // @ts-ignore
-      ({ alt: type, title: guest, src, width, height }) => {
+      ({ alt: type, title: guest, src, width, height, blurDataURL }) => {
         if (type === "video") {
           return {
             type,
@@ -62,6 +62,7 @@ export default function Home(props: Props) {
             src,
             width,
             height,
+            blurDataURL,
             alt: guest,
           };
         }
@@ -196,6 +197,8 @@ export default function Home(props: Props) {
                   // @ts-ignore
                   renderPhoto={renderPhoto}
                   onClick={({ index }) => setIndex(index)}
+                  defaultContainerWidth={1200}
+                  sizes={{ size: "calc(100vw - 240px)" }}
                 />
               )}
               {slides && (
@@ -205,7 +208,7 @@ export default function Home(props: Props) {
                   index={index}
                   close={() => setIndex(-1)}
                   plugins={[Fullscreen, Slideshow, Thumbnails, Zoom, Video]}
-                  render={{ buttonZoom: () => <div />}}
+                  render={{ slide: NextJsImage, buttonZoom: () => <div /> }}
                   thumbnails={{
                     imageFit: "cover",
                     padding: 0,
@@ -222,6 +225,7 @@ export default function Home(props: Props) {
 }
 
 const renderPhoto: RenderPhoto = ({
+  photo,
   layout,
   layoutOptions,
   imageProps: {
@@ -264,10 +268,17 @@ const renderPhoto: RenderPhoto = ({
             className={`gallery-item-overlay ${loading && "force-display"}`}
             onClick={onClick}
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             alt=""
             src={src}
+            // @ts-ignore
+            placeholder="blur"
+            // @ts-ignore
+            blurDataURL={photo.blurDataURL}
+            // @ts-ignore
+            width={photo.width}
+            // @ts-ignore
+            height={photo.height}
             style={{ ...style, width: "100%", padding: 0 }}
             className="rounded-md"
             onClick={onClick}
@@ -284,7 +295,7 @@ const renderPhoto: RenderPhoto = ({
             onClick={(e) => {
               if (isPlaying && videoRef.current) {
                 videoRef.current.pause();
-                setIsPlaying(false)
+                setIsPlaying(false);
               }
               if (onClick) onClick(e);
             }}
@@ -361,6 +372,39 @@ const renderPhoto: RenderPhoto = ({
   );
 };
 
+const NextJsImage = ({ slide, rect }: any) => {
+  const { imageFit } = useLightboxProps().carousel;
+  const cover = isImageSlide(slide) && isImageFitCover(slide, imageFit);
+
+  const width = !cover
+    ? Math.round(
+        Math.min(rect.width, (rect.height / slide.height) * slide.width)
+      )
+    : rect.width;
+
+  const height = !cover
+    ? Math.round(
+        Math.min(rect.height, (rect.width / slide.width) * slide.height)
+      )
+    : rect.height;
+
+  return (
+    <div style={{ position: "relative", width, height }}>
+      <Image
+        fill
+        alt=""
+        src={slide}
+        loading="eager"
+        placeholder="blur"
+        blurDataURL={slide.blurDataURL}
+        draggable={false}
+        style={{ objectFit: cover ? "cover" : "contain" }}
+        sizes={`${Math.ceil((width / window.innerWidth) * 100)}vw`}
+      />
+    </div>
+  );
+};
+
 const downloadMedia = async (src: string) => {
   const media = await fetch(src, { cache: "no-store" });
   const mediaBlob = await media.blob();
@@ -422,16 +466,6 @@ export async function getStaticProps(
     // Get media from db
     let media = await getMedia(eventId);
 
-    // TODO: Generate blurhashes
-    // const blurImagePromises = results.resources.map((image: ImageProps) => {
-    //   return getBase64ImageUrl(image);
-    // });
-    // const imagesWithBlurDataUrls = await Promise.all(blurImagePromises);
-
-    // for (let i = 0; i < reducedResults.length; i++) {
-    //   reducedResults[i].blurDataUrl = imagesWithBlurDataUrls[i];
-    // }
-
     // This is to make the Firestore timestamp object serializable
     interview = JSON.parse(JSON.stringify(interview) || "{}");
     media = JSON.parse(JSON.stringify(media) || "{}");
@@ -443,6 +477,7 @@ export async function getStaticProps(
         width: m.metadata.width,
         // react-photo-gallery doesn't let us pass in custom props for render
         // so we will just hijack these ones
+        blurDataURL: m.blurDataURL || null,
         alt: m.metadata.type,
         title: m.guestId,
       };

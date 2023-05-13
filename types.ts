@@ -81,6 +81,7 @@ export interface Interview {
 export interface Media {
   id: string;
   guestId: string;
+  blurDataURL?: string;
   publicUrl: string;
   url: string;
   metadata: Metadata;
