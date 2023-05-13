@@ -259,7 +259,8 @@ a {
   position: relative;
 }
 
-.gallery-video .play-btn {
+.gallery-video .play-btn,
+.gallery-video .pause-btn {
   position: absolute;
   width: 40px;
   height: 40px;
@@ -270,7 +271,23 @@ a {
   cursor: pointer;
 }
 
-.gallery-video:hover .play-btn {
+.gallery-video .pause-btn {
+  display: none;
+}
+
+.gallery-video:hover .pause-btn {
+  display: revert;
+}
+
+/* For mobile always show pause button */
+@media only screen and (hover: none) and (pointer: coarse) {
+  .gallery-video .pause-btn {
+    display: revert !important;
+  }
+}
+
+.gallery-video .play-btn:hover,
+.gallery-video .pause-btn:hover {
   @apply fill-indigo-100;
 }
 

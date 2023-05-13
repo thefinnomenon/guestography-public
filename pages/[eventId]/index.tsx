@@ -237,6 +237,11 @@ const renderPhoto: RenderPhoto = ({
 }) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [isPlaying, setIsPlaying] = useState(false);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const videoRef = useRef<HTMLVideoElement>();
+
   return (
     <div
       className="gallery-item-wrapper"
@@ -276,26 +281,59 @@ const renderPhoto: RenderPhoto = ({
           {/* <input className="gallery-item-select" type="checkbox" /> */}
           <div
             className={`gallery-item-overlay ${loading && "force-display"}`}
-            onClick={onClick}
           />
-          <div onClick={onClick}>
+          <div
+            onClick={(e) => {
+              if (isPlaying && videoRef.current) {
+                videoRef.current.pause();
+                setIsPlaying(false)
+              }
+              if (onClick) onClick(e);
+            }}
+          >
             <video
+              // @ts-ignore
+              ref={videoRef}
               className="rounded-md"
               preload="metadata"
+              onEnded={() => setIsPlaying(false)}
               src={`${src}#t=0.001`}
               style={{ ...style, width: "100%", padding: 0 }}
             />
           </div>
 
-          <div onClick={onClick}>
-            <svg
-              className="play-btn"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 311.69 311.69"
-            >
-              <path d="M155.84,0A155.85,155.85,0,1,0,311.69,155.84,155.84,155.84,0,0,0,155.84,0Zm0,296.42A140.58,140.58,0,1,1,296.42,155.84,140.58,140.58,0,0,1,155.84,296.42Z"></path>
-              <polygon points="218.79 155.84 119.22 94.34 119.22 217.34 218.79 155.84"></polygon>
-            </svg>
+          <div
+            onClick={() => {
+              if (!videoRef.current) return;
+              if (videoRef.current.paused) {
+                videoRef.current.play();
+                setIsPlaying(true);
+              } else {
+                videoRef.current.pause();
+                setIsPlaying(false);
+              }
+            }}
+          >
+            {isPlaying ? (
+              <svg
+                className="pause-btn"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 122.88 122.88"
+              >
+                <g>
+                  <path d="M61.44,0c16.97,0,32.33,6.88,43.44,18c11.12,11.12,18,26.48,18,43.44c0,16.97-6.88,32.33-18,43.44 c-11.12,11.12-26.48,18-43.44,18c-16.97,0-32.33-6.88-43.44-18C6.88,93.77,0,78.41,0,61.44C0,44.47,6.88,29.11,18,18 C29.11,6.88,44.47,0,61.44,0L61.44,0z M42.3,39.47h13.59v43.95l-13.59,0V39.47L42.3,39.47L42.3,39.47z M66.99,39.47h13.59v43.95 l-13.59,0V39.47L66.99,39.47L66.99,39.47z M97.42,25.46c-9.21-9.21-21.93-14.9-35.98-14.9c-14.05,0-26.78,5.7-35.98,14.9 c-9.21,9.21-14.9,21.93-14.9,35.98s5.7,26.78,14.9,35.98c9.21,9.21,21.93,14.9,35.98,14.9c14.05,0,26.78-5.7,35.98-14.9 c9.21-9.21,14.9-21.93,14.9-35.98S106.63,34.66,97.42,25.46L97.42,25.46z" />
+                </g>
+              </svg>
+            ) : (
+              <svg
+                className="play-btn"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 311.69 311.69"
+              >
+                <path d="M155.84,0A155.85,155.85,0,1,0,311.69,155.84,155.84,155.84,0,0,0,155.84,0Zm0,296.42A140.58,140.58,0,1,1,296.42,155.84,140.58,140.58,0,0,1,155.84,296.42Z"></path>
+                <polygon points="218.79 155.84 119.22 94.34 119.22 217.34 218.79 155.84"></polygon>
+              </svg>
+            )}
           </div>
         </div>
       )}
