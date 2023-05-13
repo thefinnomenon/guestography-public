@@ -1,10 +1,30 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
 
 export default function SuccessPage() {
+  const router = useRouter();
+  const { type } = router.query;
+
+  const title = type === "schedule" ? "Event Scheduled" : "Upload Success";
+  let message;
+  switch (type) {
+    case "schedule":
+      message =
+        "Thanks for scheduling your event with Guestography! You are all set, we will take it from here. Feel free to reach out if you need anything else.";
+      break;
+    case "interview_upload":
+      message =
+        "Thanks for uploading your interview! You can close this page and get back to the event.";
+      break;
+    case "media_upload":
+      message =
+        "Thanks for uploading your photos & videos! Keep an eye out for a message from us containing a link to the gallery page for the event.";
+  }
+
   return (
     <div>
       <Head>
-        <title>Upload Success</title>
+        <title>{title}</title>
         <meta name="description" content={`Upload was successful`} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -78,10 +98,11 @@ export default function SuccessPage() {
                 fill="url(#85737c0e-0916-41d7-917f-596dc7edfa27)"
               />
             </svg>
-            <div className="flex justify-center items-center h-full">
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Success!
+            <div className="flex flex-col justify-center items-center h-full">
+              <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-6">
+                {title}
               </h1>
+              <p className="text-xl text-center">{message}</p>
             </div>
           </div>
         </div>

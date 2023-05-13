@@ -117,7 +117,7 @@ export default function Home(props: Props) {
       });
 
       setIsSubmitting(false);
-      router.push(`/success`);
+      router.push(`/success?eventId=${eventId}&guestId=${guestId}&type=media_upload`);
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);

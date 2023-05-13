@@ -70,7 +70,7 @@ export default async function handler(
       customer_email: event.email,
       line_items,
       metadata: { eventId },
-      success_url: `${req.headers.origin}/checkout/success?eventId=${eventId}`,
+      success_url: `${req.headers.origin}/checkout/success?eventId=${eventId}&type=schedule`,
       cancel_url: `${req.headers.origin}/event?eventId=${eventId}`,
     };
 
