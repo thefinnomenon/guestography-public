@@ -5,11 +5,14 @@ import { limit } from "./parallel";
 import { defineSecret } from "firebase-functions/params";
 import path from "path";
 import os from "os";
-import fs from 'fs';
-import { Readable } from 'stream';
-import { finished } from 'stream/promises';
+const fs = require("fs").promises;
+const util = require("node:util");
+const exec = util.promisify(require("node:child_process").exec);
 import { getPlaiceholder } from "plaiceholder";
+import { S3 } from "@aws-sdk/client-s3";
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
+const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
+const cloudflareSecretAccessKey = defineSecret("CLOUDFLARE_SECRET_ACCESS_KEY");
 
 admin.initializeApp();
 
@@ -345,44 +348,67 @@ const getEarlyNextMorning = (start: string) => {
   return d.toISOString().slice(0, -1);
 };
 
-// Handle event status change
+// On media upload, create placeholders
 export const handleMediaUpload = functions
+  .runWith({ secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey] })
   .firestore.document("events/{eventId}/media/{mediaId}")
   .onCreate(async (mediaSnapshot, context) => {
     const { eventId, mediaId } = context.params;
     const media = mediaSnapshot.data() as any;
 
-    console.log(`New media ${mediaId} created for event ${eventId}`, media)
+    console.log(`New media ${mediaId} created for event ${eventId}`, media);
 
     const db = admin.firestore();
-    const tempFilePath = path.join(os.tmpdir(), mediaId);
     switch (media.metadata.type) {
-      case 'image':
+      case "image":
         try {
           const { base64 } = await getPlaiceholder(media.publicUrl);
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
-            .update({ "blurDataURL": base64 });
+            .update({ blurDataURL: base64 });
         } catch (error) {
-          console.log('Failed to generate and store blurhash', error);
+          console.log("Failed to generate blur placeholder for image", error);
         }
-        break
-      case 'video':
-        // TODO: Generate and upload video poster and store url in video metadata
-        // await downloadFile(media.publicUrl, tempFilePath);
+        break;
+      case "video":
+        try {
+          const posterFilename = `${mediaId.replace(".", "-")}-poster.jpg`;
+          const tempFilePath = path.join(os.tmpdir(), posterFilename);
+          await exec(`ffmpeg -i ${media.publicUrl} -vframes 1 ${tempFilePath}`);
 
-        // await fs.unlinkSync(tempFilePath);
-        break
-      default: 
-        console.error('Unhandled media type')
+          const { base64 } = await getPlaiceholder(tempFilePath, { dir: "/" });
+
+          const poster = await fs.readFile(tempFilePath);
+
+          const r2Key = `events/${eventId}/posters/${posterFilename}`;
+
+          const r2 = new S3({
+            region: "auto",
+            endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+            credentials: {
+              accessKeyId: cloudflareAccessKeyId.value(),
+              secretAccessKey: cloudflareSecretAccessKey.value(),
+            },
+          });
+
+          await r2.putObject({
+            Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
+            Key: r2Key,
+            ContentType: "image/jpeg",
+            Body: poster,
+          });
+
+          const posterUrl =
+          `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
+
+          await db
+            .doc(`events/${eventId}/media/${mediaId}`)
+            .update({ blurDataURL: base64, posterUrl });
+        } catch (error) {
+          console.error("Failed to generate poster for video", error);
+        }
+        break;
+      default:
+        console.error("Unhandled media type");
     }
-  })
-
-  const downloadFile = async (fileUrl: string, destination: string) => {
-    const stream = fs.createWriteStream(destination);
-    const { body } = await fetch(fileUrl);
-    if (!body) throw Error("Response body is null");
-    /* @ts-ignore */
-    await finished(Readable.fromWeb(body).pipe(stream));
-    console.log(`Media file downladed to ${destination}`);
-  }
+  });

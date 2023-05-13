@@ -30,5 +30,6 @@ module.exports = {
     "no-case-declarations": 0,
     "@typescript-eslint/no-explicit-any": 0,
     "quote-props": 0,
+    "@typescript-eslint/no-var-requires": 0,
   },
 };

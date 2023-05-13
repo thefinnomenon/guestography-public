@@ -82,6 +82,7 @@ export interface Media {
   id: string;
   guestId: string;
   blurDataURL?: string;
+  posterUrl?: string;
   publicUrl: string;
   url: string;
   metadata: Metadata;

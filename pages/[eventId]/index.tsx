@@ -43,7 +43,7 @@ export default function Home(props: Props) {
 
     const slides = media.map(
       // @ts-ignore
-      ({ alt: type, title: guest, src, width, height, blurDataURL }) => {
+      ({ alt: type, title: guest, src, width, height, blurDataURL, poster }) => {
         if (type === "video") {
           return {
             type,
@@ -51,6 +51,8 @@ export default function Home(props: Props) {
             description: `Video by ${guest}`,
             width,
             height,
+            poster,
+            preload: 'none',
             sources: [
               {
                 src,
@@ -68,6 +70,8 @@ export default function Home(props: Props) {
         }
       }
     );
+
+    console.log('SLIDES: ', slides)
 
     setSlides(slides);
   }, [media]);
@@ -305,9 +309,11 @@ const renderPhoto: RenderPhoto = ({
               // @ts-ignore
               ref={videoRef}
               className="rounded-md"
-              preload="metadata"
+              preload="none"
+              // @ts-ignore
+              poster={photo.poster}
               onEnded={() => setIsPlaying(false)}
-              src={`${src}#t=0.001`}
+              src={src}
               style={{ ...style, width: "100%", padding: 0 }}
             />
           </div>
@@ -479,6 +485,7 @@ export async function getStaticProps(
         // react-photo-gallery doesn't let us pass in custom props for render
         // so we will just hijack these ones
         blurDataURL: m.blurDataURL || null,
+        poster: m.posterUrl || null,
         alt: m.metadata.type,
         title: m.guestId,
       };
