@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { CloudTasksClient } from "@google-cloud/tasks";
+const Sentry = require("@sentry/serverless");
 import { limit } from "./parallel";
 import { defineSecret } from "firebase-functions/params";
 import path from "path";
@@ -17,6 +18,11 @@ const cloudflareSecretAccessKey = defineSecret("CLOUDFLARE_SECRET_ACCESS_KEY");
 admin.initializeApp();
 
 const client = new CloudTasksClient();
+
+Sentry.GCPFunction.init({
+  dsn: "https://52517b2e72d642219339750bae5900eb@o371187.ingest.sentry.io/4505183181733888",
+  tracesSampleRate: 1.0,
+});
 
 // Represents 30 days in seconds
 const MAX_SCHEDULE_LIMIT = 30 * 60 * 60 * 24;
@@ -61,27 +67,45 @@ export const handleEventStatusChange = functions
           );
 
           try {
+            // Update event status to WAITING
             await db
               .collection("events")
               .doc(eventId)
               .update({ status: "WAITING" });
             console.log(`Updated event ${eventId} with status WAITING`);
-          } catch (e) {
-            console.error(e);
+          } catch (error) {
+            console.error("Failed to set event to WAITING", error);
+            Sentry.captureException(error);
+            await Sentry.flush(2000);
+            throw error;
           }
           return;
         }
 
         // For events within 30 days, we can just schedule them now
-        await scheduleEvents(webhookSecret.value(), [
-          {
-            eventId,
-            event,
-          },
-        ]);
+        try {
+          // Schedule event
+          await scheduleEvents(webhookSecret.value(), [
+            {
+              eventId,
+              event,
+            },
+          ]);
+          console.log(`Scheduled event ${eventId}`);
+        } catch (error) {
+          console.error("Failed to schedule event", error);
+          Sentry.captureException(error);
+          await Sentry.flush(2000);
+          throw error;
+        }
         break;
       default:
-        console.log(`Event ${eventId} has unhandled status ${event.status}`);
+        console.error(`Event ${eventId} has unhandled status ${event.status}`);
+        Sentry.captureException(
+          `Event ${eventId} has unhandled status ${event.status}`
+        );
+        await Sentry.flush(2000);
+        throw new Error(`Event ${eventId} has unhandled status ${event.status}`);
     }
   });
 
@@ -93,22 +117,38 @@ exports.scheduledWaitingEvents = functions
   .timeZone("America/New_York")
   .onRun(async () => {
     console.log("Scheduling waiting events...");
-    const db = admin.firestore();
 
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    try {
+      const db = admin.firestore();
 
-    const eventsToBeScheduledRes = await db
-      .collection("events")
-      .where("status", "==", "WAITING")
-      .where("date", "<", thirtyDaysFromNow.toISOString())
-      .get();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
-    const events = eventsToBeScheduledRes.docs.map((event: any) => {
-      return { eventId: event.id, event: event.data() };
-    });
+      // Query for WAITING events that start within 30 days
+      const eventsToBeScheduledRes = await db
+        .collection("events")
+        .where("status", "==", "WAITING")
+        .where("date", "<", thirtyDaysFromNow.toISOString())
+        .get();
 
-    await scheduleEvents(webhookSecret.value(), events);
+      console.log(
+        `Found ${eventsToBeScheduledRes.size} events that need to be scheduled.`
+      );
+
+      // Format events
+      const events = eventsToBeScheduledRes.docs.map((event: any) => {
+        return { eventId: event.id, event: event.data() };
+      });
+
+      // Schedule events
+      await scheduleEvents(webhookSecret.value(), events);
+      console.log('Scheduled waiting events');
+    } catch (error) {
+      console.error("Failed to schedule waiting events", error);
+      Sentry.captureException(error);
+      await Sentry.flush(2000);
+      throw error;
+    }
   });
 
 const scheduleEvents = async (webhookSecret: string, events: any) => {
@@ -124,39 +164,63 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
     "guestography-tasks"
   );
 
+  // Create event scheduling function array
   const eventsFuncArr = await events.map((eventObj: any) => {
     return async () => {
-      const tasks = createTasks(
-        webhookSecret,
-        eventObj.eventId,
-        eventObj.event
-      );
-      const tasksFuncArr = await tasks.map((task) => {
-        return () => scheduleTask(parent, task);
-      });
-      const scheduleTasksRes = await limit(tasksFuncArr, 10);
-      console.log("Tasks scheduling results: ", scheduleTasksRes);
-
       try {
+        // Create tasks
+        const tasks = createTasks(
+          webhookSecret,
+          eventObj.eventId,
+          eventObj.event
+        );
+        console.log(`Created ${tasks.length} tasks`);
+
+        // Schedule tasks in parallel
+        const tasksFuncArr = await tasks.map((task) => {
+          return async () => await scheduleTask(parent, task);
+        });
+        const scheduleTasksRes = await limit(tasksFuncArr, 10);
+        console.log(
+          `Scheduled ${scheduleTasksRes.filter(res => res)}/${tasks.length} tasks`
+        );
+
+        // Update event status to scheduled
         await db
           .collection("events")
           .doc(eventObj.eventId)
           .update({ status: "SCHEDULED" });
         console.log(`Updated event ${eventObj.eventId} with status SCHEDULED`);
-      } catch (e) {
-        console.error(e);
+
+        return true;
+      } catch (error) {
+        console.error("Failed to schedule event", error);
+        Sentry.captureException(error);
+        await Sentry.flush(2000);
+
+        return false;
       }
     };
   });
-  const scheduleEventsRes = await limit(eventsFuncArr, 10);
 
-  console.log("Events Scheduling results: ", scheduleEventsRes);
+  // Schedule events in parallel
+  const scheduleEventsRes = await limit(eventsFuncArr, 10);
+  console.log(
+    `Scheduled ${scheduleEventsRes.filter((res) => res)}/${events.length} events`
+  );
 };
 
 const scheduleTask = async (parent: any, task: any) => {
-  const [response] = await client.createTask({ parent, task });
-  console.log(`Scheduled task ${response.name}`);
-  return response.name;
+  try {
+    const [response] = await client.createTask({ parent, task });
+    console.log(`Scheduled task ${response.name}`);
+    return true;
+  } catch (error) {
+    console.error("Failed to schedule task", error);
+    Sentry.captureException(error);
+    await Sentry.flush(2000);
+    return false;
+  }
 };
 
 const createTasks = (secret: string, eventId: string, event: any) => {
@@ -306,24 +370,17 @@ const formatTime = (date: string) => {
   const currentDate = new Date();
 
   // Schedule time can not be in the past.
-  if (convertedDate < currentDate) {
-    console.error("Scheduled date in the past.");
-  } else if (convertedDate > currentDate) {
-    const dateDiffInSeconds =
+  if (convertedDate <= currentDate) throw new Error("Scheduled date in the past.");
+  
+  const dateDiffInSeconds =
       (convertedDate.getTime() - currentDate.getTime()) / 1000;
 
-    // Restrict schedule time to the 30 day maximum.
-    if (dateDiffInSeconds > MAX_SCHEDULE_LIMIT) {
-      console.error("Schedule time is over 30 day maximum.");
-      return null;
-    }
+  // Restrict schedule time to the 30 day maximum.
+  if (dateDiffInSeconds > MAX_SCHEDULE_LIMIT) throw new Error("Schedule time is over 30 day maximum.");
 
-    return (
-      dateDiffInSeconds + Date.now() / 1000 + getSecondsOffsetInMessageWindow()
-    );
-  }
-
-  return null;
+  return (
+    dateDiffInSeconds + Date.now() / 1000 + getSecondsOffsetInMessageWindow()
+  );
 };
 
 const formatBody = (payload: { [key: string]: any }) => {
@@ -358,30 +415,48 @@ export const handleMediaUpload = functions
 
     console.log(`New media ${mediaId} created for event ${eventId}`, media);
 
-    const db = admin.firestore();
     switch (media.metadata.type) {
       case "image":
+        console.log('New media is an image. Generating base64 placeholder.')
         try {
+          // Generate base64 placeholder for image
           const { base64 } = await getPlaiceholder(media.publicUrl);
+          console.log(`Generated base64 placeholder ${base64}`);
+
+          // Add base64 placeholder to media db entry
+          const db = admin.firestore();
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
             .update({ blurDataURL: base64 });
+          console.log(`Updated media entry with blurDataURL: ${base64}`);
         } catch (error) {
           console.log("Failed to generate blur placeholder for image", error);
+          Sentry.captureException(error);
+          await Sentry.flush(2000);
+          throw error;
         }
         break;
       case "video":
+        console.log("New media is a video. Generating poster and base64 placeholder.");
         try {
+          const db = admin.firestore();
           const posterFilename = `${mediaId.replace(".", "-")}-poster.jpg`;
           const tempFilePath = path.join(os.tmpdir(), posterFilename);
+
+          // Generate poster from first frame of interview video (via publicUrl)
+          // and save to tempFilePath
           await exec(`ffmpeg -i ${media.publicUrl} -vframes 1 ${tempFilePath}`);
+          console.log(`Generated poster at ${tempFilePath}`);
 
+          // Generate base64 placeholder for poster
           const { base64 } = await getPlaiceholder(tempFilePath, { dir: "/" });
+          console.log(`Generated poster placeholder: ${base64}`);
 
+          // Load poster from filesystem
           const poster = await fs.readFile(tempFilePath);
+          console.log(`Retrieved poster from filesystem`);
 
-          const r2Key = `events/${eventId}/posters/${posterFilename}`;
-
+          // Initiaize R2 client
           const r2 = new S3({
             region: "auto",
             endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -391,21 +466,29 @@ export const handleMediaUpload = functions
             },
           });
 
+          // Upload poster to R2
+          const r2Key = `events/${eventId}/posters/${posterFilename}`;
           await r2.putObject({
             Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
             Key: r2Key,
             ContentType: "image/jpeg",
             Body: poster,
           });
+          console.log(`Uploaded poster to R2 with key: ${r2Key}`);
 
-          const posterUrl =
-          `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
-
+          // Update interview entry with poster and placeholder
+          const posterUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
             .update({ blurDataURL: base64, posterUrl });
+          console.log(
+            `Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`
+          );
         } catch (error) {
           console.error("Failed to generate poster for video", error);
+          Sentry.captureException(error);
+          await Sentry.flush(2000);
+          throw error;
         }
         break;
       default:
@@ -413,7 +496,7 @@ export const handleMediaUpload = functions
     }
   });
 
-  // On generated interview video upload, create placeholder
+// On generated interview video upload, create poster and placeholder
 export const handleInterviewUpload = functions
   .runWith({ secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey] })
   .firestore.document("events/{eventId}/interviews/interview")
@@ -422,20 +505,27 @@ export const handleInterviewUpload = functions
     const interview = interviewSnapshot.data() as any;
 
     console.log(`Interview generated for event ${eventId}`, interview);
-
-    const db = admin.firestore();
+    console.log(`Generating poster and placeholder...`);
 
     try {
+      const db = admin.firestore();
       const posterFilename = "interview-poster.jpg";
       const tempFilePath = path.join(os.tmpdir(), posterFilename);
+
+      // Generate poster from first frame of interview video (via publicUrl)
+      // and save to tempFilePath
       await exec(`ffmpeg -i ${interview.publicUrl} -vframes 1 ${tempFilePath}`);
+      console.log(`Generated poster at ${tempFilePath}`);
 
+      // Generate base64 placeholder for poster
       const { base64 } = await getPlaiceholder(tempFilePath, { dir: "/" });
+      console.log(`Generated poster placeholder: ${base64}`);
 
+      // Load poster from filesystem
       const poster = await fs.readFile(tempFilePath);
+      console.log(`Retrieved poster from filesystem`);
 
-      const r2Key = `events/${eventId}/posters/${posterFilename}`;
-
+      // Initiaize R2 client
       const r2 = new S3({
         region: "auto",
         endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -445,20 +535,27 @@ export const handleInterviewUpload = functions
         },
       });
 
+      // Upload poster to R2
+      const r2Key = `events/${eventId}/posters/${posterFilename}`;
       await r2.putObject({
         Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
         Key: r2Key,
         ContentType: "image/jpeg",
         Body: poster,
       });
+      console.log(`Uploaded poster to R2 with key: ${r2Key}`);
 
+      // Update interview entry with poster and placeholder
       const posterUrl =
       `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
-
       await db
         .doc(`events/${eventId}/interviews/interview`)
         .update({ blurDataURL: base64, posterUrl });
+      console.log(`Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`);
     } catch (error) {
       console.error("Failed to generate poster for interview", error);
+      Sentry.captureException(error);
+      await Sentry.flush(2000);
+      throw error;
     }
   });

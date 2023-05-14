@@ -30,7 +30,8 @@
     "firebase-functions": "^4.4.0",
     "node-firestore-import-export": "^1.1.0",
     "plaiceholder": "^2.5.0",
-    "sharp": "^0.32.1"
+    "sharp": "^0.32.1",
+    "@sentry/serverless": "^7"
   },
   "devDependencies": {
     "@types/async": "^3.2.18",
