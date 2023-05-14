@@ -71,8 +71,6 @@ export default function Home(props: Props) {
       }
     );
 
-    console.log('SLIDES: ', slides)
-
     setSlides(slides);
   }, [media]);
 
@@ -415,29 +413,40 @@ const NextJsImage = ({ slide, rect }: any) => {
   );
 };
 
-const downloadMedia = async (src: string) => {
-  const media = await fetch(src, { cache: "no-store" });
-  const mediaBlob = await media.blob();
-  const mediaURL = URL.createObjectURL(mediaBlob);
+// Use share dialog for iPhone & trigger normal download for other devices
+const downloadMedia = async (src: string) => { 
+  const response = await fetch(src, { cache: "no-store" }); 
+  const blob = await response.blob();
+  const mediaURL = URL.createObjectURL(blob);
   const mediaFilename = getFilenameFromSource(src);
+  const file = new File([blob], mediaFilename, {
+    type: blob.type,
+  });
+
   const mediaShare = {
-    files: [new File([mediaBlob], mediaFilename)],
+    title: mediaFilename,
+    files: [file],
   };
 
-  if (navigator.canShare && navigator.canShare(mediaShare)) {
-    try {
-      await navigator.share(mediaShare);
-    } catch (error) {
-      console.error(error);
-    }
-  } else {
-    const link = document.createElement("a");
-    link.href = mediaURL;
-    link.download = mediaFilename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+  // Note: Webkit bug where first promise never resolves
+  //       so web share only works once...
+  // if (
+  //   navigator.canShare &&
+  //   navigator.canShare(mediaShare) &&
+  //   window?.navigator?.userAgent.match(/iphone/i)
+  // ) {
+  //   try {
+  //     await navigator.share(mediaShare);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // } else {
+  const link = document.createElement("a");
+  link.href = mediaURL;
+  link.download = mediaFilename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 const getFilenameFromSource = (src: string) => {
