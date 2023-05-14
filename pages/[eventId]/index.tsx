@@ -211,7 +211,14 @@ export default function Home(props: Props) {
                   open={index >= 0}
                   index={index}
                   close={() => setIndex(-1)}
-                  plugins={[Fullscreen, Slideshow, Thumbnails, Zoom, Video]}
+                  plugins={[
+                    Fullscreen,
+                    Slideshow,
+                    Thumbnails,
+                    Zoom,
+                    Video,
+                    Download,
+                  ]}
                   render={{ slide: NextJsImage, buttonZoom: () => <div /> }}
                   thumbnails={{
                     imageFit: "cover",
