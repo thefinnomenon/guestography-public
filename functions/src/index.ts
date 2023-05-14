@@ -21,6 +21,7 @@ const client = new CloudTasksClient();
 
 Sentry.GCPFunction.init({
   dsn: "https://52517b2e72d642219339750bae5900eb@o371187.ingest.sentry.io/4505183181733888",
+  enabled: !process.env.FUNCTIONS_EMULATOR,
   tracesSampleRate: 1.0,
 });
 
