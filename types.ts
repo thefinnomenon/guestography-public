@@ -74,6 +74,7 @@ export interface Interview {
   guestId: string;
   guest: GuestTag[];
   publicUrl: string;
+  posterUrl?: string;
   url: string;
   metadata: Metadata;
 }

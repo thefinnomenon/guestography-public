@@ -164,7 +164,8 @@ export default function Home(props: Props) {
                     <video
                       className="rounded-md"
                       src={`${interview.publicUrl}#t=0.001`}
-                      preload="metadata"
+                      preload="none"
+                      poster={interview.posterUrl}
                       controls
                     />
                     <button

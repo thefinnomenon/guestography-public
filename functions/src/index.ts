@@ -412,3 +412,53 @@ export const handleMediaUpload = functions
         console.error("Unhandled media type");
     }
   });
+
+  // On generated interview video upload, create placeholder
+export const handleInterviewUpload = functions
+  .runWith({ secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey] })
+  .firestore.document("events/{eventId}/interviews/interview")
+  .onCreate(async (interviewSnapshot, context) => {
+    const { eventId } = context.params;
+    const interview = interviewSnapshot.data() as any;
+
+    console.log(`Interview generated for event ${eventId}`, interview);
+
+    const db = admin.firestore();
+
+    try {
+      const posterFilename = "interview-poster.jpg";
+      const tempFilePath = path.join(os.tmpdir(), posterFilename);
+      await exec(`ffmpeg -i ${interview.publicUrl} -vframes 1 ${tempFilePath}`);
+
+      const { base64 } = await getPlaiceholder(tempFilePath, { dir: "/" });
+
+      const poster = await fs.readFile(tempFilePath);
+
+      const r2Key = `events/${eventId}/posters/${posterFilename}`;
+
+      const r2 = new S3({
+        region: "auto",
+        endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+        credentials: {
+          accessKeyId: cloudflareAccessKeyId.value(),
+          secretAccessKey: cloudflareSecretAccessKey.value(),
+        },
+      });
+
+      await r2.putObject({
+        Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
+        Key: r2Key,
+        ContentType: "image/jpeg",
+        Body: poster,
+      });
+
+      const posterUrl =
+      `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
+
+      await db
+        .doc(`events/${eventId}/interviews/interview`)
+        .update({ blurDataURL: base64, posterUrl });
+    } catch (error) {
+      console.error("Failed to generate poster for interview", error);
+    }
+  });
