@@ -39,3 +39,5 @@ next-env.d.ts
 functions/firebase-debug.log
 functions/pubsub-debug.log
 functions/firestore-debug.log
+# Sentry Auth Token
+.sentryclirc
