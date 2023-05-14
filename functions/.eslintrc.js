@@ -31,5 +31,6 @@ module.exports = {
     "@typescript-eslint/no-explicit-any": 0,
     "quote-props": 0,
     "@typescript-eslint/no-var-requires": 0,
+    "max-len": ["error", { "code": 120 }],
   },
 };

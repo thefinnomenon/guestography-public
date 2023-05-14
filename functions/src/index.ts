@@ -143,7 +143,7 @@ exports.scheduledWaitingEvents = functions
 
       // Schedule events
       await scheduleEvents(webhookSecret.value(), events);
-      console.log('Scheduled waiting events');
+      console.log("Scheduled waiting events");
     } catch (error) {
       console.error("Failed to schedule waiting events", error);
       Sentry.captureException(error);
@@ -183,7 +183,7 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
         });
         const scheduleTasksRes = await limit(tasksFuncArr, 10);
         console.log(
-          `Scheduled ${scheduleTasksRes.filter(res => res)}/${tasks.length} tasks`
+          `Scheduled ${scheduleTasksRes.filter((res) => res)}/${tasks.length} tasks`
         );
 
         // Update event status to scheduled
@@ -372,7 +372,7 @@ const formatTime = (date: string) => {
 
   // Schedule time can not be in the past.
   if (convertedDate <= currentDate) throw new Error("Scheduled date in the past.");
-  
+
   const dateDiffInSeconds =
       (convertedDate.getTime() - currentDate.getTime()) / 1000;
 
@@ -418,7 +418,7 @@ export const handleMediaUpload = functions
 
     switch (media.metadata.type) {
       case "image":
-        console.log('New media is an image. Generating base64 placeholder.')
+        console.log("New media is an image. Generating base64 placeholder.");
         try {
           // Generate base64 placeholder for image
           const { base64 } = await getPlaiceholder(media.publicUrl);
@@ -455,7 +455,7 @@ export const handleMediaUpload = functions
 
           // Load poster from filesystem
           const poster = await fs.readFile(tempFilePath);
-          console.log(`Retrieved poster from filesystem`);
+          console.log("Retrieved poster from filesystem");
 
           // Initiaize R2 client
           const r2 = new S3({
@@ -506,7 +506,7 @@ export const handleInterviewUpload = functions
     const interview = interviewSnapshot.data() as any;
 
     console.log(`Interview generated for event ${eventId}`, interview);
-    console.log(`Generating poster and placeholder...`);
+    console.log("Generating poster and placeholder...");
 
     try {
       const db = admin.firestore();
@@ -524,7 +524,7 @@ export const handleInterviewUpload = functions
 
       // Load poster from filesystem
       const poster = await fs.readFile(tempFilePath);
-      console.log(`Retrieved poster from filesystem`);
+      console.log("Retrieved poster from filesystem");
 
       // Initiaize R2 client
       const r2 = new S3({
