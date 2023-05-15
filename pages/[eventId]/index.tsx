@@ -20,6 +20,8 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import Video from "yet-another-react-lightbox/plugins/video";
 import Download from "yet-another-react-lightbox/plugins/download";
+import Captions from "yet-another-react-lightbox/plugins/captions";
+import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { useContext, useEffect, useRef, useState } from "react";
 import { MdOutlineFileDownload } from "react-icons/md";
@@ -54,11 +56,12 @@ export default function Home(props: Props) {
           return {
             type,
             guest,
-            description: `Video by ${guest}`,
+            title: `Video by ${getGuestNameFromId(guest)}`,
+            description: `Video by ${getGuestNameFromId(guest)}`,
             width,
             height,
             poster,
-            preload: 'none',
+            preload: "none",
             sources: [
               {
                 src,
@@ -70,6 +73,8 @@ export default function Home(props: Props) {
             src,
             width,
             height,
+            title:`Image by ${getGuestNameFromId(guest)}`,
+            description: `Image by ${getGuestNameFromId(guest)}`,
             blurDataURL,
             alt: guest,
           };
@@ -169,20 +174,31 @@ export default function Home(props: Props) {
                       id="interview-video"
                       className="rounded-md"
                       onPlay={() => {
-                        track('Interview video played', { eventId, guestId })
+                        track("Interview video played", { eventId, guestId });
                       }}
                       onTimeUpdate={() => {
-                        const video = document.getElementById('interview-video') as HTMLVideoElement;
-                        const percentageComplete = Math.floor(video.currentTime / video.duration * 10);
-                        if (percentageComplete > interviewVideoPercentageComplete) { 
-                          setInterviewVideoPercentageComplete(percentageComplete);
-                          track(`${percentageComplete}% of interview video watched`, { eventId, guestId })
+                        const video = document.getElementById(
+                          "interview-video"
+                        ) as HTMLVideoElement;
+                        const percentageComplete = Math.floor(
+                          (video.currentTime / video.duration) * 10
+                        );
+                        if (
+                          percentageComplete > interviewVideoPercentageComplete
+                        ) {
+                          setInterviewVideoPercentageComplete(
+                            percentageComplete
+                          );
+                          track(
+                            `${percentageComplete}% of interview video watched`,
+                            { eventId, guestId }
+                          );
                         }
                       }}
                       onEnded={() => {
-                        track('Interview video ended', { eventId, guestId })
+                        track("Interview video ended", { eventId, guestId });
                       }}
-                      src={`${interview.publicUrl}#t=0.001`}
+                      src={`${interview.publicUrl}`}
                       preload="none"
                       poster={interview.posterUrl}
                       controls
@@ -194,7 +210,7 @@ export default function Home(props: Props) {
                         setIsDownloadingInterview(true);
                         await downloadMedia(interview.publicUrl);
                         setIsDownloadingInterview(false);
-                        track('Interview downloaded', { eventId, guestId })
+                        track("Interview downloaded", { eventId, guestId });
                       }}
                       disabled={isDownloadingInterview}
                     >
@@ -241,7 +257,14 @@ export default function Home(props: Props) {
                       Zoom,
                       Video,
                       Download,
+                      Captions,
                     ]}
+                    download={{
+                      download: async ({ slide, saveAs }) => {
+                        saveAs(slide.src);
+                      },
+                    }}
+                    captions={{ descriptionTextAlign: 'center' }}
                     render={{ slide: NextJsImage, buttonZoom: () => <div /> }}
                     thumbnails={{
                       imageFit: "cover",
@@ -491,6 +514,7 @@ const getFilenameFromSource = (src: string) => {
 };
 
 const getGuestNameFromId = (guestId: string) => {
+  if(!guestId) return 'Anonymous'
   return guestId.slice(0, guestId.lastIndexOf("-")).replace("-", " ").trim();
 };
 

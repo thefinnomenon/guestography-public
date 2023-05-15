@@ -294,3 +294,33 @@ a {
 .force-display {
   display: revert;
 }
+
+/* Hide slide description on desktop */
+.yarl__slide_description_container {
+  display: none !important;
+}
+
+/* Remove slide title background */
+.yarl__slide_title_container {
+  background: transparent !important;
+}
+
+/* Reduce caption padding to not cover video controls on mobile and hide title caption */
+@media screen and (max-width: 500px) {
+  .yarl__slide_description_container {
+    display: revert !important;
+  }
+
+  .yarl__slide_captions_container {
+    padding: 0 !important;
+  }
+
+  .yarl__thumbnails_container {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .yarl__slide_title_container {
+    display: none !important;
+  }
+}
