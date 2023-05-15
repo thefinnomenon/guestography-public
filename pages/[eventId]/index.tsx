@@ -61,6 +61,8 @@ export default function Home(props: Props) {
             width,
             height,
             poster,
+            download: true,
+            src,
             preload: "none",
             sources: [
               {
@@ -73,9 +75,10 @@ export default function Home(props: Props) {
             src,
             width,
             height,
-            title:`Image by ${getGuestNameFromId(guest)}`,
+            title: `Image by ${getGuestNameFromId(guest)}`,
             description: `Image by ${getGuestNameFromId(guest)}`,
             blurDataURL,
+            download: true,
             alt: guest,
           };
         }
@@ -260,8 +263,8 @@ export default function Home(props: Props) {
                       Captions,
                     ]}
                     download={{
-                      download: async ({ slide, saveAs }) => {
-                        saveAs(slide.src);
+                      download: async ({ slide }) => {
+                        await downloadMedia(slide.src);
                       },
                     }}
                     captions={{ descriptionTextAlign: 'center' }}
