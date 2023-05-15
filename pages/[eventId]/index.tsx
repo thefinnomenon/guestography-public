@@ -21,8 +21,11 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import Video from "yet-another-react-lightbox/plugins/video";
 import Download from "yet-another-react-lightbox/plugins/download";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { MdOutlineFileDownload } from "react-icons/md";
+import { track } from "../../lib/mixpanel";
+import { useRouter } from "next/router";
+import { EventAndGuestContext } from "../../context/EventAndGuestContext";
 
 interface Props {
   title: string;
@@ -32,10 +35,13 @@ interface Props {
 }
 
 export default function Home(props: Props) {
-  const { title, interview, media } = props;
+  const router = useRouter();
+  const { guestId } = router.query as { guestId: string};
+  const { title, interview, media, eventId } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
   const [isDownloadingInterview, setIsDownloadingInterview] = useState(false);
+  const [interviewVideoPercentageComplete, setInterviewVideoPercentageComplete] = useState(0);
   const [downloadList, setDownloadList] = useState([]);
 
   useEffect(() => {
@@ -160,7 +166,22 @@ export default function Home(props: Props) {
                   <h2 className="mb-4">Interview</h2>
                   <div className="relative">
                     <video
+                      id="interview-video"
                       className="rounded-md"
+                      onPlay={() => {
+                        track('Interview video played', { eventId, guestId })
+                      }}
+                      onTimeUpdate={() => {
+                        const video = document.getElementById('interview-video') as HTMLVideoElement;
+                        const percentageComplete = Math.floor(video.currentTime / video.duration * 10);
+                        if (percentageComplete > interviewVideoPercentageComplete) { 
+                          setInterviewVideoPercentageComplete(percentageComplete);
+                          track(`${percentageComplete}% of interview video watched`, { eventId, guestId })
+                        }
+                      }}
+                      onEnded={() => {
+                        track('Interview video ended', { eventId, guestId })
+                      }}
                       src={`${interview.publicUrl}#t=0.001`}
                       preload="none"
                       poster={interview.posterUrl}
@@ -173,6 +194,7 @@ export default function Home(props: Props) {
                         setIsDownloadingInterview(true);
                         await downloadMedia(interview.publicUrl);
                         setIsDownloadingInterview(false);
+                        track('Interview downloaded', { eventId, guestId })
                       }}
                       disabled={isDownloadingInterview}
                     >
@@ -188,45 +210,47 @@ export default function Home(props: Props) {
                   </div>
                 </>
               )}
-              <h2 className="mt-8 mb-4">Media</h2>
-              {media && (
-                <PhotoAlbum
-                  layout="masonry"
-                  photos={media}
-                  columns={(containerWidth) => {
-                    if (containerWidth < 400) return 2;
-                    if (containerWidth < 800) return 3;
-                    return 4;
-                  }}
-                  // @ts-ignore
-                  renderPhoto={renderPhoto}
-                  onClick={({ index }) => setIndex(index)}
-                  defaultContainerWidth={1200}
-                  sizes={{ size: "calc(100vw - 240px)" }}
-                />
-              )}
-              {slides && (
-                <Lightbox
-                  slides={slides}
-                  open={index >= 0}
-                  index={index}
-                  close={() => setIndex(-1)}
-                  plugins={[
-                    Fullscreen,
-                    Slideshow,
-                    Thumbnails,
-                    Zoom,
-                    Video,
-                    Download,
-                  ]}
-                  render={{ slide: NextJsImage, buttonZoom: () => <div /> }}
-                  thumbnails={{
-                    imageFit: "cover",
-                    padding: 0,
-                    showToggle: true,
-                  }}
-                />
-              )}
+              <EventAndGuestContext.Provider value={{ eventId, guestId }}>
+                <h2 className="mt-8 mb-4">Media</h2>
+                {media && (
+                  <PhotoAlbum
+                    layout="masonry"
+                    photos={media}
+                    columns={(containerWidth) => {
+                      if (containerWidth < 400) return 2;
+                      if (containerWidth < 800) return 3;
+                      return 4;
+                    }}
+                    // @ts-ignore
+                    renderPhoto={renderPhoto}
+                    onClick={({ index }) => setIndex(index)}
+                    defaultContainerWidth={1200}
+                    sizes={{ size: "calc(100vw - 240px)" }}
+                  />
+                )}
+                {slides && (
+                  <Lightbox
+                    slides={slides}
+                    open={index >= 0}
+                    index={index}
+                    close={() => setIndex(-1)}
+                    plugins={[
+                      Fullscreen,
+                      Slideshow,
+                      Thumbnails,
+                      Zoom,
+                      Video,
+                      Download,
+                    ]}
+                    render={{ slide: NextJsImage, buttonZoom: () => <div /> }}
+                    thumbnails={{
+                      imageFit: "cover",
+                      padding: 0,
+                      showToggle: true,
+                    }}
+                  />
+                )}
+              </EventAndGuestContext.Provider>
             </div>
           </div>
         </div>
@@ -254,6 +278,8 @@ const renderPhoto: RenderPhoto = ({
   const [isPlaying, setIsPlaying] = useState(false);
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const videoRef = useRef<HTMLVideoElement>();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { eventId, guestId } = useContext(EventAndGuestContext);
 
   return (
     <div
@@ -304,6 +330,8 @@ const renderPhoto: RenderPhoto = ({
           />
           <div
             onClick={(e) => {
+              track("Slider opened", { eventId, guestId, type, uploaderId: guest });
+
               if (isPlaying && videoRef.current) {
                 videoRef.current.pause();
                 setIsPlaying(false);
@@ -329,6 +357,7 @@ const renderPhoto: RenderPhoto = ({
             onClick={() => {
               if (!videoRef.current) return;
               if (videoRef.current.paused) {
+                track("Media video played inline", { eventId, guestId, uploaderId: guest });
                 videoRef.current.play();
                 setIsPlaying(true);
               } else {
@@ -369,6 +398,7 @@ const renderPhoto: RenderPhoto = ({
               setLoading(true);
               await downloadMedia(src);
               setLoading(false);
+              track("Media video downloaded", { eventId, guestId, type, uploaderId: guest });
             }}
             disabled={loading}
           >

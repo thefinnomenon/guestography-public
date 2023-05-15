@@ -3,9 +3,11 @@ import { ClipLoader } from "react-spinners";
 import Link from "next/link";
 import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { csvToJson } from "../utils/csv";
+import { track } from "../lib/mixpanel";
 const { Timestamp } = require("firebase/firestore");
 
 export default function Form() {
+  const [hasFormBeenEdited, setHasFormBeenEdited] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -259,6 +261,12 @@ export default function Form() {
         </div>
         <div className="mt-12">
           <form
+            onChange={() => {
+              if (!hasFormBeenEdited) {
+                track('Event form edited');
+                setHasFormBeenEdited(true);
+              }
+            }}
             onSubmit={handleFormSubmit}
             className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8"
           >

@@ -8,6 +8,7 @@ import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { BiError } from "react-icons/bi";
 import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
+import { track } from "../../../lib/mixpanel";
 
 interface Props {
   title: string;
@@ -50,6 +51,7 @@ export default function Home(props: Props) {
           return i !== tagIndex;
         })
       );
+      track("Guest tag deleted", { eventId, guestId });
     },
     [guestId, suggestions, tags]
   );
@@ -60,8 +62,9 @@ export default function Home(props: Props) {
       setSuggestions(
         suggestions.filter((suggestion) => newTag.id !== suggestion.id)
       );
+      track("Guest tag added", { eventId, guestId });
     },
-    [suggestions, tags]
+    [guestId, suggestions, tags]
   );
 
   // Handle Video
@@ -108,6 +111,16 @@ export default function Home(props: Props) {
     });
 
     setError(err);
+
+    track("Interview selected", { 
+      eventId,
+      guestId,
+      orientation: videoOrientation, 
+      videoHeight: video.videoHeight,
+      videoWidth: video.videoWidth, 
+      duration: video.duration, 
+      error: err 
+    });
   };
 
   useEffect(() => {
@@ -291,6 +304,12 @@ export default function Home(props: Props) {
                     type="file"
                     name="interview"
                     accept="video/*"
+                    onClick={() => {
+                      track("Select interview clicked", {
+                        eventId,
+                        guestId,
+                      });
+                    }}
                     onChange={(e) =>
                       handleInterviewSelection(
                         e.target.files && e.target.files[0]

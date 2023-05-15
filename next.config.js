@@ -9,6 +9,26 @@ module.exports = {
     locales: ["en"],
     defaultLocale: "en",
   },
+  async rewrites() {
+    return [
+      {
+        source: "/mixpanel/lib.min.js",
+        destination: "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js",
+      },
+      {
+        source: "/mixpanel/lib.js",
+        destination: "https://cdn.mxpnl.com/libs/mixpanel-2-latest.js",
+      },
+      {
+        source: "/mixpanel/decide",
+        destination: "https://decide.mixpanel.com/decide",
+      },
+      {
+        source: "/mixpanel/:slug",
+        destination: "https://api.mixpanel.com/:slug",
+      },
+    ];
+  },
 };
 
 

@@ -7,6 +7,7 @@ import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
 import { GoFileMedia } from "react-icons/go";
 import { MdOutlineCheckCircleOutline, MdErrorOutline } from "react-icons/md";
+import { track } from "../../../lib/mixpanel";
 
 interface Props {
   title: string;
@@ -158,6 +159,12 @@ export default function Home(props: Props) {
     );
 
     setMedia(mediaList);
+
+    track("Media selected", {
+      eventId,
+      guestId,
+      mediaMetadata: mediaList.map(media => media.metadata)
+    });
   };
 
   const getStatusIcon = (status: MediaStatus) => {
@@ -278,6 +285,12 @@ export default function Home(props: Props) {
                     name="interview"
                     accept="image/*, video/*"
                     multiple
+                    onClick={() => {
+                      track("Select media clicked", {
+                        eventId,
+                        guestId,
+                      });
+                    }}
                     onChange={(e) => handleMediaSelection(e.target.files)}
                     className="block w-full text-sm text-slate-500
     file:mr-4 file:py-2 file:px-4
