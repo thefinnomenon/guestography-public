@@ -8,7 +8,7 @@ import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { BiError } from "react-icons/bi";
 import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
-import { track, indentify } from "../../../lib/mixpanel";
+import { track, identify } from "../../../lib/mixpanel";
 
 interface Props {
   title: string;

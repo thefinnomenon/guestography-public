@@ -25,7 +25,7 @@ import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { useContext, useEffect, useRef, useState } from "react";
 import { MdOutlineFileDownload } from "react-icons/md";
-import { track, indentify} from "../../lib/mixpanel";
+import { track, identify} from "../../lib/mixpanel";
 import { useRouter } from "next/router";
 import { EventAndGuestContext } from "../../context/EventAndGuestContext";
 
