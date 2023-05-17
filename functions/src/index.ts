@@ -112,7 +112,7 @@ export const handleEventStatusChange = functions
             },
           ]);
           console.log(`Scheduled event ${eventId}`);
-          const eventForAnalytics = { ...event, guests: null, numberOfGuests: event.guests.length }
+          const eventForAnalytics = { ...event, guests: null, numberOfGuests: event.guests.length };
           mixpanel.track("Event scheduled", { event: eventForAnalytics });
         } catch (error) {
           console.error("Failed to schedule event", error);
@@ -470,7 +470,11 @@ export const handleMediaUpload = functions
             .doc(`events/${eventId}/media/${mediaId}`)
             .update({ blurDataURL: base64 });
           console.log(`Updated media entry with blurDataURL: ${base64}`);
-          mixpanel.track("Media uploaded", { eventId, guestId: media.guestId, type: 'image', metadata: media.metadata });
+          mixpanel.track("Media uploaded", {
+            eventId,
+            guestId: media.guestId,
+            type: "image",
+            metadata: media.metadata });
         } catch (error) {
           console.log("Failed to generate blur placeholder for image", error);
           Sentry.captureException(error);
@@ -530,7 +534,7 @@ export const handleMediaUpload = functions
             eventId,
             guestId: media.guestId,
             type: "video",
-            metadata: media.metadata
+            metadata: media.metadata,
           });
         } catch (error) {
           console.error("Failed to generate poster for video", error);
@@ -603,7 +607,7 @@ export const handleInterviewUpload = functions
       mixpanel.track("Interview uploaded", {
         eventId,
         guestId: interview.guestId,
-        metadata: interview.metadata
+        metadata: interview.metadata,
       });
     } catch (error) {
       console.error("Failed to generate poster for interview", error);
