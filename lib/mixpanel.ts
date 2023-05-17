@@ -1,12 +1,10 @@
 import mixpanel, { Dict, Query } from "mixpanel-browser";
 
-// TODO: Update for prod
 mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "", {
-  //api_host: "https://guestography.com/mixpanel",
-  api_host: "http://localhost:3000/mixpanel",
+  api_host: "https://guestography.com/mixpanel",
 });
 
-// if (process.env.NODE_ENV !== "production") mixpanel.disable();
+if (process.env.NODE_ENV !== "production") mixpanel.disable();
 
 export const track = (name: string, props?: Dict) => mixpanel.track(name, props);
 
