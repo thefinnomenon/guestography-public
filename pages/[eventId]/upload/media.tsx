@@ -25,23 +25,27 @@ interface MediaItem {
     type: "image" | "video";
     height: number;
     width: number;
+    lastModifiedAt: number;
+    duration?: number;
   };
 }
 
-const getImageSize = (dataURL: string) =>
-  new Promise<{ height: number; width: number }>((resolve) => {
+const getImageMetadata = (dataURL: string) =>
+  new Promise<{ height: number; width: number, duration?: number }>((resolve) => {
     const img = new Image();
     img.onload = () => {
+      
       resolve({
         height: img.height,
         width: img.width,
+        
       });
     };
     img.src = dataURL;
   });
 
-const getVideoSize = (dataURL: string) =>
-  new Promise<{ height: number; width: number }>((resolve) => {
+const getVideoMetadata = (dataURL: string) =>
+  new Promise<{ height: number; width: number, duration: number }>((resolve) => {
     const video = document.createElement("video");
     video.addEventListener(
       "loadedmetadata",
@@ -49,6 +53,7 @@ const getVideoSize = (dataURL: string) =>
         resolve({
           height: video.videoHeight,
           width: video.videoWidth,
+          duration: video.duration
         });
       },
       false
@@ -145,17 +150,18 @@ export default function Home(props: Props) {
           file.name.lastIndexOf(".") + 1,
           file.name.length
         );
+        const lastModifiedAt = file.lastModified;
         const type = file.type.includes("image") ? "image" : "video";
         const fileAsDataURL = URL.createObjectURL(file);
-        const { height, width } =
+        const { height, width, duration } =
           type === "image"
-            ? await getImageSize(fileAsDataURL)
-            : await getVideoSize(fileAsDataURL);
+            ? await getImageMetadata(fileAsDataURL)
+            : await getVideoMetadata(fileAsDataURL);
         return {
           file,
           status: "queued",
           signedUrl: urls[index],
-          metadata: { fileExt, type, height, width },
+          metadata: { fileExt, type, height, width, lastModifiedAt, duration },
         };
       })
     );

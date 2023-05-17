@@ -10,6 +10,8 @@ mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "", {
 
 export const track = (name: string, props?: Dict) => mixpanel.track(name, props);
 
+export const identify = (id: string) => mixpanel.identify(id);
+
 export const Mixpanel = {
   identify: (id: string) => {
     mixpanel.identify(id);

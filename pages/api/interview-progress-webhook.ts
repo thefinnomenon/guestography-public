@@ -87,6 +87,7 @@ export default async function handler(
           height: videoHeight,
           type: "video",
           fileExt: "mp4",
+          duration: outputDetails.DurationInMs
         },
         publicUrl,
         guests: [],
@@ -104,17 +105,6 @@ export default async function handler(
     console.error("Failed to delete from S3", error);
     throw error
   }
-
-  mixpanel.track("Interview video generated", {
-    eventId,
-    metadata: {
-      width: videoWidth,
-      height: videoHeight,
-      type: "video",
-      fileExt: "mp4",
-      duration: outputDetails.DurationInMs,
-    },
-  });
 
   res.status(200).send("okay");
 }

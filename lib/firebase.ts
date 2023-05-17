@@ -74,7 +74,7 @@ export const getMedia = async (eventId: string) => {
     const db = admin.firestore();
     const snapshot = await db
       .collection(`events/${eventId}/media`)
-      .orderBy("createdAt", "asc")
+      .orderBy("metadata.lastModifiedAt", "asc")
       .get();
     return snapshot.docs.map((doc) => {
       return {
