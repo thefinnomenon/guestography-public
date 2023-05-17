@@ -8,7 +8,7 @@ import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { BiError } from "react-icons/bi";
 import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
-import { track } from "../../../lib/mixpanel";
+import { track, indentify } from "../../../lib/mixpanel";
 
 interface Props {
   title: string;
@@ -20,8 +20,10 @@ interface Props {
 export default function Home(props: Props) {
   const { title, orientation, eventId, guests } = props;
   let guestId = "";
-  if (typeof window !== "undefined" && router.query.guestId)
+  if (typeof window !== "undefined" && router.query.guestId) {
     guestId = router.query.guestId as string;
+    identify(guestId);
+  }
   const defaultTag = guests
     ? guests.find((guest) => guest.id === guestId)
     : null;
@@ -53,7 +55,7 @@ export default function Home(props: Props) {
       );
       track("Guest tag deleted", { eventId, guestId });
     },
-    [guestId, suggestions, tags]
+    [eventId, guestId, suggestions, tags]
   );
 
   const onAddition = useCallback(
@@ -64,7 +66,7 @@ export default function Home(props: Props) {
       );
       track("Guest tag added", { eventId, guestId });
     },
-    [guestId, suggestions, tags]
+    [eventId, guestId, suggestions, tags]
   );
 
   // Handle Video

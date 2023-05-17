@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-// import serviceAccount from "../../lib/serviceAccountKey.json";
+import Mixpanel from "mixpanel";
+
+const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -31,8 +33,8 @@ export default async function handler(
 ) {
   const status = req.body.detail.status;
   if (status === "ERROR") {
-    res.status(500).send("Failed to create interview video");
-    return;
+    console.error("Failed to create interview video");
+    throw Error("Failed to create interview video", req.body);
   }
 
   const outputDetails = req.body.detail.outputGroupDetails[0].outputDetails[0];
@@ -51,8 +53,7 @@ export default async function handler(
     ).Body?.transformToByteArray();
   } catch (error) {
     console.error("Error while downloading object from S3", error);
-    res.status(500).send("Failed to download object from s3");
-    return;
+    throw error
   }
 
   // Upload interview to r2
@@ -66,8 +67,7 @@ export default async function handler(
     });
   } catch (error) {
     console.error("Failed to upload to R2", error);
-    res.status(500).send("Failed to upload to R2");
-    return;
+    throw error
   }
 
   // Add firebase record for interview
@@ -94,8 +94,7 @@ export default async function handler(
       });
   } catch (error) {
     console.error("Failed to create Firebase record", error);
-    res.status(500).send("Failed to create Firebase record");
-    return;
+    throw error
   }
 
   // Delete interview from S3
@@ -103,9 +102,19 @@ export default async function handler(
     await s3.deleteObject({ Bucket, Key });
   } catch (error) {
     console.error("Failed to delete from S3", error);
-    res.status(500).send("Failed to delete from S3");
-    return;
+    throw error
   }
+
+  mixpanel.track("Interview video generated", {
+    eventId,
+    metadata: {
+      width: videoWidth,
+      height: videoHeight,
+      type: "video",
+      fileExt: "mp4",
+      duration: outputDetails.DurationInMs,
+    },
+  });
 
   res.status(200).send("okay");
 }

@@ -5,6 +5,9 @@ import Stripe from "stripe";
 import { slugify } from "../../utils/format";
 import ShortUniqueId from "short-unique-id";
 import { Event } from "../../types";
+import Mixpanel from "mixpanel";
+
+const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -61,8 +64,6 @@ export default async function handler(
       quantity: event.guests.length,
     });
 
-  console.log("Line items: ", line_items);
-
   try {
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
@@ -75,28 +76,26 @@ export default async function handler(
     };
 
     checkoutSession = await stripe.checkout.sessions.create(params);
-  } catch (e: any) {
-    res.status(500).json(e.message);
-    return;
+  } catch (e) {
+    console.error("Failed to create Stripe checkout session", e);
+    throw(e);
   }
-
-  console.log("Created checkout session: ", checkoutSession.id);
 
   // Store event in db
   try {
     await db.collection("events").doc(eventId).create(event);
-    console.log("Created record for event: ", eventId);
   } catch (e) {
-    console.error(e);
-    res.status(500).json(e);
-    return;
+    console.error('Failed to create event', e);
+    throw e;
   }
 
   // Redirect to Stripe checkout page
-  if (checkoutSession.url)
+  if (checkoutSession.url) {
     res.status(200).json({ checkoutUrl: checkoutSession.url });
-  else
-    res.status(500).json({
-      message: "Failed to generate checkout session",
-    });
+    mixpanel.track('Event created', { eventId })
+  } else {
+    console.error("Failed to generate checkout session");
+    mixpanel.track("Failed to create event", { eventId });
+    throw Error("Failed to generate checkout session");
+  }
 }

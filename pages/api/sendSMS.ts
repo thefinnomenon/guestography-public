@@ -2,6 +2,9 @@ import { Twilio } from "twilio";
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import { Event } from "../../types";
+import Mixpanel from 'mixpanel';
+
+const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || '');
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -21,7 +24,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { type, eventId, guestId, secret } = req.body; // JSON.parse(req.body);
+  const { type, eventId, guestId, secret } = req.body;
 
   // Verify secret
   if (secret !== process.env.WEBHOOK_SECRET) {
@@ -45,17 +48,14 @@ export default async function handler(
   } catch (e: any) {
     console.error(`Failed to retrieve event ${eventId}`);
     res.status(500).send(`Failed to retrieve event ${eventId}`);
-    return;
+    throw Error(e);
   }
 
   // Grab guest from event
   const guest = event.guests.find((guest) => guest.id === guestId);
   if (!guest) {
     console.error(`Failed to find guest ${guestId} for event ${eventId}`);
-    res
-      .status(500)
-      .send(`Failed to find guest ${guestId} for event ${eventId}`);
-    return;
+    throw Error(`Failed to find guest ${guestId} for event ${eventId}`);
   }
 
   // Format message
@@ -109,7 +109,7 @@ export default async function handler(
     default:
       console.error(`Unknown message type ${type}`);
       res.status(500).send(`Unknown message type ${type}`);
-      return;
+      throw Error(`Unknown message type ${type}`);
   }
 
   try {
@@ -118,11 +118,12 @@ export default async function handler(
       to: guest.phone,
       body: msg,
     });
-    console.log("Send SMS: ", twilioMsgRes.sid);
+    console.log("SMS sent: ", twilioMsgRes.sid);
+    mixpanel.track('SMS sent', { eventId, guestId, type });
   } catch (error) {
     console.error("Failed to send SMS", error);
-    res.status(500).send("Failed to send SMS");
-    return;
+    mixpanel.track("SMS send failure", { eventId, guestId, type });
+    throw(error);
   }
 
   res.status(200).send("okay");

@@ -7,7 +7,7 @@ import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
 import { GoFileMedia } from "react-icons/go";
 import { MdOutlineCheckCircleOutline, MdErrorOutline } from "react-icons/md";
-import { track } from "../../../lib/mixpanel";
+import { track, identify } from "../../../lib/mixpanel";
 
 interface Props {
   title: string;
@@ -59,8 +59,10 @@ const getVideoSize = (dataURL: string) =>
 export default function Home(props: Props) {
   const { title, eventId } = props;
   let guestId = "";
-  if (typeof window !== "undefined" && router.query.guestId)
+  if (typeof window !== "undefined" && router.query.guestId) {
     guestId = router.query.guestId as string;
+    identify(guestId)
+  }
   const [media, setMedia] = useState<MediaItem[] | null>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 

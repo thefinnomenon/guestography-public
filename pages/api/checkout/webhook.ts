@@ -3,6 +3,9 @@ import * as admin from "firebase-admin";
 //import serviceAccount from "../../../lib/serviceAccountKey.json";
 import { buffer } from "micro";
 import Stripe from "stripe";
+import Mixpanel from "mixpanel";
+
+const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2022-11-15",
@@ -35,16 +38,15 @@ export default async function handler(
 
   if (!endpointSecret) {
     console.error("Webhook Error: Missing webhook signature secret");
-    res.status(500).send(`Webhook Error: Missing webhook signature secret`);
-    return;
+    throw Error("Webhook Error: Missing webhook signature secret");
   }
 
   let event;
   try {
     event = stripe.webhooks.constructEvent(payload, sig || "", endpointSecret);
-  } catch (err: any) {
-    console.error("Webhook Error: ", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+  } catch (error: any) {
+    console.error("Webhook Error: ", error.message);
+    throw error
   }
 
   const db = admin.firestore();
@@ -72,10 +74,10 @@ export default async function handler(
           { merge: true }
         );
         console.log(`Updated event ${eventId} status to ${status}`);
-      } catch (e) {
-        console.error(e);
-        res.status(500).json(e);
-        return;
+        mixpanel.track(`Event ${status === 'PAID'} ? 'paid' : 'unpaid'`, { eventId });
+      } catch (error) {
+        console.error("Failed to update event status", error);
+        throw error;
       }
 
       break;
@@ -94,10 +96,10 @@ export default async function handler(
           { merge: true }
         );
         console.log(`Updated event ${eventId} status to PAID`);
-      } catch (e) {
-        console.error(e);
-        res.status(500).json(e);
-        return;
+        mixpanel.track("Event paid", { eventId });
+      } catch (error) {
+        console.error("Failed to update event");
+        throw error
       }
 
       break;
@@ -116,10 +118,10 @@ export default async function handler(
           { merge: true }
         );
         console.log(`Updated event ${eventId} status to PAYMENT_FAILURE`);
-      } catch (e) {
-        console.error(e);
-        res.status(500).json(e);
-        return;
+        mixpanel.track("Event payment failure", { eventId });
+      } catch (error) {
+        console.error("Failed to update event", error);
+        throw error;
       }
       break;
     }

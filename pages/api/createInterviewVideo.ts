@@ -5,6 +5,9 @@ import {
   MediaConvertClient,
   CreateJobCommand,
 } from "@aws-sdk/client-mediaconvert";
+import Mixpanel from "mixpanel";
+
+const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
 const ENDPOINT = {
   endpoint: "https://mqm13wgra.mediaconvert.us-east-2.amazonaws.com",
@@ -173,9 +176,13 @@ export default async function handler(
 
   try {
     const data = await mediaConvert.send(new CreateJobCommand(params));
+    mixpanel.track("Interview generation job created", {
+      eventId,
+      jobId: data.Job?.Arn,
+    });
     res.status(200).send("okay");
-  } catch (err) {
-    console.error("Error", err);
-    res.status(500).send(err);
+  } catch (error) {
+    console.error("Failed to create MediaConvert job", error);
+    throw error
   }
 }

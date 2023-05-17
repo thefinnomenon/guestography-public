@@ -45,14 +45,18 @@ export default async function handler(
     const bucket = process.env.CLOUDFLARE_BUCKET_NAME;
     const key = `events/${eventId}/interviews/${guestId}.${fileExt || ""}`;
 
-    const url = await getSignedUrl(
-      r2,
-      new PutObjectCommand({ Bucket: bucket, Key: key }),
-      { expiresIn: 3600 * 24 * 7 }
-    );
-
-    res.status(200).json({ url });
-    return;
+    try {
+      const url = await getSignedUrl(
+        r2,
+        new PutObjectCommand({ Bucket: bucket, Key: key }),
+        { expiresIn: 3600 * 24 * 7 }
+      );
+      res.status(200).json({ url });
+      return;
+    } catch (error) {
+      console.error('Failed to create signed interview url');
+      throw error;
+    }
   }
 
   if (req.method === "POST") {
@@ -88,8 +92,7 @@ export default async function handler(
       return;
     } catch (e) {
       console.error(e);
-      res.status(400).send(e);
-      return;
+      throw (e);
     }
   }
 

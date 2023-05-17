@@ -33,12 +33,12 @@ export default async function handler(
 
     if (typeof eventId != "string") {
       res.status(400).json({ error: "Invalid eventId" });
-      return;
+      return
     }
 
     if (typeof guestId != "string") {
       res.status(400).json({ error: "Invalid guestId" });
-      return;
+      return
     }
 
     const bucket = process.env.CLOUDFLARE_BUCKET_NAME;
@@ -46,17 +46,23 @@ export default async function handler(
       (fileName: string) => `events/${eventId}/media/${guestId}-${fileName}`
     );
 
-    const urls = await Promise.all(
-      keys.map(async (key: string) => {
-        return getSignedUrl(
-          r2,
-          new PutObjectCommand({ Bucket: bucket, Key: key }),
-          {
-            expiresIn: 3600 * 24 * 7,
-          }
-        );
-      })
-    );
+    let urls
+    try {
+      urls = await Promise.all(
+        keys.map(async (key: string) => {
+          return getSignedUrl(
+            r2,
+            new PutObjectCommand({ Bucket: bucket, Key: key }),
+            {
+              expiresIn: 3600 * 24 * 7,
+            }
+          );
+        })
+      );
+    } catch (error) {
+      console.error('Failed to create signed media urls');      
+      throw error
+    }
 
     res.status(200).json({ urls });
     return;
@@ -89,7 +95,7 @@ export default async function handler(
     } catch (e) {
       console.error(e);
       res.status(400).send(e);
-      return;
+      throw (e);
     }
   }
 
