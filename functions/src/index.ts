@@ -11,6 +11,8 @@ const util = require("node:util");
 const exec = util.promisify(require("node:child_process").exec);
 import { getPlaiceholder } from "plaiceholder";
 import { S3 } from "@aws-sdk/client-s3";
+import Mixpanel from "mixpanel";
+
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
 const cloudflareSecretAccessKey = defineSecret("CLOUDFLARE_SECRET_ACCESS_KEY");
@@ -18,6 +20,8 @@ const cloudflareSecretAccessKey = defineSecret("CLOUDFLARE_SECRET_ACCESS_KEY");
 admin.initializeApp();
 
 const client = new CloudTasksClient();
+
+const mixpanel = Mixpanel.init(process.env.MIXPANEL_TOKEN || "");
 
 Sentry.GCPFunction.init({
   dsn: "https://52517b2e72d642219339750bae5900eb@o371187.ingest.sentry.io/4505183181733888",
@@ -74,8 +78,23 @@ export const handleEventStatusChange = functions
               .doc(eventId)
               .update({ status: "WAITING" });
             console.log(`Updated event ${eventId} with status WAITING`);
+            const eventForAnalytics = {
+              ...event,
+              guests: null,
+              numberOfGuests: event.guests.length,
+            };
+            mixpanel.track("Event waiting", {
+              event: eventForAnalytics,
+              secondsTillEvent,
+            });
           } catch (error) {
             console.error("Failed to set event to WAITING", error);
+            const eventForAnalytics = {
+              ...event,
+              guests: null,
+              numberOfGuests: event.guests.length,
+            };
+            mixpanel.track("Event failed", { event: eventForAnalytics });
             Sentry.captureException(error);
             await Sentry.flush(2000);
             throw error;
@@ -93,8 +112,16 @@ export const handleEventStatusChange = functions
             },
           ]);
           console.log(`Scheduled event ${eventId}`);
+          const eventForAnalytics = { ...event, guests: null, numberOfGuests: event.guests.length }
+          mixpanel.track("Event scheduled", { event: eventForAnalytics });
         } catch (error) {
           console.error("Failed to schedule event", error);
+          const eventForAnalytics = {
+            ...event,
+            guests: null,
+            numberOfGuests: event.guests.length,
+          };
+          mixpanel.track("Event failed", { event: eventForAnalytics });
           Sentry.captureException(error);
           await Sentry.flush(2000);
           throw error;
@@ -193,9 +220,22 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
           .update({ status: "SCHEDULED" });
         console.log(`Updated event ${eventObj.eventId} with status SCHEDULED`);
 
+        const eventForAnalytics = {
+          ...eventObj,
+          guests: null,
+          numberOfGuests: eventObj.guests.length,
+        };
+        mixpanel.track("Event scheduled", { event: eventForAnalytics });
+
         return true;
       } catch (error) {
         console.error("Failed to schedule event", error);
+        const eventForAnalytics = {
+          ...eventObj,
+          guests: null,
+          numberOfGuests: eventObj.guests.length,
+        };
+        mixpanel.track("Event failed", { event: eventForAnalytics });
         Sentry.captureException(error);
         await Sentry.flush(2000);
 
@@ -430,6 +470,7 @@ export const handleMediaUpload = functions
             .doc(`events/${eventId}/media/${mediaId}`)
             .update({ blurDataURL: base64 });
           console.log(`Updated media entry with blurDataURL: ${base64}`);
+          mixpanel.track("Media uploaded", { eventId, guestId: media.guestId, type: 'image' });
         } catch (error) {
           console.log("Failed to generate blur placeholder for image", error);
           Sentry.captureException(error);
@@ -485,6 +526,11 @@ export const handleMediaUpload = functions
           console.log(
             `Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`
           );
+          mixpanel.track("Media uploaded", {
+            eventId,
+            guestId: media.guestId,
+            type: "video",
+          });
         } catch (error) {
           console.error("Failed to generate poster for video", error);
           Sentry.captureException(error);
@@ -553,6 +599,10 @@ export const handleInterviewUpload = functions
         .doc(`events/${eventId}/interviews/interview`)
         .update({ blurDataURL: base64, posterUrl });
       console.log(`Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`);
+      mixpanel.track("Interview uploaded", {
+        eventId,
+        guestId: interview.guestId,
+      });
     } catch (error) {
       console.error("Failed to generate poster for interview", error);
       Sentry.captureException(error);

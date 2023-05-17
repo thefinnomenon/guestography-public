@@ -74,7 +74,12 @@ export default async function handler(
           { merge: true }
         );
         console.log(`Updated event ${eventId} status to ${status}`);
-        mixpanel.track(`Event ${status === 'PAID'} ? 'paid' : 'unpaid'`, { eventId });
+
+        mixpanel.track(`Event ${status === "PAID"} ? 'paid' : 'unpaid'`, {
+          eventId,
+          total: session.amount_total,
+          subtotal: session.amount_subtotal,
+        });
       } catch (error) {
         console.error("Failed to update event status", error);
         throw error;
@@ -96,7 +101,11 @@ export default async function handler(
           { merge: true }
         );
         console.log(`Updated event ${eventId} status to PAID`);
-        mixpanel.track("Event paid", { eventId });
+        mixpanel.track("Event paid", {
+          eventId,
+          total: session.amount_total,
+          subtotal: session.amount_subtotal,
+        });
       } catch (error) {
         console.error("Failed to update event");
         throw error
@@ -118,7 +127,11 @@ export default async function handler(
           { merge: true }
         );
         console.log(`Updated event ${eventId} status to PAYMENT_FAILURE`);
-        mixpanel.track("Event payment failure", { eventId });
+        mixpanel.track("Event payment failure", {
+          eventId,
+          total: session.amount_total,
+          subtotal: session.amount_subtotal,
+        });
       } catch (error) {
         console.error("Failed to update event", error);
         throw error;
