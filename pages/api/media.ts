@@ -79,6 +79,10 @@ export default async function handler(
       const fileName = path.slice(path.lastIndexOf("/") + 1);
       const docRef = db.doc(`events/${eventId}/media/${fileName}`);
       const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}${path}`;
+
+      // If metadata was stripped from media -> set unsorted to true
+      if (!m.metadata.createdAt) m.metadata.unsorted = true;
+
       bulkWriter.set(docRef, {
         guestId,
         url: m.url,
@@ -94,7 +98,6 @@ export default async function handler(
       return;
     } catch (e) {
       console.error(e);
-      res.status(400).send(e);
       throw (e);
     }
   }

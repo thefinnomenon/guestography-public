@@ -4,10 +4,11 @@ import router from "next/router";
 import { useState } from "react";
 import { getEvent, getEvents } from "../../../lib/firebase";
 import { ClipLoader } from "react-spinners";
-import { Event } from "../../../types";
+import { Event, Metadata } from "../../../types";
 import { GoFileMedia } from "react-icons/go";
 import { MdOutlineCheckCircleOutline, MdErrorOutline } from "react-icons/md";
 import { track, identify } from "../../../lib/mixpanel";
+import * as ExifReader from "exifreader";
 
 interface Props {
   title: string;
@@ -20,14 +21,7 @@ interface MediaItem {
   status: MediaStatus;
   file: File;
   signedUrl: string;
-  metadata: {
-    fileExt: string;
-    type: "image" | "video";
-    height: number;
-    width: number;
-    lastModifiedAt: number;
-    duration?: number;
-  };
+  metadata: Metadata;
 }
 
 const getImageMetadata = (dataURL: string) =>
@@ -150,18 +144,43 @@ export default function Home(props: Props) {
           file.name.lastIndexOf(".") + 1,
           file.name.length
         );
-        const lastModifiedAt = file.lastModified;
+        // TODO: Handle video metadata extraction
+        const metadata = await ExifReader.load(file, { includeUnknown: true, expanded: true });
+        console.log(JSON.stringify(metadata));
+        const location = { lat: metadata.gps?.Latitude, long: metadata.gps?.Longitude, alt: metadata.gps?.Altitude };
+        const device = { make: metadata.exif?.Make?.description, model: metadata.exif?.Model?.description };
+        const mimeType = file.type;
+        const camera = metadata.exif?.LensModel?.description;
+        const createdDateTime = metadata.exif?.DateTime?.description;
+        const createdDateTimeOffset = metadata.exif?.OffsetTime?.description;
+        let createdAt;
+        if (createdDateTime && createdDateTimeOffset) {
+          let [date, time] = createdDateTime.split(" ");
+          date = date.replaceAll(":", "-");
+          createdAt = new Date(`${date}T${time}${createdDateTimeOffset}`).toISOString();
+        }
+        let height = metadata.file?.["Image Height"]?.value;
+        let width = metadata.file?.["Image Width"]?.value;
+        const orientation = height && width ? height > width ? 'portrait' : 'landscape' : null;
         const type = file.type.includes("image") ? "image" : "video";
         const fileAsDataURL = URL.createObjectURL(file);
-        const { height, width, duration } =
-          type === "image"
-            ? await getImageMetadata(fileAsDataURL)
-            : await getVideoMetadata(fileAsDataURL);
+        // In case we didn't manage to extract height and width from metadata
+        let duration
+        if (!height || !width) {
+          const { height: h, width: w, duration: d } =
+            type === "image"
+              ? await getImageMetadata(fileAsDataURL)
+              : await getVideoMetadata(fileAsDataURL);
+          height = h
+          width = w
+          duration = d
+        }
+        console.log(orientation, location, device, mimeType, camera, createdAt, height, width, orientation, type)
         return {
           file,
           status: "queued",
           signedUrl: urls[index],
-          metadata: { fileExt, type, height, width, lastModifiedAt, duration },
+          metadata: { fileExt, orientation, location, device, mimeType, camera, createdAt, height, width, type },
         };
       })
     );

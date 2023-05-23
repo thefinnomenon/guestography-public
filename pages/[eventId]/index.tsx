@@ -34,13 +34,14 @@ interface Props {
   eventId: string;
   interview?: Interview;
   media?: GalleryMedia[];
+  unsorted?: GalleryMedia[];
 }
 
 export default function Home(props: Props) {
   const router = useRouter();
   const { guestId } = router.query as { guestId: string};
   if (guestId) identify(guestId)
-  const { title, interview, media, eventId } = props;
+  const { title, interview, media, unsorted, eventId } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
   const [isDownloadingInterview, setIsDownloadingInterview] = useState(false);
@@ -48,46 +49,10 @@ export default function Home(props: Props) {
   const [downloadList, setDownloadList] = useState([]);
 
   useEffect(() => {
-    if (!media) return;
-
-    const slides = media.map(
-      // @ts-ignore
-      ({ alt: type, title: guest, src, width, height, blurDataURL, poster }) => {
-        if (type === "video") {
-          return {
-            type,
-            guest,
-            title: `Video by ${getGuestNameFromId(guest)}`,
-            description: `Video by ${getGuestNameFromId(guest)}`,
-            width,
-            height,
-            poster,
-            download: true,
-            src,
-            preload: "none",
-            sources: [
-              {
-                src,
-              },
-            ],
-          };
-        } else {
-          return {
-            src,
-            width,
-            height,
-            title: `Image by ${getGuestNameFromId(guest)}`,
-            description: `Image by ${getGuestNameFromId(guest)}`,
-            blurDataURL,
-            download: true,
-            alt: guest,
-          };
-        }
-      }
-    );
-
-    setSlides(slides);
-  }, [media]);
+    const slidesMedia = media ? media.map((m) => mapMediatoSlides(m)) : [];
+    const slidesUnsorted = unsorted ? unsorted.map((m) => mapMediatoSlides(m)) : [];
+    setSlides([...slidesMedia, ...slidesUnsorted]);
+  }, [media, unsorted]);
 
   return (
     <div>
@@ -172,7 +137,7 @@ export default function Home(props: Props) {
             <div className="mt-12">
               {interview && (
                 <>
-                  <h2 className="mb-4">Interview</h2>
+                  <h2 className="text-2xl font-bold mb-4">Interview</h2>
                   <div className="relative">
                     <video
                       id="interview-video"
@@ -231,7 +196,7 @@ export default function Home(props: Props) {
                 </>
               )}
               <EventAndGuestContext.Provider value={{ eventId, guestId }}>
-                <h2 className="mt-8 mb-4">Media</h2>
+                <h2 className="text-2xl font-bold mt-8 mb-4">Media</h2>
                 {media && (
                   <PhotoAlbum
                     layout="masonry"
@@ -244,6 +209,25 @@ export default function Home(props: Props) {
                     // @ts-ignore
                     renderPhoto={renderPhoto}
                     onClick={({ index }) => setIndex(index)}
+                    defaultContainerWidth={1200}
+                    sizes={{ size: "calc(100vw - 240px)" }}
+                  />
+                )}
+                <h2 className="text-2xl font-bold mt-8 mb-4">Unsorted Media</h2>
+                {unsorted && (
+                  <PhotoAlbum
+                    layout="masonry"
+                    photos={unsorted}
+                    columns={(containerWidth) => {
+                      if (containerWidth < 400) return 2;
+                      if (containerWidth < 800) return 3;
+                      return 4;
+                    }}
+                    // @ts-ignore
+                    renderPhoto={renderPhoto}
+                    onClick={({ index }) =>
+                      setIndex(media ? media.length + index : index)
+                    }
                     defaultContainerWidth={1200}
                     sizes={{ size: "calc(100vw - 240px)" }}
                   />
@@ -268,7 +252,7 @@ export default function Home(props: Props) {
                         await downloadMedia(slide.src);
                       },
                     }}
-                    captions={{ descriptionTextAlign: 'center' }}
+                    captions={{ descriptionTextAlign: "center" }}
                     render={{ slide: NextJsImage, buttonZoom: () => <div /> }}
                     thumbnails={{
                       imageFit: "cover",
@@ -291,8 +275,7 @@ const renderPhoto: RenderPhoto = ({
   layout,
   layoutOptions,
   imageProps: {
-    alt: type,
-    title: guest,
+    alt,
     src,
     style,
     onClick,
@@ -307,6 +290,11 @@ const renderPhoto: RenderPhoto = ({
   const videoRef = useRef<HTMLVideoElement>();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const { eventId, guestId } = useContext(EventAndGuestContext);
+
+  // @ts-ignore
+  const guest = photo.guest;
+  // @ts-ignore
+  const type = photo.type;
 
   return (
     <div
@@ -333,7 +321,7 @@ const renderPhoto: RenderPhoto = ({
             onClick={onClick}
           />
           <Image
-            alt=""
+            alt={`Image by ${getGuestNameFromId(guest ? guest : "")}`}
             src={src}
             // @ts-ignore
             placeholder="blur"
@@ -357,7 +345,12 @@ const renderPhoto: RenderPhoto = ({
           />
           <div
             onClick={(e) => {
-              track("Slider opened", { eventId, guestId, type, uploaderId: guest });
+              track("Slider opened", {
+                eventId,
+                guestId,
+                type,
+                uploaderId: guest,
+              });
 
               if (isPlaying && videoRef.current) {
                 videoRef.current.pause();
@@ -384,7 +377,11 @@ const renderPhoto: RenderPhoto = ({
             onClick={() => {
               if (!videoRef.current) return;
               if (videoRef.current.paused) {
-                track("Media video played inline", { eventId, guestId, uploaderId: guest });
+                track("Media video played inline", {
+                  eventId,
+                  guestId,
+                  uploaderId: guest,
+                });
                 videoRef.current.play();
                 setIsPlaying(true);
               } else {
@@ -425,7 +422,12 @@ const renderPhoto: RenderPhoto = ({
               setLoading(true);
               await downloadMedia(src);
               setLoading(false);
-              track("Media video downloaded", { eventId, guestId, type, uploaderId: guest });
+              track("Media video downloaded", {
+                eventId,
+                guestId,
+                type,
+                uploaderId: guest,
+              });
             }}
             disabled={loading}
           >
@@ -443,6 +445,45 @@ const renderPhoto: RenderPhoto = ({
     </div>
   );
 };
+
+const mapMediatoSlides = (media: GalleryMedia) => {
+  // @ts-ignore
+  const { type, guest, src, width, height, blurDataURL, poster } = media;
+
+  if (type === "video") {
+    return {
+      type,
+      guest,
+      title: `Video by ${getGuestNameFromId(guest)}`,
+      description: `Video by ${getGuestNameFromId(guest)}`,
+      alt: `Video by ${getGuestNameFromId(guest)}`,
+      width,
+      height,
+      poster,
+      download: true,
+      src,
+      preload: "none",
+      sources: [
+        {
+          src,
+        },
+      ],
+    };
+  } else {
+    return {
+      type,
+      guest,
+      src,
+      width,
+      height,
+      title: `Image by ${getGuestNameFromId(guest)}`,
+      description: `Image by ${getGuestNameFromId(guest)}`,
+      blurDataURL,
+      download: true,
+      alt: `Image by ${getGuestNameFromId(guest)}`,
+    };
+  }
+}
 
 const NextJsImage = ({ slide, rect }: any) => {
   const { imageFit } = useLightboxProps().carousel;
@@ -548,23 +589,34 @@ export async function getStaticProps(
     let interview = await getInterview(eventId);
 
     // Get media from db
-    let media = await getMedia(eventId);
+    let { media, unsortedMedia } = await getMedia(eventId);
 
     // This is to make the Firestore timestamp object serializable
     interview = JSON.parse(JSON.stringify(interview) || "{}");
     media = JSON.parse(JSON.stringify(media) || "{}");
+    unsortedMedia = JSON.parse(JSON.stringify(unsortedMedia) || "{}");
 
     const galleryMedia = media.map((m) => {
       return {
         src: m.publicUrl,
         height: m.metadata.height,
         width: m.metadata.width,
-        // react-photo-gallery doesn't let us pass in custom props for render
-        // so we will just hijack these ones
         blurDataURL: m.blurDataURL || null,
         poster: m.posterUrl || null,
-        alt: m.metadata.type,
-        title: m.guestId,
+        type: m.metadata.type,
+        guest: m.guestId,
+      };
+    });
+
+    const galleryUnsortedMedia = unsortedMedia.map((m) => {
+      return {
+        src: m.publicUrl,
+        height: m.metadata.height,
+        width: m.metadata.width,
+        blurDataURL: m.blurDataURL || null,
+        poster: m.posterUrl || null,
+        type: m.metadata.type,
+        guest: m.guestId,
       };
     });
 
@@ -574,6 +626,7 @@ export async function getStaticProps(
         eventId,
         interview,
         media: galleryMedia,
+        unsorted: galleryUnsortedMedia,
       },
       revalidate: 60,
     };

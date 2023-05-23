@@ -72,16 +72,32 @@ export const getInterview = async (eventId: string) => {
 export const getMedia = async (eventId: string) => {
   try {
     const db = admin.firestore();
+
+    // Query for media in ascending order by createdAt
     const snapshot = await db
       .collection(`events/${eventId}/media`)
-      .orderBy("metadata.lastModifiedAt", "asc")
+      .orderBy("metadata.createdAt", "asc")
       .get();
-    return snapshot.docs.map((doc) => {
+    const media = snapshot.docs.map((doc) => {
       return {
         ...(doc.data() as Media),
         id: doc.id,
       };
     });
+
+    // Query for unsorted media (media without createdAt)
+    const snapshot2 = await db
+      .collection(`events/${eventId}/media`)
+      .where("metadata.unsorted", "==", true)
+      .get();
+    const unsortedMedia = snapshot2.docs.map((doc) => {
+      return {
+        ...(doc.data() as Media),
+        id: doc.id,
+      };
+    });
+
+    return { media, unsortedMedia }
   } catch (e) {
     console.log(e);
     throw e;

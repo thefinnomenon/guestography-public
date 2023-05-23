@@ -64,9 +64,17 @@ export interface GuestTag {
 
 export interface Metadata {
   fileExt: string;
+  location?: { lat?: number; long?: number; alt?: number };
+  device?: { make?: string; model?: string };
+  mimeType?: string;
+  camera?: string;
+  createdAt?: string;
+  unsorted?: boolean;
+  orientation?: "portrait" | "landscape" | null;
   type: "image" | "video";
   height: number;
   width: number;
+  duration?: number;
 }
 
 export interface Interview {
