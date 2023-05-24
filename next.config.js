@@ -1,3 +1,5 @@
+const CopyPlugin = require("copy-webpack-plugin");
+
 module.exports = {
   reactStrictMode: true,
   swcMinify: true,
@@ -29,8 +31,30 @@ module.exports = {
       },
     ];
   },
-};
+  webpack: function (config, { isServer }) {
+    config.experiments = { ...config.experiments, asyncWebAssembly: true };
 
+    config.plugins = [
+      ...config.plugins,
+      new CopyPlugin({
+        patterns: [
+          {
+            from: "./node_modules/mediainfo.js/dist/MediaInfoModule.wasm",
+            to: ".",
+          },
+        ],
+      }),
+    ];
+
+    if (!isServer) {
+      config.resolve.fallback = {
+        module: false,
+      };
+    }
+
+    return config;
+  },
+};
 
 // Injected content via Sentry wizard below
 

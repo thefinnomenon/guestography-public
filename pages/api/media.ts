@@ -88,7 +88,7 @@ export default async function handler(
         url: m.url,
         publicUrl,
         metadata: m.metadata,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     });
 

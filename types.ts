@@ -65,7 +65,7 @@ export interface GuestTag {
 export interface Metadata {
   fileExt: string;
   location?: { lat?: number; long?: number; alt?: number };
-  device?: { make?: string; model?: string };
+  device?: { make?: string; model?: string, version?: string };
   mimeType?: string;
   camera?: string;
   createdAt?: string;
@@ -95,6 +95,7 @@ export interface Media {
   publicUrl: string;
   url: string;
   metadata: Metadata;
+  uploadedAt: string;
 }
 
 export interface GalleryMedia {
