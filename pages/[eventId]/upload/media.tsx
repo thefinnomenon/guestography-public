@@ -373,22 +373,27 @@ const getVideoMetadata = async (mediainfo: any, file: File) => {
   let height = Number(Height);
   let width = Number(Width);
    
-  // Apple specific metadata  
-  const {
-    com_apple_quicktime_location_ISO6709,
-    com_apple_quicktime_make,
-    com_apple_quicktime_model,
-    com_apple_quicktime_software,
-  } = extra;
+  // Apple specific metadata 
+  let device, location; 
+  if (extra) {
+    const {
+      com_apple_quicktime_location_ISO6709,
+      com_apple_quicktime_make,
+      com_apple_quicktime_model,
+      com_apple_quicktime_software,
+    } = extra;
+
+    device = {
+      make: com_apple_quicktime_make,
+      model: com_apple_quicktime_model,
+      version: com_apple_quicktime_software,
+    };
+
+    location = parseIso6709(com_apple_quicktime_location_ISO6709);
+  }
 
   let duration = parseVideoDuration(Duration_String3);
   const createdAt = new Date(Tagged_Date).toISOString();
-  const device = {
-    make: com_apple_quicktime_make,
-    model: com_apple_quicktime_model,
-    version: com_apple_quicktime_software,
-  };
-  const location = parseIso6709(com_apple_quicktime_location_ISO6709);
   if(!height || !width || !duration) {
     const dims = await LoadVideoAndGetDimensions(file);
     height = dims.height;
@@ -489,7 +494,8 @@ const parseVideoDuration = (durationStr: string) => {
 }
 
 // Format latlongalt/ -> { lat, long, alt }
-const parseIso6709 = (loc: string) => {
+const parseIso6709 = (loc?: string) => {
+  if (!loc) return;
   const [ _, lat, long, alt ] = loc.match(/([-+][^-+]*)([-+][^-+]*)([^-+]*[^\/]*)/) || [];
   return { lat: Number(lat), long: Number(long), alt: Number(alt) }
 }
