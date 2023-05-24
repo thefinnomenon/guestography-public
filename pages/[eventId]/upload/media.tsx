@@ -393,7 +393,7 @@ const getVideoMetadata = async (mediainfo: any, file: File) => {
   }
 
   let duration = parseVideoDuration(Duration_String3);
-  const createdAt = new Date(Tagged_Date).toISOString();
+  const createdAt = Tagged_Date ? new Date(Tagged_Date).toISOString(): undefined;
   if(!height || !width || !duration) {
     const dims = await LoadVideoAndGetDimensions(file);
     height = dims.height;
