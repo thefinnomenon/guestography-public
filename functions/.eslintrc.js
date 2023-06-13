@@ -14,8 +14,8 @@ module.exports = {
   ],
   parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: ["./tsconfig.json"],
-    sourceType: "module",
+    project: "./tsconfig.json",
+    tsconfigRootDir: __dirname,
   },
   ignorePatterns: [
     "/lib/**/*", // Ignore built files.
@@ -31,6 +31,7 @@ module.exports = {
     "@typescript-eslint/no-explicit-any": 0,
     "quote-props": 0,
     "@typescript-eslint/no-var-requires": 0,
-    "max-len": ["error", { "code": 120 }],
+    "max-len": ["error", { code: 120 }],
+    "@typescript-eslint/ban-ts-comment": 0,
   },
 };

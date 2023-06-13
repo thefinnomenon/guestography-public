@@ -1,15 +1,13 @@
 import Head from "next/head";
 import { GetStaticPropsContext } from "next";
 import router from "next/router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getEvent, getEvents } from "../../../lib/firebase";
 import { ClipLoader } from "react-spinners";
 import { Event, Metadata } from "../../../types";
 import { GoFileMedia } from "react-icons/go";
 import { MdOutlineCheckCircleOutline, MdErrorOutline } from "react-icons/md";
 import { track, identify } from "../../../lib/mixpanel";
-import * as ExifReader from "exifreader";
-import MediaInfo from 'mediainfo.js';
 
 interface Props {
   title: string;
@@ -22,17 +20,12 @@ interface MediaItem {
   status: MediaStatus;
   file: File;
   signedUrl: string;
-  metadata: Metadata;
+  metadata?: Metadata;
 }
 
 export default function Home(props: Props) {
   const { title, eventId } = props;
   const [mediainfo, setMediaInfo] = useState<unknown>();
-
-  useEffect(() => {
-    const initMediaInfo = async () => setMediaInfo(await getMediaInfoJS());
-    initMediaInfo();
-  }, [])
 
   let guestId = "";
   if (typeof window !== "undefined" && router.query.guestId) {
@@ -117,15 +110,10 @@ export default function Home(props: Props) {
 
     const mediaList: MediaItem[] = await Promise.all(
       fileArr.map(async (file, index) => {
-        const fileExt = file.name.slice(file.name.lastIndexOf(".") + 1, file.name.length);
-        const type = file.type.includes("image") ? "image" : "video";
-        const metadata = type === 'image' ? await getImageMetadata(file) : await getVideoMetadata(mediainfo, file);
-        console.log(metadata);
         return {
           file,
           status: "queued",
           signedUrl: urls[index],
-          metadata: { ...metadata, fileExt, type },
         };
       })
     );
@@ -321,183 +309,6 @@ export default function Home(props: Props) {
       </main>
     </div>
   );
-}
-
-async function getMediaInfoJS() {
-  return new Promise((resolve, reject) => {
-    // @ts-ignore
-    MediaInfo(
-      {
-        chunkSize: 5 * 1024 * 1024,
-        coverData: false,
-        format: "object",
-        full: true,
-        locateFile: (path: any, prefix: any) => {
-          return `../../${path}`;
-        }
-      },
-      (mediainfo: any) => {
-        resolve(mediainfo);
-      },
-      (error: any) => {
-        console.error("[mediainfo.js] failed instantiate", error);
-        reject(error);
-      }
-    );
-  });
-}
-
-const getVideoMetadata = async (mediainfo: any, file: File) => {
-  const getSize = () => file.size;
-  const readChunk = (chunkSize: any, offset: any) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event?.target?.error) {
-          reject(event?.target?.error);
-        }
-        // @ts-ignore
-        resolve(new Uint8Array(event.target.result));
-      };
-      reader.readAsArrayBuffer(file.slice(offset, offset + chunkSize));
-    });
-
-  const metadata = await mediainfo.analyzeData(getSize, readChunk);
-
-  console.log(metadata);
-
-  const { Duration_String3, InternetMediaType: mimeType, Tagged_Date, extra } =
-    metadata.media.track[0];
-
-  const { Height, Width } = metadata.media.track[1];
-  let height = Number(Height);
-  let width = Number(Width);
-   
-  // Apple specific metadata 
-  let device, location; 
-  if (extra) {
-    const {
-      com_apple_quicktime_location_ISO6709,
-      com_apple_quicktime_make,
-      com_apple_quicktime_model,
-      com_apple_quicktime_software,
-    } = extra;
-
-    device = {
-      make: com_apple_quicktime_make,
-      model: com_apple_quicktime_model,
-      version: com_apple_quicktime_software,
-    };
-
-    location = parseIso6709(com_apple_quicktime_location_ISO6709);
-  }
-
-  let duration = parseVideoDuration(Duration_String3);
-  const createdAt = Tagged_Date ? new Date(Tagged_Date).toISOString(): undefined;
-  if(!height || !width || !duration) {
-    const dims = await LoadVideoAndGetDimensions(file);
-    height = dims.height;
-    width = dims.width;
-    duration = dims.duration;
-  }
-  const orientation: 'portrait' | 'landscape' = height > width ? 'portrait' : 'landscape';
-
-  return { mimeType, duration, createdAt, device, height, width, orientation, location };
-}
-
-const getImageMetadata = async (file: File) => {
-  const metadata = await ExifReader.load(file, {
-    includeUnknown: true,
-    expanded: true,
-  });
-
-  const location = {
-    lat: metadata.gps?.Latitude,
-    long: metadata.gps?.Longitude,
-    alt: metadata.gps?.Altitude,
-  };
-
-  const device = {
-    make: metadata.exif?.Make?.description,
-    model: metadata.exif?.Model?.description,
-  };
-
-  const mimeType = file.type;
-  const camera = metadata.exif?.LensModel?.description;
-  const createdDateTime = metadata.exif?.DateTime?.description;
-  const createdDateTimeOffset = metadata.exif?.OffsetTime?.description;
-
-  let createdAt;
-  if (createdDateTime && createdDateTimeOffset) {
-    let [date, time] = createdDateTime.split(" ");
-    date = date.replaceAll(":", "-");
-    createdAt = new Date(
-      `${date}T${time}${createdDateTimeOffset}`
-    ).toISOString();
-  }
-
-  let height = metadata.file?.["Image Height"]?.value || null;
-  let width = metadata.file?.["Image Width"]?.value || null;
-  if (!height || !width) {
-    const dims = await loadImageAndGetDimensions(file);
-    height = dims.height;
-    width = dims.width;
-  }
-
-  const orientation: 'portrait' | 'landscape' | null = height && width ? (height > width ? "portrait" : "landscape") : null;
-
-  return {
-    location,
-    device,
-    mimeType,
-    camera,
-    createdAt,
-    height,
-    width,
-    orientation,
-  };
-};
-
-const loadImageAndGetDimensions = (file: File) =>
-  new Promise<{ height: number; width: number }>((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      resolve({
-        height: img.height,
-        width: img.width,
-      });
-    };
-    img.src = URL.createObjectURL(file);
-  });
-
-const LoadVideoAndGetDimensions = (file: File) =>
-  new Promise<{ height: number; width: number, duration: number }>((resolve) => {
-    const video = document.createElement("video");
-    video.addEventListener(
-      "loadedmetadata",
-      () => {
-        resolve({
-          height: video.videoHeight,
-          width: video.videoWidth,
-          duration: video.duration
-        });
-      },
-      false
-    );
-    video.src = URL.createObjectURL(file);
-  });
-
-// Format "HH:MM:SS.MS" -> Seconds
-const parseVideoDuration = (durationStr: string) => {
-  const [ hours, minutes, seconds ] = durationStr.split(":");
-  return Number(hours) * 60 * 60 + Number(minutes) * 60 + Math.round(Number(seconds));
-}
-
-// Format latlongalt/ -> { lat, long, alt }
-const parseIso6709 = (loc?: string) => {
-  if (!loc) return;
-  const [ _, lat, long, alt ] = loc.match(/([-+][^-+]*)([-+][^-+]*)([^-+]*[^\/]*)/) || [];
-  return { lat: Number(lat), long: Number(long), alt: Number(alt) }
 }
 
 export async function getStaticPaths() {

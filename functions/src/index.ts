@@ -1,8 +1,10 @@
+import dotenv from "dotenv";
+dotenv.config();
 import admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import { CloudTasksClient } from "@google-cloud/tasks";
 const Sentry = require("@sentry/serverless");
-import { limit } from "./parallel";
+import { limit } from "./parallel.js";
 import { defineSecret } from "firebase-functions/params";
 import path from "path";
 import os from "os";
@@ -10,8 +12,12 @@ const fs = require("fs").promises;
 const util = require("node:util");
 const exec = util.promisify(require("node:child_process").exec);
 import { getPlaiceholder } from "plaiceholder";
+import * as ExifReader from "exifreader";
+import sizeOf from "image-size";
 import { S3 } from "@aws-sdk/client-s3";
 import Mixpanel from "mixpanel";
+const got = require("got");
+import { fromStream } from "file-type";
 
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
@@ -112,7 +118,11 @@ export const handleEventStatusChange = functions
             },
           ]);
           console.log(`Scheduled event ${eventId}`);
-          const eventForAnalytics = { ...event, guests: null, numberOfGuests: event.guests.length };
+          const eventForAnalytics = {
+            ...event,
+            guests: null,
+            numberOfGuests: event.guests.length,
+          };
           mixpanel.track("Event scheduled", { event: eventForAnalytics });
         } catch (error) {
           console.error("Failed to schedule event", error);
@@ -133,7 +143,9 @@ export const handleEventStatusChange = functions
           `Event ${eventId} has unhandled status ${event.status}`
         );
         await Sentry.flush(2000);
-        throw new Error(`Event ${eventId} has unhandled status ${event.status}`);
+        throw new Error(
+          `Event ${eventId} has unhandled status ${event.status}`
+        );
     }
   });
 
@@ -210,7 +222,9 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
         });
         const scheduleTasksRes = await limit(tasksFuncArr, 10);
         console.log(
-          `Scheduled ${scheduleTasksRes.filter((res) => res)}/${tasks.length} tasks`
+          `Scheduled ${scheduleTasksRes.filter((res: any) => res)}/${
+            tasks.length
+          } tasks`
         );
 
         // Update event status to scheduled
@@ -247,7 +261,9 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
   // Schedule events in parallel
   const scheduleEventsRes = await limit(eventsFuncArr, 10);
   console.log(
-    `Scheduled ${scheduleEventsRes.filter((res) => res)}/${events.length} events`
+    `Scheduled ${scheduleEventsRes.filter((res: any) => res)}/${
+      events.length
+    } events`
   );
 };
 
@@ -411,13 +427,15 @@ const formatTime = (date: string) => {
   const currentDate = new Date();
 
   // Schedule time can not be in the past.
-  if (convertedDate <= currentDate) throw new Error("Scheduled date in the past.");
+  if (convertedDate <= currentDate)
+    throw new Error("Scheduled date in the past.");
 
   const dateDiffInSeconds =
-      (convertedDate.getTime() - currentDate.getTime()) / 1000;
+    (convertedDate.getTime() - currentDate.getTime()) / 1000;
 
   // Restrict schedule time to the 30 day maximum.
-  if (dateDiffInSeconds > MAX_SCHEDULE_LIMIT) throw new Error("Schedule time is over 30 day maximum.");
+  if (dateDiffInSeconds > MAX_SCHEDULE_LIMIT)
+    throw new Error("Schedule time is over 30 day maximum.");
 
   return (
     dateDiffInSeconds + Date.now() / 1000 + getSecondsOffsetInMessageWindow()
@@ -446,7 +464,7 @@ const getEarlyNextMorning = (start: string) => {
   return d.toISOString().slice(0, -1);
 };
 
-// On media upload, create placeholders
+// On media upload, extract metadata and create placeholders
 export const handleMediaUpload = functions
   .runWith({ secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey] })
   .firestore.document("events/{eventId}/media/{mediaId}")
@@ -456,25 +474,49 @@ export const handleMediaUpload = functions
 
     console.log(`New media ${mediaId} created for event ${eventId}`, media);
 
-    switch (media.metadata.type) {
+    const stream = got.stream(media.publicUrl);
+    let mime;
+    try {
+      const fileType = await fromStream(stream);
+      if (!fileType?.mime) throw Error("Failed to determine file type");
+      mime = fileType.mime;
+    } catch (error) {
+      console.error(error);
+      Sentry.captureException(error);
+      await Sentry.flush(2000);
+      throw error;
+    }
+
+    switch (mime.split("/")[0]) {
       case "image":
-        console.log("New media is an image. Generating base64 placeholder.");
+        console.log(
+          "New media is an image. Extracting metadata and creating base64 placeholder"
+        );
         try {
+          // Extract metadata for image
+          const metadata = await getImageMetadata(media.publicUrl);
+          metadata.mimeType = mime;
+          console.log("Extracted image metadata", { metadata });
+
           // Generate base64 placeholder for image
           const { base64 } = await getPlaiceholder(media.publicUrl);
           console.log(`Generated base64 placeholder ${base64}`);
 
-          // Add base64 placeholder to media db entry
+          // Add metadata and base64 placeholder to media db entry
           const db = admin.firestore();
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
-            .update({ blurDataURL: base64 });
-          console.log(`Updated media entry with blurDataURL: ${base64}`);
+            .update({ metadata, blurDataURL: base64 });
+          console.log("Updated media entry with metadata and blurDataURL", {
+            metadata,
+            blurDataUrl: base64,
+          });
           mixpanel.track("Media uploaded", {
             eventId,
             guestId: media.guestId,
             type: "image",
-            metadata: media.metadata });
+            metadata,
+          });
         } catch (error) {
           console.log("Failed to generate blur placeholder for image", error);
           Sentry.captureException(error);
@@ -483,7 +525,9 @@ export const handleMediaUpload = functions
         }
         break;
       case "video":
-        console.log("New media is a video. Generating poster and base64 placeholder.");
+        console.log(
+          "New media is a video. Generating poster and base64 placeholder."
+        );
         try {
           const db = admin.firestore();
           const posterFilename = `${mediaId.replace(".", "-")}-poster.jpg`;
@@ -522,7 +566,7 @@ export const handleMediaUpload = functions
           });
           console.log(`Uploaded poster to R2 with key: ${r2Key}`);
 
-          // Update interview entry with poster and placeholder
+          // Update media entry with poster and placeholder
           const posterUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
@@ -598,12 +642,13 @@ export const handleInterviewUpload = functions
       console.log(`Uploaded poster to R2 with key: ${r2Key}`);
 
       // Update interview entry with poster and placeholder
-      const posterUrl =
-      `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
+      const posterUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
       await db
         .doc(`events/${eventId}/interviews/interview`)
         .update({ blurDataURL: base64, posterUrl });
-      console.log(`Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`);
+      console.log(
+        `Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`
+      );
       mixpanel.track("Interview uploaded", {
         eventId,
         guestId: interview.guestId,
@@ -616,3 +661,158 @@ export const handleInterviewUpload = functions
       throw error;
     }
   });
+
+const getImageMetadata = async (file: string) => {
+  const metadata = await ExifReader.load(file, {
+    includeUnknown: true,
+    expanded: true,
+  });
+
+  const location = {
+    lat: metadata.gps?.Latitude,
+    long: metadata.gps?.Longitude,
+    alt: metadata.gps?.Altitude,
+  };
+
+  const device = {
+    make: metadata.exif?.Make?.description,
+    model: metadata.exif?.Model?.description,
+  };
+
+  const mimeType = metadata.exif?.["File Format"]?.value;
+  const camera = metadata.exif?.LensModel?.description;
+  const createdDateTime = metadata.exif?.DateTime?.description;
+  const createdDateTimeOffset = metadata.exif?.OffsetTime?.description;
+
+  let createdAt;
+  if (createdDateTime && createdDateTimeOffset) {
+    let [date, time] = createdDateTime.split(" ");
+    date = date.replaceAll(":", "-");
+    createdAt = new Date(
+      `${date}T${time}${createdDateTimeOffset}`
+    ).toISOString();
+  }
+
+  let height = metadata.file?.["Image Height"]?.value || null;
+  let width = metadata.file?.["Image Width"]?.value || null;
+
+  // If failed to get height and width from metadata, we need to get it from the file buffer
+  if (!height || !width) {
+    const dims = await sizeOf(file);
+    height = dims.height || null;
+    width = dims.width || null;
+  }
+
+  const orientation: "portrait" | "landscape" | null =
+    height && width ? (height > width ? "portrait" : "landscape") : null;
+
+  const md: any = {};
+  if (location.lat && location.long) md.location = location;
+  if (device.make) md.device = device;
+  if (mimeType) md.mimeType = mimeType;
+  if (camera) md.camera = camera;
+  if (createdAt) md.createdAt = createdAt;
+  if (height) md.height = height;
+  if (width) md.width = width;
+  if (orientation) md.orientation = orientation;
+
+  return md;
+};
+
+// async function getMediaInfoJS() {
+//   return new Promise((resolve, reject) => {
+//     // @ts-ignore
+//     MediaInfo(
+//       {
+//         chunkSize: 5 * 1024 * 1024,
+//         coverData: false,
+//         format: "object",
+//         full: true,
+//         locateFile: (path: any, prefix: any) => {
+//           return `../../${path}`;
+//         }
+//       },
+//       (mediainfo: any) => {
+//         resolve(mediainfo);
+//       },
+//       (error: any) => {
+//         console.error("[mediainfo.js] failed instantiate", error);
+//         reject(error);
+//       }
+//     );
+//   });
+// }
+
+// const getVideoMetadata = async (mediainfo: any, file: File) => {
+//   const getSize = () => file.size;
+//   const readChunk = (chunkSize: any, offset: any) =>
+//     new Promise((resolve, reject) => {
+//       const reader = new FileReader();
+//       reader.onload = (event) => {
+//         if (event?.target?.error) {
+//           reject(event?.target?.error);
+//         }
+//         // @ts-ignore
+//         resolve(new Uint8Array(event.target.result));
+//       };
+//       reader.readAsArrayBuffer(file.slice(offset, offset + chunkSize));
+//     });
+
+//   const metadata = await mediainfo.analyzeData(getSize, readChunk);
+
+//   console.log(metadata);
+
+//   const { Duration_String3, InternetMediaType: mimeType, Tagged_Date, extra } =
+//     metadata.media.track[0];
+
+//   const { Height, Width } = metadata.media.track[1];
+//   let height = Number(Height);
+//   let width = Number(Width);
+
+//   // Apple specific metadata
+//   let device, location;
+//   if (extra) {
+//     const {
+//       com_apple_quicktime_location_ISO6709,
+//       com_apple_quicktime_make,
+//       com_apple_quicktime_model,
+//       com_apple_quicktime_software,
+//     } = extra;
+
+//     device = {
+//       make: com_apple_quicktime_make,
+//       model: com_apple_quicktime_model,
+//       version: com_apple_quicktime_software,
+//     };
+
+//     location = parseIso6709(com_apple_quicktime_location_ISO6709);
+//   }
+
+//   let duration = parseVideoDuration(Duration_String3);
+//   const createdAt = Tagged_Date ? new Date(Tagged_Date).toISOString(): undefined;
+//   if(!height || !width || !duration) {
+//     const dims = await LoadVideoAndGetDimensions(file);
+//     height = dims.height;
+//     width = dims.width;
+//     duration = dims.duration;
+//   }
+//   const orientation: 'portrait' | 'landscape' = height > width ? 'portrait' : 'landscape';
+
+//   return { mimeType, duration, createdAt, device, height, width, orientation, location };
+// }
+
+// Format "HH:MM:SS.MS" -> Seconds
+const parseVideoDuration = (durationStr: string) => {
+  const [hours, minutes, seconds] = durationStr.split(":");
+  return (
+    Number(hours) * 60 * 60 + Number(minutes) * 60 + Math.round(Number(seconds))
+  );
+};
+
+// Format latlongalt/ -> { lat, long, alt }
+const parseIso6709 = (loc?: string) => {
+  if (!loc) return;
+  const [_, lat, long, alt] =
+    loc.match(/([-+][^-+]*)([-+][^-+]*)([^-+]*[^\/]*)/) || [];
+  return { lat: Number(lat), long: Number(long), alt: Number(alt) };
+};
