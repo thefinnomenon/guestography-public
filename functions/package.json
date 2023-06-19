@@ -40,6 +40,7 @@
     "mixpanel": "^0.17.0",
     "node-firestore-import-export": "^1.1.0",
     "plaiceholder": "^2.5.0",
+    "sanitize-filename": "^1.6.3",
     "sharp": "^0.32.1"
   },
   "devDependencies": {

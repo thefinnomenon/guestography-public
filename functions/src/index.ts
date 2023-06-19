@@ -11,6 +11,7 @@ import os from "os";
 const fs = require("fs").promises;
 const fetch = require("cross-fetch");
 const util = require("node:util");
+const sanitize = require("sanitize-filename");
 const exec = util.promisify(require("node:child_process").exec);
 import { getPlaiceholder } from "plaiceholder";
 import * as ExifReader from "exifreader";
@@ -469,7 +470,11 @@ const getEarlyNextMorning = (start: string) => {
 
 // On media upload, extract metadata and create placeholders
 export const handleMediaUpload = functions
-  .runWith({ secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey] })
+  .runWith({
+    secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey],
+    timeoutSeconds: 300,
+    memory: "1GB",
+  })
   .firestore.document("events/{eventId}/media/{mediaId}")
   .onCreate(async (mediaSnapshot, context) => {
     const { eventId, mediaId } = context.params;
@@ -533,12 +538,19 @@ export const handleMediaUpload = functions
         );
         try {
           const db = admin.firestore();
-          const posterFilename = `${mediaId.replace(".", "-")}-poster.jpg`;
+          const posterFilename = `${sanitize(mediaId).replaceAll(
+            "%",
+            ""
+          )}-poster.jpg`;
           const tempFilePath = path.join(os.tmpdir(), posterFilename);
 
           // Extract metadata
           const mediaInfo = await getMediaInfoJS();
-          const metadata = await getVideoMetadata(mediaInfo, mediaId, media.publicUrl);
+          const metadata = await getVideoMetadata(
+            mediaInfo,
+            mediaId,
+            media.publicUrl
+          );
           console.log("Generated metadata", { metadata });
 
           // Generate poster from first frame of video
@@ -576,10 +588,15 @@ export const handleMediaUpload = functions
 
           // Update media entry with poster and placeholder
           const posterUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
+          console.log("Updating db with: ", { metadata, base64, posterUrl });
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
             .update({ metadata, blurDataURL: base64, posterUrl });
-          console.log("Updated db entry", { metadata, blurDataUrl: base64, posterUrl });
+          console.log("Updated db entry", {
+            metadata,
+            blurDataUrl: base64,
+            posterUrl,
+          });
           mixpanel.track("Media uploaded", {
             eventId,
             guestId: media.guestId,
@@ -587,7 +604,7 @@ export const handleMediaUpload = functions
             metadata,
           });
         } catch (error) {
-          console.error("Failed to generate poster for video", error);
+          console.error("Failed to process video", error);
           Sentry.captureException(error);
           await Sentry.flush(2000);
           throw error;
@@ -694,9 +711,9 @@ const getImageMetadata = async (file: string) => {
   if (createdDateTime && createdDateTimeOffset) {
     let [date, time] = createdDateTime.split(" ");
     date = date.replaceAll(":", "-");
-    createdAt = new Date(
+    createdAt = createdDateTimeOffset ? new Date(
       `${date}T${time}${createdDateTimeOffset}`
-    ).toISOString();
+    ).toISOString(): null;
   }
 
   let height = metadata.file?.["Image Height"]?.value || null;
@@ -750,8 +767,10 @@ async function getMediaInfoJS() {
 
 const getVideoMetadata = async (mediainfo: any, mediaId: string, url: string) => {
   // Unfortunately with the WASM version of MediaInfo we need to download the file
+  // TODO: Switch to using the mediainfo binary and the publicUrl or
+  // stream the file chunks straight to mediainfo to avoid creating a tmp file
   const res = await fetch(url);
-  const fileWriteHandle = await fs.open(`/tmp/${mediaId}`, "w");
+  const fileWriteHandle = await fs.open(`/tmp/${sanitize(mediaId).replaceAll("%", "")}`, "w");
   const fileStream = fileWriteHandle.createWriteStream();
   await new Promise((resolve, reject) => {
     /* @ts-ignore */
@@ -760,11 +779,14 @@ const getVideoMetadata = async (mediainfo: any, mediaId: string, url: string) =>
     res.body.on("error", reject);
     fileStream.on("finish", resolve);
   });
-  const fileReadHandle = await fs.open(`/tmp/${mediaId}`, "r");
+  const fileReadHandle = await fs.open(
+    `/tmp/${sanitize(mediaId).replaceAll("%", "")}`,
+    "r"
+  );
   const fileSize = (await fileReadHandle.stat()).size;
   const readChunk = async (size: any, offset: any) => {
     const buffer = new Uint8Array(size);
-    await (fileReadHandle).read(buffer, 0, size, offset);
+    await fileReadHandle.read(buffer, 0, size, offset);
     return buffer;
   };
 
@@ -805,7 +827,7 @@ const getVideoMetadata = async (mediainfo: any, mediaId: string, url: string) =>
   const duration = parseVideoDuration(Duration_String3);
   const createdAt = Tagged_Date
     ? new Date(Tagged_Date).toISOString()
-    : undefined;
+    : null;
   const orientation: "portrait" | "landscape" =
     height > width ? "portrait" : "landscape";
 
@@ -813,16 +835,17 @@ const getVideoMetadata = async (mediainfo: any, mediaId: string, url: string) =>
   fileReadHandle && (await fileReadHandle.close());
   mediainfo && mediainfo.close();
 
-  return {
-    mimeType,
-    duration,
-    createdAt,
-    device,
-    height,
-    width,
-    orientation,
-    location,
-  };
+  const md: any = {};
+  if (location && location.lat && location.long) md.location = location;
+  if (device && device.make) md.device = device;
+  if (mimeType) md.mimeType = mimeType;
+  if (duration) md.duration = duration;
+  if (createdAt) md.createdAt = createdAt;
+  if (height) md.height = height;
+  if (width) md.width = width;
+  if (orientation) md.orientation = orientation;
+
+  return md;
 };
 
 // Format "HH:MM:SS.MS" -> Seconds
@@ -837,6 +860,6 @@ const parseVideoDuration = (durationStr: string) => {
 const parseIso6709 = (loc?: string) => {
   if (!loc) return;
   const [_, lat, long, alt] =
-    loc.match(/([-+][^-+]*)([-+][^-+]*)([^-+]*[^\/]*)/) || [];
+    loc.match(/([-+][^-+]*)([-+][^-+]*)([^-+]*[^/]*)/) || [];
   return { lat: Number(lat), long: Number(long), alt: Number(alt) };
 };

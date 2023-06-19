@@ -35,5 +35,7 @@ module.exports = {
     "@typescript-eslint/ban-ts-comment": 0,
     "camelcase": 0,
     "one-var": 0,
+    "curly": 0,
+    "operator-linebreak": 0,
   },
 };
