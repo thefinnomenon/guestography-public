@@ -33,5 +33,7 @@ module.exports = {
     "@typescript-eslint/no-var-requires": 0,
     "max-len": ["error", { code: 120 }],
     "@typescript-eslint/ban-ts-comment": 0,
+    "camelcase": 0,
+    "one-var": 0,
   },
 };

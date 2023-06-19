@@ -9,6 +9,7 @@ import { defineSecret } from "firebase-functions/params";
 import path from "path";
 import os from "os";
 const fs = require("fs").promises;
+const fetch = require("cross-fetch");
 const util = require("node:util");
 const exec = util.promisify(require("node:child_process").exec);
 import { getPlaiceholder } from "plaiceholder";
@@ -18,6 +19,8 @@ import { S3 } from "@aws-sdk/client-s3";
 import Mixpanel from "mixpanel";
 const got = require("got");
 import { fromStream } from "file-type";
+// eslint-disable-next-line import/default
+import MediaInfo from "mediainfo.js";
 
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
@@ -526,14 +529,19 @@ export const handleMediaUpload = functions
         break;
       case "video":
         console.log(
-          "New media is a video. Generating poster and base64 placeholder."
+          "New media is a video. Extracting metadata and generating poster and base64 placeholder."
         );
         try {
           const db = admin.firestore();
           const posterFilename = `${mediaId.replace(".", "-")}-poster.jpg`;
           const tempFilePath = path.join(os.tmpdir(), posterFilename);
 
-          // Generate poster from first frame of interview video (via publicUrl)
+          // Extract metadata
+          const mediaInfo = await getMediaInfoJS();
+          const metadata = await getVideoMetadata(mediaInfo, mediaId, media.publicUrl);
+          console.log("Generated metadata", { metadata });
+
+          // Generate poster from first frame of video
           // and save to tempFilePath
           await exec(`ffmpeg -i ${media.publicUrl} -vframes 1 ${tempFilePath}`);
           console.log(`Generated poster at ${tempFilePath}`);
@@ -570,15 +578,13 @@ export const handleMediaUpload = functions
           const posterUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
-            .update({ blurDataURL: base64, posterUrl });
-          console.log(
-            `Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`
-          );
+            .update({ metadata, blurDataURL: base64, posterUrl });
+          console.log("Updated db entry", { metadata, blurDataUrl: base64, posterUrl });
           mixpanel.track("Media uploaded", {
             eventId,
             guestId: media.guestId,
             type: "video",
-            metadata: media.metadata,
+            metadata,
           });
         } catch (error) {
           console.error("Failed to generate poster for video", error);
@@ -719,87 +725,105 @@ const getImageMetadata = async (file: string) => {
   return md;
 };
 
-// async function getMediaInfoJS() {
-//   return new Promise((resolve, reject) => {
-//     // @ts-ignore
-//     MediaInfo(
-//       {
-//         chunkSize: 5 * 1024 * 1024,
-//         coverData: false,
-//         format: "object",
-//         full: true,
-//         locateFile: (path: any, prefix: any) => {
-//           return `../../${path}`;
-//         }
-//       },
-//       (mediainfo: any) => {
-//         resolve(mediainfo);
-//       },
-//       (error: any) => {
-//         console.error("[mediainfo.js] failed instantiate", error);
-//         reject(error);
-//       }
-//     );
-//   });
-// }
+async function getMediaInfoJS() {
+  return new Promise((resolve, reject) => {
+    // eslint-disable-next-line new-cap
+    MediaInfo(
+      {
+        chunkSize: 5 * 1024 * 1024,
+        coverData: false,
+        format: "object",
+        locateFile: () =>
+          "./src//MediaInfoModule.wasm",
+        full: true,
+      },
+      (mediainfo: any) => {
+        resolve(mediainfo);
+      },
+      (error: any) => {
+        console.error("[mediainfo.js] failed instantiate", error);
+        reject(error);
+      }
+    );
+  });
+}
 
-// const getVideoMetadata = async (mediainfo: any, file: File) => {
-//   const getSize = () => file.size;
-//   const readChunk = (chunkSize: any, offset: any) =>
-//     new Promise((resolve, reject) => {
-//       const reader = new FileReader();
-//       reader.onload = (event) => {
-//         if (event?.target?.error) {
-//           reject(event?.target?.error);
-//         }
-//         // @ts-ignore
-//         resolve(new Uint8Array(event.target.result));
-//       };
-//       reader.readAsArrayBuffer(file.slice(offset, offset + chunkSize));
-//     });
+const getVideoMetadata = async (mediainfo: any, mediaId: string, url: string) => {
+  // Unfortunately with the WASM version of MediaInfo we need to download the file
+  const res = await fetch(url);
+  const fileWriteHandle = await fs.open(`/tmp/${mediaId}`, "w");
+  const fileStream = fileWriteHandle.createWriteStream();
+  await new Promise((resolve, reject) => {
+    /* @ts-ignore */
+    res.body.pipe(fileStream);
+    /* @ts-ignore */
+    res.body.on("error", reject);
+    fileStream.on("finish", resolve);
+  });
+  const fileReadHandle = await fs.open(`/tmp/${mediaId}`, "r");
+  const fileSize = (await fileReadHandle.stat()).size;
+  const readChunk = async (size: any, offset: any) => {
+    const buffer = new Uint8Array(size);
+    await (fileReadHandle).read(buffer, 0, size, offset);
+    return buffer;
+  };
 
-//   const metadata = await mediainfo.analyzeData(getSize, readChunk);
+  const metadata = await mediainfo.analyzeData(() => fileSize, readChunk);
 
-//   console.log(metadata);
+  console.log(metadata);
 
-//   const { Duration_String3, InternetMediaType: mimeType, Tagged_Date, extra } =
-//     metadata.media.track[0];
+  const {
+    Duration_String3,
+    InternetMediaType: mimeType,
+    Tagged_Date,
+    extra,
+  } = metadata.media.track[0];
 
-//   const { Height, Width } = metadata.media.track[1];
-//   let height = Number(Height);
-//   let width = Number(Width);
+  const { Height, Width } = metadata.media.track[1];
+  const height = Number(Height);
+  const width = Number(Width);
 
-//   // Apple specific metadata
-//   let device, location;
-//   if (extra) {
-//     const {
-//       com_apple_quicktime_location_ISO6709,
-//       com_apple_quicktime_make,
-//       com_apple_quicktime_model,
-//       com_apple_quicktime_software,
-//     } = extra;
+  // Apple specific metadata
+  let device, location;
+  if (extra) {
+    const {
+      com_apple_quicktime_location_ISO6709,
+      com_apple_quicktime_make,
+      com_apple_quicktime_model,
+      com_apple_quicktime_software,
+    } = extra;
 
-//     device = {
-//       make: com_apple_quicktime_make,
-//       model: com_apple_quicktime_model,
-//       version: com_apple_quicktime_software,
-//     };
+    device = {
+      make: com_apple_quicktime_make,
+      model: com_apple_quicktime_model,
+      version: com_apple_quicktime_software,
+    };
 
-//     location = parseIso6709(com_apple_quicktime_location_ISO6709);
-//   }
+    location = parseIso6709(com_apple_quicktime_location_ISO6709);
+  }
 
-//   let duration = parseVideoDuration(Duration_String3);
-//   const createdAt = Tagged_Date ? new Date(Tagged_Date).toISOString(): undefined;
-//   if(!height || !width || !duration) {
-//     const dims = await LoadVideoAndGetDimensions(file);
-//     height = dims.height;
-//     width = dims.width;
-//     duration = dims.duration;
-//   }
-//   const orientation: 'portrait' | 'landscape' = height > width ? 'portrait' : 'landscape';
+  const duration = parseVideoDuration(Duration_String3);
+  const createdAt = Tagged_Date
+    ? new Date(Tagged_Date).toISOString()
+    : undefined;
+  const orientation: "portrait" | "landscape" =
+    height > width ? "portrait" : "landscape";
 
-//   return { mimeType, duration, createdAt, device, height, width, orientation, location };
-// }
+  fileWriteHandle && (await fileWriteHandle.close());
+  fileReadHandle && (await fileReadHandle.close());
+  mediainfo && mediainfo.close();
+
+  return {
+    mimeType,
+    duration,
+    createdAt,
+    device,
+    height,
+    width,
+    orientation,
+    location,
+  };
+};
 
 // Format "HH:MM:SS.MS" -> Seconds
 const parseVideoDuration = (durationStr: string) => {
