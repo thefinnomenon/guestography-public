@@ -10,7 +10,11 @@ import {
 } from "../../lib/firebase";
 import { Interview, Media, GalleryMedia } from "../../types";
 import PhotoAlbum, { RenderPhoto } from "react-photo-album";
-import Lightbox, { isImageFitCover, isImageSlide, useLightboxProps } from "yet-another-react-lightbox";
+import Lightbox, {
+  isImageFitCover,
+  isImageSlide,
+  useLightboxProps,
+} from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 
 // import optional lightbox plugins
@@ -25,7 +29,7 @@ import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { useContext, useEffect, useRef, useState } from "react";
 import { MdOutlineFileDownload } from "react-icons/md";
-import { track, identify} from "../../lib/mixpanel";
+import { track, identify } from "../../lib/mixpanel";
 import { useRouter } from "next/router";
 import { EventAndGuestContext } from "../../context/EventAndGuestContext";
 
@@ -39,18 +43,23 @@ interface Props {
 
 export default function Home(props: Props) {
   const router = useRouter();
-  const { guestId } = router.query as { guestId: string};
-  if (guestId) identify(guestId)
+  const { guestId } = router.query as { guestId: string };
+  if (guestId) identify(guestId);
   const { title, interview, media, unsorted, eventId } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
   const [isDownloadingInterview, setIsDownloadingInterview] = useState(false);
-  const [interviewVideoPercentageComplete, setInterviewVideoPercentageComplete] = useState(0);
+  const [
+    interviewVideoPercentageComplete,
+    setInterviewVideoPercentageComplete,
+  ] = useState(0);
   const [downloadList, setDownloadList] = useState([]);
 
   useEffect(() => {
     const slidesMedia = media ? media.map((m) => mapMediatoSlides(m)) : [];
-    const slidesUnsorted = unsorted ? unsorted.map((m) => mapMediatoSlides(m)) : [];
+    const slidesUnsorted = unsorted
+      ? unsorted.map((m) => mapMediatoSlides(m))
+      : [];
     setSlides([...slidesMedia, ...slidesUnsorted]);
   }, [media, unsorted]);
 
@@ -274,13 +283,7 @@ const renderPhoto: RenderPhoto = ({
   photo,
   layout,
   layoutOptions,
-  imageProps: {
-    alt,
-    src,
-    style,
-    onClick,
-    ...restImageProps
-  },
+  imageProps: { alt, src, style, onClick, ...restImageProps },
 }) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [loading, setLoading] = useState(false);
@@ -483,7 +486,7 @@ const mapMediatoSlides = (media: GalleryMedia) => {
       alt: `Image by ${getGuestNameFromId(guest)}`,
     };
   }
-}
+};
 
 const NextJsImage = ({ slide, rect }: any) => {
   const { imageFit } = useLightboxProps().carousel;
@@ -519,8 +522,8 @@ const NextJsImage = ({ slide, rect }: any) => {
 };
 
 // Use share dialog for iPhone & trigger normal download for other devices
-const downloadMedia = async (src: string) => { 
-  const response = await fetch(src, { cache: "no-store" }); 
+const downloadMedia = async (src: string) => {
+  const response = await fetch(src, { cache: "no-store" });
   const blob = await response.blob();
   const mediaURL = URL.createObjectURL(blob);
   const mediaFilename = getFilenameFromSource(src);
@@ -559,7 +562,7 @@ const getFilenameFromSource = (src: string) => {
 };
 
 const getGuestNameFromId = (guestId: string) => {
-  if(!guestId) return 'Anonymous'
+  if (!guestId) return "Anonymous";
   return guestId.slice(0, guestId.lastIndexOf("-")).replace("-", " ").trim();
 };
 
@@ -603,7 +606,7 @@ export async function getStaticProps(
         width: m.metadata.width,
         blurDataURL: m.blurDataURL || null,
         poster: m.posterUrl || null,
-        type: m.metadata.type,
+        type: m.metadata?.mimeType?.includes("image") ? "image" : "video",
         guest: m.guestId,
       };
     });
@@ -615,7 +618,7 @@ export async function getStaticProps(
         width: m.metadata.width,
         blurDataURL: m.blurDataURL || null,
         poster: m.posterUrl || null,
-        type: m.metadata.type,
+        type: m.metadata?.mimeType?.includes("image") ? "image" : "video",
         guest: m.guestId,
       };
     });
