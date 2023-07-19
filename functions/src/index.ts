@@ -711,9 +711,9 @@ const getImageMetadata = async (file: string) => {
   if (createdDateTime && createdDateTimeOffset) {
     let [date, time] = createdDateTime.split(" ");
     date = date.replaceAll(":", "-");
-    createdAt = createdDateTimeOffset ? new Date(
-      `${date}T${time}${createdDateTimeOffset}`
-    ).toISOString(): null;
+    createdAt = createdDateTimeOffset
+      ? new Date(`${date}T${time}${createdDateTimeOffset}`).toISOString()
+      : null;
   }
 
   let height = metadata.file?.["Image Height"]?.value || null;
@@ -750,8 +750,7 @@ async function getMediaInfoJS() {
         chunkSize: 5 * 1024 * 1024,
         coverData: false,
         format: "object",
-        locateFile: () =>
-          "./src//MediaInfoModule.wasm",
+        locateFile: () => "./src//MediaInfoModule.wasm",
         full: true,
       },
       (mediainfo: any) => {
@@ -765,12 +764,19 @@ async function getMediaInfoJS() {
   });
 }
 
-const getVideoMetadata = async (mediainfo: any, mediaId: string, url: string) => {
+const getVideoMetadata = async (
+  mediainfo: any,
+  mediaId: string,
+  url: string
+) => {
   // Unfortunately with the WASM version of MediaInfo we need to download the file
   // TODO: Switch to using the mediainfo binary and the publicUrl or
   // stream the file chunks straight to mediainfo to avoid creating a tmp file
   const res = await fetch(url);
-  const fileWriteHandle = await fs.open(`/tmp/${sanitize(mediaId).replaceAll("%", "")}`, "w");
+  const fileWriteHandle = await fs.open(
+    `/tmp/${sanitize(mediaId).replaceAll("%", "")}`,
+    "w"
+  );
   const fileStream = fileWriteHandle.createWriteStream();
   await new Promise((resolve, reject) => {
     /* @ts-ignore */
@@ -801,9 +807,14 @@ const getVideoMetadata = async (mediainfo: any, mediaId: string, url: string) =>
     extra,
   } = metadata.media.track[0];
 
-  const { Height, Width } = metadata.media.track[1];
-  const height = Number(Height);
-  const width = Number(Width);
+  const { Height, Width, Rotation } = metadata.media.track[1];
+  let height = Number(Height);
+  let width = Number(Width);
+  const rotation = Number(Rotation);
+
+  // Fix height & width based on rotation
+  // TODO: Do we need to flip videos to fix for rotation (e.g. is a video with 180 going to be upside-down?)
+  if (rotation === 90 || rotation === 270) [height, width] = [width, height];
 
   // Apple specific metadata
   let device, location;
@@ -825,9 +836,7 @@ const getVideoMetadata = async (mediainfo: any, mediaId: string, url: string) =>
   }
 
   const duration = parseVideoDuration(Duration_String3);
-  const createdAt = Tagged_Date
-    ? new Date(Tagged_Date).toISOString()
-    : null;
+  const createdAt = Tagged_Date ? new Date(Tagged_Date).toISOString() : null;
   const orientation: "portrait" | "landscape" =
     height > width ? "portrait" : "landscape";
 
