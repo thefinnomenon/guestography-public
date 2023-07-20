@@ -162,7 +162,8 @@ export default function Home(props: Props) {
                           (video.currentTime / video.duration) * 100
                         );
                         if (
-                          percentageComplete > interviewVideoPercentageComplete
+                          percentageComplete >
+                          interviewVideoPercentageComplete + 9
                         ) {
                           setInterviewVideoPercentageComplete(
                             percentageComplete
