@@ -259,6 +259,12 @@ export default function Home(props: Props) {
                     download={{
                       download: async ({ slide }) => {
                         await downloadMedia(slide.src);
+                        track("Media downloaded", {
+                          eventId,
+                          guestId,
+                          uploaderId: slide.guest,
+                          type: slide.type,
+                        });
                       },
                     }}
                     captions={{ descriptionTextAlign: "center" }}
@@ -428,8 +434,8 @@ const renderPhoto: RenderPhoto = ({
               track("Media downloaded", {
                 eventId,
                 guestId,
-                type,
                 uploaderId: guest,
+                type,
               });
             }}
             disabled={loading}
