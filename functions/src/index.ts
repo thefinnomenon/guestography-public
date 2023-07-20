@@ -523,7 +523,7 @@ export const handleMediaUpload = functions
             eventId,
             guestId: media.guestId,
             type: "image",
-            metadata,
+            ...flattenObject(metadata),
           });
         } catch (error) {
           console.log("Failed to generate blur placeholder for image", error);
@@ -601,7 +601,7 @@ export const handleMediaUpload = functions
             eventId,
             guestId: media.guestId,
             type: "video",
-            metadata,
+            ...flattenObject(metadata),
           });
         } catch (error) {
           console.error("Failed to process video", error);
@@ -871,4 +871,20 @@ const parseIso6709 = (loc?: string) => {
   const [_, lat, long, alt] =
     loc.match(/([-+][^-+]*)([-+][^-+]*)([^-+]*[^/]*)/) || [];
   return { lat: Number(lat), long: Number(long), alt: Number(alt) };
+};
+
+// Flatten Javascript Object
+export const flattenObject = (obj: object, parentKey?: string) => {
+  let result: { [key: string]: any } = {};
+
+  Object.entries(obj).forEach(([key, value]) => {
+    const _key = parentKey ? parentKey + "." + key : key;
+    if (typeof value === "object") {
+      result = { ...result, ...flattenObject(value, _key) };
+    } else {
+      result[_key] = value;
+    }
+  });
+
+  return result;
 };
