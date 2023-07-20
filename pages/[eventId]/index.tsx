@@ -159,7 +159,7 @@ export default function Home(props: Props) {
                           "interview-video"
                         ) as HTMLVideoElement;
                         const percentageComplete = Math.floor(
-                          (video.currentTime / video.duration) * 10
+                          (video.currentTime / video.duration) * 100
                         );
                         if (
                           percentageComplete > interviewVideoPercentageComplete
