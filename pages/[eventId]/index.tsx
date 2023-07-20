@@ -425,7 +425,7 @@ const renderPhoto: RenderPhoto = ({
               setLoading(true);
               await downloadMedia(src);
               setLoading(false);
-              track("Media video downloaded", {
+              track("Media downloaded", {
                 eventId,
                 guestId,
                 type,
