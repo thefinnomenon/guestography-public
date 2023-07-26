@@ -30,7 +30,44 @@ export default async function handler(
   const db = admin.firestore();
   const event: Event = req.body;
 
-  // TODO: Validate event info
+  // Validate event info
+  try {
+    if (event.endDate < event.date)
+      throw Error("End date must be after start date");
+    if (event.interviews.enabled) {
+      if (
+        event.interviews.initialMessage.schedule < event.date ||
+        event.interviews.initialMessage.schedule > event.endDate ||
+        event.interviews.initialMessage.schedule >
+          event.interviews.reminderMessage.schedule
+      )
+        throw Error("Invalid interview initial message schedule");
+
+      if (
+        event.interviews.reminderMessage.schedule < event.date ||
+        event.interviews.reminderMessage.schedule > event.endDate
+      )
+        throw Error("Invalid interview reminder message schedule");
+    }
+    if (event.media.enabled) {
+      if (
+        event.media.initialMessage.schedule > event.endDate ||
+        event.media.initialMessage.schedule >
+          event.media.collectionMessage.schedule
+      )
+        throw Error("Invalid media initial message schedule");
+
+      if (
+        event.media.collectionMessage.schedule < event.date ||
+        event.media.collectionMessage.schedule > event.endDate
+      )
+        throw Error("Invalid media collection message schedule");
+    }
+  } catch (e) {
+    console.error("Invalid event: ", e);
+    res.status(400).send(e);
+    return;
+  }
 
   // Map over guest list & add unique guest ids
   const uid = new ShortUniqueId();
@@ -78,21 +115,23 @@ export default async function handler(
     checkoutSession = await stripe.checkout.sessions.create(params);
   } catch (e) {
     console.error("Failed to create Stripe checkout session", e);
-    throw(e);
+    res.status(400).send("Failed to create Stripe checkout session");
+    return;
   }
 
   // Store event in db
   try {
     await db.collection("events").doc(eventId).create(event);
   } catch (e) {
-    console.error('Failed to create event', e);
-    throw e;
+    console.error("Failed to create event", e);
+    res.status(400).send(e);
+    return;
   }
 
   // Redirect to Stripe checkout page
   if (checkoutSession.url) {
     res.status(200).json({ checkoutUrl: checkoutSession.url });
-    mixpanel.track('Event created', { eventId })
+    mixpanel.track("Event created", { eventId });
   } else {
     console.error("Failed to generate checkout session");
     mixpanel.track("Failed to create event", { eventId });

@@ -175,7 +175,10 @@ export default function Form() {
 
       if (res.status === 200 && resData && resData.checkoutUrl)
         window.location.href = resData.checkoutUrl;
-      else throw Error(resData);
+      else {
+        setIsSubmitting(false);
+        throw Error(resData);
+      }
     } catch (error) {
       console.error("Failed to submit event form", error);
     }
@@ -263,7 +266,7 @@ export default function Form() {
           <form
             onChange={() => {
               if (!hasFormBeenEdited) {
-                track('Event form edited');
+                track("Event form edited");
                 setHasFormBeenEdited(true);
               }
             }}
@@ -390,6 +393,8 @@ export default function Form() {
                   id="date"
                   onChange={(e) => setEventStart(e.target.value)}
                   required
+                  min={new Date().toLocaleDateString()}
+                  max={eventEnd}
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -406,6 +411,7 @@ export default function Form() {
                   type="datetime-local"
                   name="date"
                   id="date"
+                  min={eventStart}
                   onChange={(e) => setEventEnd(e.target.value)}
                   value={eventEnd || getEstimatedEventEnd(eventStart)}
                   required
@@ -591,6 +597,8 @@ export default function Form() {
                       }
                       value={interviewsInitialMessageTime || eventStart}
                       required={isInterviewsChecked}
+                      min={eventStart}
+                      max={interviewsReminderMessageTime}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
                   </div>
@@ -651,6 +659,8 @@ export default function Form() {
                         interviewsReminderMessageTime ||
                         getEstimatedEventEnd(eventStart)
                       }
+                      min={interviewsInitialMessageTime}
+                      max={eventEnd}
                       required={isInterviewsChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
@@ -735,6 +745,7 @@ export default function Form() {
                       value={
                         mediaInitialMessageTime || getHourBefore(eventStart)
                       }
+                      max={mediaCollectionMessageTime}
                       required={isMediaChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
@@ -792,6 +803,8 @@ export default function Form() {
                       value={
                         mediaCollectionMessageTime || getNextMorning(eventStart)
                       }
+                      min={mediaInitialMessageTime}
+                      max={eventEnd}
                       required={isMediaChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
