@@ -44,14 +44,19 @@ export default async function handler(
   const db = admin.firestore();
   let event;
   try {
-    event = (await db.collection("events").doc(eventId).get()).data() as Event;
+    event = (
+      await db.collection("events").doc(eventId.trim()).get()
+    ).data() as Event;
   } catch (e: any) {
     console.error(`Failed to retrieve event ${eventId}`);
     res.status(500).send(`Failed to retrieve event ${eventId}`);
     throw Error(e);
   }
 
-  console.log("EVENT: ", event);
+  if (!event) {
+    console.error(`Failed to find event ${eventId}`);
+    throw Error(`Failed to find event ${eventId}`);
+  }
 
   let guest;
   if (guest === "owner" && type === "galleryReadyMessage")
