@@ -26,9 +26,6 @@ export default async function handler(
 ) {
   const { type, eventId, guestId, secret } = JSON.parse(req.body);
 
-  console.log("BODY: ", req.body);
-  console.log("BODY CONTENTS: ", { type, eventId, guestId, secret });
-
   // Verify secret
   if (secret !== process.env.WEBHOOK_SECRET) {
     console.error("Invalid webhook secret");
@@ -53,6 +50,8 @@ export default async function handler(
     res.status(500).send(`Failed to retrieve event ${eventId}`);
     throw Error(e);
   }
+
+  console.log("EVENT: ", event);
 
   let guest;
   if (guest === "owner" && type === "galleryReadyMessage")
