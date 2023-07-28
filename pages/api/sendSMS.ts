@@ -26,6 +26,8 @@ export default async function handler(
 ) {
   const { type, eventId, guestId, secret } = req.body;
 
+  console.log("BODY: ", { type, eventId, guestId, secret });
+
   // Verify secret
   console.log("VERIFYING WEBHOOK_SECRET: ", secret, process.env.WEBHOOK_SECRET);
   if (secret !== process.env.WEBHOOK_SECRET) {
