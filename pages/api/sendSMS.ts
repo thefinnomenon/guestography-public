@@ -57,7 +57,7 @@ export default async function handler(
   }
 
   let guest;
-  if (guest === "owner" && type === "galleryReadyMessage")
+  if (guestId === "owner" && type === "galleryReadyMessage")
     guest = { firstName: event.firstName, phone: event.phone };
   else guest = event.guests.find((guest) => guest.id === guestId);
 
