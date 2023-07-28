@@ -26,10 +26,10 @@ export default async function handler(
 ) {
   const { type, eventId, guestId, secret } = req.body;
 
-  console.log("BODY: ", { type, eventId, guestId, secret });
+  console.log("BODY: ", req.body);
+  console.log("BODY CONTENTS: ", { type, eventId, guestId, secret });
 
   // Verify secret
-  console.log("VERIFYING WEBHOOK_SECRET: ", secret, process.env.WEBHOOK_SECRET);
   if (secret !== process.env.WEBHOOK_SECRET) {
     console.error("Invalid webhook secret");
     res.status(401).send("Invalid webhook secret");
