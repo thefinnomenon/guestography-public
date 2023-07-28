@@ -44,9 +44,7 @@ export default async function handler(
   const db = admin.firestore();
   let event;
   try {
-    event = (
-      await db.collection("events").doc(eventId.trim()).get()
-    ).data() as Event;
+    event = (await db.collection("events").doc(eventId).get()).data() as Event;
   } catch (e: any) {
     console.error(`Failed to retrieve event ${eventId}`);
     res.status(500).send(`Failed to retrieve event ${eventId}`);
