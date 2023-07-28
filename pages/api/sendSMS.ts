@@ -2,9 +2,9 @@ import { Twilio } from "twilio";
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import { Event } from "../../types";
-import Mixpanel from 'mixpanel';
+import Mixpanel from "mixpanel";
 
-const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || '');
+const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -27,6 +27,7 @@ export default async function handler(
   const { type, eventId, guestId, secret } = req.body;
 
   // Verify secret
+  console.log("VERIFYING WEBHOOK_SECRET: ", secret, process.env.WEBHOOK_SECRET);
   if (secret !== process.env.WEBHOOK_SECRET) {
     console.error("Invalid webhook secret");
     res.status(401).send("Invalid webhook secret");
@@ -51,8 +52,11 @@ export default async function handler(
     throw Error(e);
   }
 
-  // Grab guest from event
-  const guest = event.guests.find((guest) => guest.id === guestId);
+  let guest;
+  if (guest === "owner" && type === "galleryReadyMessage")
+    guest = { firstName: event.firstName, phone: event.phone };
+  else guest = event.guests.find((guest) => guest.id === guestId);
+
   if (!guest) {
     console.error(`Failed to find guest ${guestId} for event ${eventId}`);
     throw Error(`Failed to find guest ${guestId} for event ${eventId}`);
@@ -119,11 +123,11 @@ export default async function handler(
       body: msg,
     });
     console.log("SMS sent: ", twilioMsgRes.sid);
-    mixpanel.track('SMS sent', { eventId, guestId, type });
+    mixpanel.track("SMS sent", { eventId, guestId, type });
   } catch (error) {
     console.error("Failed to send SMS", error);
     mixpanel.track("SMS send failure", { eventId, guestId, type });
-    throw(error);
+    throw error;
   }
 
   res.status(200).send("okay");

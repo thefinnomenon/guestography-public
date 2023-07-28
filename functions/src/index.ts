@@ -212,6 +212,7 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
   const eventsFuncArr = await events.map((eventObj: any) => {
     return async () => {
       try {
+        console.log("WEBHOOK SECRET: ", webhookSecret);
         // Create tasks
         const tasks = createTasks(
           webhookSecret,
@@ -249,9 +250,11 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
       } catch (error) {
         console.error("Failed to schedule event", error);
         const eventForAnalytics = {
-          ...eventObj,
+          ...eventObj.event,
+          phone: null,
+          email: null,
           guests: null,
-          numberOfGuests: eventObj.guests.length,
+          numberOfGuests: eventObj.event.guests.length,
         };
         mixpanel.track("Event failed", { event: eventForAnalytics });
         Sentry.captureException(error);
@@ -403,6 +406,27 @@ const createTasks = (secret: string, eventId: string, event: any) => {
     };
     tasks.push(galleryReadyMessageTask);
   });
+
+  // Add Gallery Ready Message Task for event owner
+  const galleryReadyMessageTask = {
+    httpRequest: {
+      headers: {
+        "Content-Type": "text/json",
+      },
+      httpMethod: "POST",
+      url: "https://guestography.com/api/sendSMS",
+      body: formatBody({
+        secret,
+        eventId,
+        guestId: "owner",
+        type: "galleryReadyMessage",
+      }),
+    },
+    scheduleTime: {
+      seconds: formatTime(getNextMorning(event.dateEnd)),
+    },
+  };
+  tasks.push(galleryReadyMessageTask);
 
   // Add event tasks
   if (event.interviews.enabled) {
