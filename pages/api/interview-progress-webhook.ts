@@ -89,7 +89,7 @@ export default async function handler(
           height: videoHeight,
           type: "video",
           fileExt: "mp4",
-          duration: outputDetails.DurationInMs || 0,
+          duration: outputDetails.durationInMs,
         },
         publicUrl,
         guests: [],
