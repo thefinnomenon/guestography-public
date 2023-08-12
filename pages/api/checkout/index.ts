@@ -28,6 +28,7 @@ export default async function handler(
       const params: Stripe.Checkout.SessionCreateParams = {
         payment_method_types: ["card"],
         line_items,
+        allow_promotion_codes: true,
         success_url: `${req.headers.origin}/result?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${req.headers.origin}/donate-with-checkout`,
       };
