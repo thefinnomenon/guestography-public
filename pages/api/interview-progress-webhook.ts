@@ -45,6 +45,8 @@ export default async function handler(
   const Key = filePath.replace(`s3://${Bucket}/`, "");
   const eventId = filePath.split("/")[4];
 
+  console.log("outputDetails", outputDetails);
+
   // Download interview from s3
   let interviewVideo;
   try {
@@ -53,7 +55,7 @@ export default async function handler(
     ).Body?.transformToByteArray();
   } catch (error) {
     console.error("Error while downloading object from S3", error);
-    throw error
+    throw error;
   }
 
   // Upload interview to r2
@@ -67,7 +69,7 @@ export default async function handler(
     });
   } catch (error) {
     console.error("Failed to upload to R2", error);
-    throw error
+    throw error;
   }
 
   // Add firebase record for interview
@@ -87,7 +89,7 @@ export default async function handler(
           height: videoHeight,
           type: "video",
           fileExt: "mp4",
-          duration: outputDetails.DurationInMs
+          duration: outputDetails.DurationInMs || 0,
         },
         publicUrl,
         guests: [],
@@ -95,7 +97,7 @@ export default async function handler(
       });
   } catch (error) {
     console.error("Failed to create Firebase record", error);
-    throw error
+    throw error;
   }
 
   // Delete interview from S3
@@ -103,7 +105,7 @@ export default async function handler(
     await s3.deleteObject({ Bucket, Key });
   } catch (error) {
     console.error("Failed to delete from S3", error);
-    throw error
+    throw error;
   }
 
   res.status(200).send("okay");
