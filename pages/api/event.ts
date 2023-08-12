@@ -107,6 +107,7 @@ export default async function handler(
       payment_method_types: ["card"],
       customer_email: event.email,
       line_items,
+      allow_promotion_codes: true,
       metadata: { eventId },
       success_url: `${req.headers.origin}/checkout/success?eventId=${eventId}&type=schedule`,
       cancel_url: `${req.headers.origin}/event?eventId=${eventId}`,
