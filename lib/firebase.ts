@@ -76,6 +76,7 @@ export const getMedia = async (eventId: string) => {
     // Query for media in ascending order by createdAt
     const snapshot = await db
       .collection(`events/${eventId}/media`)
+      .where("metadata.createdAt", "!=", null)
       .orderBy("metadata.createdAt", "asc")
       .get();
     const media = snapshot.docs.map((doc) => {
@@ -88,7 +89,7 @@ export const getMedia = async (eventId: string) => {
     // Query for unsorted media (media without createdAt)
     const snapshot2 = await db
       .collection(`events/${eventId}/media`)
-      .where("metadata.unsorted", "==", true)
+      .where("metadata.createdAt", "==", null)
       .get();
     const unsortedMedia = snapshot2.docs.map((doc) => {
       return {
@@ -97,7 +98,7 @@ export const getMedia = async (eventId: string) => {
       };
     });
 
-    return { media, unsortedMedia }
+    return { media, unsortedMedia };
   } catch (e) {
     console.log(e);
     throw e;

@@ -758,7 +758,7 @@ const getImageMetadata = async (file: string) => {
   if (device.make) md.device = device;
   if (mimeType) md.mimeType = mimeType;
   if (camera) md.camera = camera;
-  if (createdAt) md.createdAt = createdAt;
+  md.createdAt = createdAt || null;
   if (height) md.height = height;
   if (width) md.width = width;
   if (orientation) md.orientation = orientation;
@@ -837,7 +837,7 @@ const getVideoMetadata = async (
   const rotation = Number(Rotation);
 
   // Fix height & width based on rotation
-  // TODO: Do we need to flip videos to fix for rotation (e.g. is a video with 180 going to be upside-down?)
+  // TODO: Fix for upside down rotation (e.g. a video with 180 degree rotation)
   if (rotation === 90 || rotation === 270) [height, width] = [width, height];
 
   // Apple specific metadata
@@ -873,7 +873,7 @@ const getVideoMetadata = async (
   if (device && device.make) md.device = device;
   if (mimeType) md.mimeType = mimeType;
   if (duration) md.duration = duration;
-  if (createdAt) md.createdAt = createdAt;
+  md.createdAt = createdAt || null;
   if (height) md.height = height;
   if (width) md.width = width;
   if (orientation) md.orientation = orientation;

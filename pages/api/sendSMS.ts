@@ -103,13 +103,13 @@ export default async function handler(
         return;
       }
 
-      msg = `Hi ${firstName}, Guestography again! Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n${interviewLink}`;
+      msg = `Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n${interviewLink}`;
       break;
     case "mediaInitialMessage":
-      msg = `Hi ${firstName}! We hope you are excited for ${eventTitle}! We wanted to let you know that we are using Guestography to collect photos and videos from everyone so please snap away and after the event you will receive a message asking you to upload your best shots! If you're an iPhone user, please go into Settings > Camera > Formats and select "Most Compatible" to ensure that we can use all your photos and videos!`;
+      msg = `Hi ${firstName}! Hope you are excited for ${eventTitle}! We are using Guestography to collect photos and videos from everyone so please snap away and after the event you will receive a message asking you to upload your best shots!`;
       break;
     case "mediaCollectionMessage":
-      msg = `Good morning ${firstName}! Guestography here and we hope that you had fun at ${eventTitle} yesterday and invite you to share any photos and videos you took by uploading them using the link below.\n${mediaLink}`;
+      msg = `Hope that you had fun at ${eventTitle}! Share any photos and videos you took by uploading them using the link below.\n${mediaLink}`;
       break;
     case "galleryReadyMessage":
       msg = `Good news ${firstName}, the gallery for ${eventTitle} is ready! Take a look here,\n${galleryLink}`;
