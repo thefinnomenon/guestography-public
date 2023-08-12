@@ -650,6 +650,8 @@ export const handleInterviewUpload = functions
     console.log(`Interview generated for event ${eventId}`, interview);
     console.log("Generating poster and placeholder...");
 
+    // TODO: Fix video orientation based on metadata rotation (e.g. 180 is upside down)
+
     try {
       const db = admin.firestore();
       const posterFilename = "interview-poster.jpg";
@@ -837,7 +839,7 @@ const getVideoMetadata = async (
   const rotation = Number(Rotation);
 
   // Fix height & width based on rotation
-  // TODO: Fix for upside down rotation (e.g. a video with 180 degree rotation)
+  // TODO: Do we need to flip videos to fix for rotation (e.g. is a video with 180 going to be upside-down?)
   if (rotation === 90 || rotation === 270) [height, width] = [width, height];
 
   // Apple specific metadata
