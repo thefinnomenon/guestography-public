@@ -543,25 +543,31 @@ const downloadMedia = async (src: string) => {
     files: [file],
   };
 
-  // Note: Webkit bug where first promise never resolves
-  //       so web share only works once...
-  // if (
-  //   navigator.canShare &&
-  //   navigator.canShare(mediaShare) &&
-  //   window?.navigator?.userAgent.match(/iphone/i)
-  // ) {
-  //   try {
-  //     await navigator.share(mediaShare);
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // } else {
-  const link = document.createElement("a");
-  link.href = mediaURL;
-  link.download = mediaFilename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  if (
+    navigator.canShare &&
+    navigator.canShare(mediaShare) &&
+    window?.navigator?.userAgent.match(/iphone/i)
+  ) {
+    // NOTE: iOS is annoying and doesn't present save image so let's just open
+    // it in a different tab for easy saving to gallery
+    if (blob.type.includes("image")) {
+      window.open(src, "_blank");
+      return;
+    }
+
+    try {
+      await navigator.share(mediaShare);
+    } catch (error) {
+      console.error(error);
+    }
+  } else {
+    const link = document.createElement("a");
+    link.href = mediaURL;
+    link.download = mediaFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 };
 
 const getFilenameFromSource = (src: string) => {
