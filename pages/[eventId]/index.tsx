@@ -602,9 +602,11 @@ export async function getStaticProps(
     let { media, unsortedMedia } = await getMedia(eventId);
 
     // This is to make the Firestore timestamp object serializable
-    interview = JSON.parse(JSON.stringify(interview) || "{}");
-    media = JSON.parse(JSON.stringify(media) || "{}");
-    unsortedMedia = JSON.parse(JSON.stringify(unsortedMedia) || "{}");
+    interview = interview ? JSON.parse(JSON.stringify(interview)) : null;
+    media = media ? JSON.parse(JSON.stringify(media)) : null;
+    unsortedMedia = unsortedMedia
+      ? JSON.parse(JSON.stringify(unsortedMedia))
+      : null;
 
     const galleryMedia = media.map((m) => {
       return {
