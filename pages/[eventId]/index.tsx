@@ -221,19 +221,18 @@ export default function Home(props: Props) {
                     onClick={({ index }) => setIndex(index)}
                     defaultContainerWidth={1200}
                     sizes={{
-                      size: "calc(100vw - 40px)",
+                      // Default 4 columns
+                      size: "calc(25vw)",
                       sizes: [
                         {
-                          viewport: "(max-width: 299px)",
-                          size: "calc(100vw - 10px)",
+                          // 2 columns
+                          viewport: "(max-width: 400px)",
+                          size: "calc(50vw)",
                         },
                         {
-                          viewport: "(max-width: 599px)",
-                          size: "calc(100vw - 20px)",
-                        },
-                        {
-                          viewport: "(max-width: 1199px)",
-                          size: "calc(100vw - 30px)",
+                          // 3 columns
+                          viewport: "(max-width: 800px)",
+                          size: "calc(33vw)",
                         },
                       ],
                     }}
