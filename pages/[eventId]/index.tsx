@@ -220,7 +220,23 @@ export default function Home(props: Props) {
                     renderPhoto={renderPhoto}
                     onClick={({ index }) => setIndex(index)}
                     defaultContainerWidth={1200}
-                    sizes={{ size: "calc(100vw - 240px)" }}
+                    sizes={{
+                      size: "calc(100vw - 40px)",
+                      sizes: [
+                        {
+                          viewport: "(max-width: 299px)",
+                          size: "calc(100vw - 10px)",
+                        },
+                        {
+                          viewport: "(max-width: 599px)",
+                          size: "calc(100vw - 20px)",
+                        },
+                        {
+                          viewport: "(max-width: 1199px)",
+                          size: "calc(100vw - 30px)",
+                        },
+                      ],
+                    }}
                   />
                 )}
                 <h2 className="text-2xl font-bold mt-8 mb-4">Unsorted Media</h2>
@@ -290,7 +306,7 @@ const renderPhoto: RenderPhoto = ({
   photo,
   layout,
   layoutOptions,
-  imageProps: { alt, src, style, onClick, ...restImageProps },
+  imageProps: { alt, src, style, sizes, onClick, ...restImageProps },
 }) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [loading, setLoading] = useState(false);
@@ -334,16 +350,17 @@ const renderPhoto: RenderPhoto = ({
             alt={`Image by ${getGuestNameFromId(guest ? guest : "")}`}
             src={src}
             // @ts-ignore
-            placeholder="blur"
+            // placeholder={"blurDataURL" in photo ? "blur" : undefined}
             // @ts-ignore
             blurDataURL={photo.blurDataURL}
             // @ts-ignore
             width={photo.width}
             // @ts-ignore
             height={photo.height}
-            style={{ ...style, width: "100%", padding: 0 }}
+            style={{ ...style, width: "100%", height: "auto", padding: 0 }}
             className="rounded-md"
             onClick={onClick}
+            sizes={sizes}
             {...restImageProps}
           />
         </>
@@ -514,11 +531,10 @@ const NextJsImage = ({ slide, rect }: any) => {
   return (
     <div style={{ position: "relative", width, height }}>
       <Image
-        fill
         alt=""
         src={slide}
         loading="eager"
-        placeholder="blur"
+        placeholder={"blurDataURL" in slide ? "blur" : undefined}
         blurDataURL={slide.blurDataURL}
         draggable={false}
         style={{ objectFit: cover ? "cover" : "contain" }}
@@ -543,6 +559,7 @@ const downloadMedia = async (src: string) => {
     files: [file],
   };
 
+  // NOTE: Share dialog doesn't work well on Android
   if (
     navigator.canShare &&
     navigator.canShare(mediaShare) &&

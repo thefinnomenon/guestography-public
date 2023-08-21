@@ -717,6 +717,8 @@ const getImageMetadata = async (file: string) => {
     expanded: true,
   });
 
+  console.log("Image Metadata: ", { metadata });
+
   const location = {
     lat: metadata.gps?.Latitude,
     long: metadata.gps?.Longitude,
@@ -730,6 +732,7 @@ const getImageMetadata = async (file: string) => {
 
   const mimeType = metadata.exif?.["File Format"]?.value;
   const camera = metadata.exif?.LensModel?.description;
+  const rotation = metadata.exif?.Orientation?.description;
   const createdDateTime = metadata.exif?.DateTime?.description;
   const createdDateTimeOffset = metadata.exif?.OffsetTime?.description;
 
@@ -750,6 +753,14 @@ const getImageMetadata = async (file: string) => {
     const dims = await sizeOf(file);
     height = dims.height || null;
     width = dims.width || null;
+  }
+
+  let tmp;
+  switch (rotation) {
+    case "Rotate 90 CW":
+      tmp = height;
+      height = width;
+      width = tmp;
   }
 
   const orientation: "portrait" | "landscape" | null =
@@ -824,7 +835,7 @@ const getVideoMetadata = async (
 
   const metadata = await mediainfo.analyzeData(() => fileSize, readChunk);
 
-  console.log(metadata);
+  console.log("Video metadata: ", { metadata });
 
   const {
     Duration_String3,
