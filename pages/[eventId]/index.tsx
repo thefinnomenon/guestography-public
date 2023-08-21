@@ -11,6 +11,9 @@ import {
 import { Interview, Media, GalleryMedia } from "../../types";
 import PhotoAlbum, { RenderPhoto } from "react-photo-album";
 import Lightbox, {
+  ContainerRect,
+  Render,
+  Slide,
   isImageFitCover,
   isImageSlide,
   useLightboxProps,
@@ -220,22 +223,6 @@ export default function Home(props: Props) {
                     renderPhoto={renderPhoto}
                     onClick={({ index }) => setIndex(index)}
                     defaultContainerWidth={1200}
-                    sizes={{
-                      // Default 4 columns
-                      size: "calc(25vw)",
-                      sizes: [
-                        {
-                          // 2 columns
-                          viewport: "(max-width: 400px)",
-                          size: "calc(50vw)",
-                        },
-                        {
-                          // 3 columns
-                          viewport: "(max-width: 800px)",
-                          size: "calc(33vw)",
-                        },
-                      ],
-                    }}
                   />
                 )}
                 <h2 className="text-2xl font-bold mt-8 mb-4">Unsorted Media</h2>
@@ -284,7 +271,11 @@ export default function Home(props: Props) {
                       },
                     }}
                     captions={{ descriptionTextAlign: "center" }}
-                    render={{ slide: NextJsImage, buttonZoom: () => <div /> }}
+                    render={{
+                      slide: NextJsImage,
+                      thumbnail: NextJsImage,
+                      buttonZoom: () => <div />,
+                    }}
                     thumbnails={{
                       imageFit: "cover",
                       padding: 0,
@@ -359,7 +350,8 @@ const renderPhoto: RenderPhoto = ({
             style={{ ...style, width: "100%", height: "auto", padding: 0 }}
             className="rounded-md"
             onClick={onClick}
-            sizes="25vw"
+            // Two columns, three columns, four columns (default)
+            sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
             {...restImageProps}
           />
         </>
@@ -531,7 +523,7 @@ const NextJsImage = ({ slide, rect }: any) => {
     <div style={{ position: "relative", width, height }}>
       <Image
         alt=""
-        src={slide}
+        src={slide.poster || slide}
         loading="eager"
         placeholder={"blurDataURL" in slide ? "blur" : undefined}
         blurDataURL={slide.blurDataURL}
