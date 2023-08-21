@@ -271,7 +271,11 @@ export default function Home(props: Props) {
                       },
                     }}
                     captions={{ descriptionTextAlign: "center" }}
-                    render={{ slide: NextJsImage, buttonZoom: () => <div /> }}
+                    render={{
+                      slide: NextJsImage,
+                      thumbnail: NextJsImage,
+                      buttonZoom: () => <div />,
+                    }}
                     thumbnails={{
                       imageFit: "cover",
                       padding: 0,
