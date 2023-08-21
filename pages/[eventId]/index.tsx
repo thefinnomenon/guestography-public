@@ -359,7 +359,7 @@ const renderPhoto: RenderPhoto = ({
             style={{ ...style, width: "100%", height: "auto", padding: 0 }}
             className="rounded-md"
             onClick={onClick}
-            sizes={sizes}
+            sizes="25vw"
             {...restImageProps}
           />
         </>
