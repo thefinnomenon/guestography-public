@@ -523,7 +523,7 @@ const NextJsImage = ({ slide, rect }: any) => {
     <div style={{ position: "relative", width, height }}>
       <Image
         alt=""
-        src={slide}
+        src={slide.poster || slide}
         loading="eager"
         placeholder={"blurDataURL" in slide ? "blur" : undefined}
         blurDataURL={slide.blurDataURL}
