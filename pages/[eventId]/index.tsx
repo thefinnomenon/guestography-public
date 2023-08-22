@@ -302,6 +302,10 @@ const renderPhoto: RenderPhoto = ({
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [isPlaying, setIsPlaying] = useState(false);
   // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [showFacade, setShowFacade] = useState(true);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [autoplay, setAutoplay] = useState(false);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const videoRef = useRef<HTMLVideoElement>();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const { eventId, guestId } = useContext(EventAndGuestContext);
@@ -364,38 +368,76 @@ const renderPhoto: RenderPhoto = ({
           <div
             className={`gallery-item-overlay ${loading && "force-display"}`}
           />
-          <div
-            onClick={(e) => {
-              track("Slider opened", {
-                eventId,
-                guestId,
-                type,
-                uploaderId: guest,
-              });
 
-              if (isPlaying && videoRef.current) {
-                videoRef.current.pause();
-                setIsPlaying(false);
-              }
+          {showFacade ? (
+            <Image
+              alt={`Image by ${getGuestNameFromId(guest ? guest : "")}`}
               // @ts-ignore
-              if (onClick) onClick(e);
-            }}
-          >
-            <video
+              src={photo.poster}
               // @ts-ignore
-              ref={videoRef}
+              priority={photo.priority}
+              // @ts-ignore
+              // loading={photo.priority ? "eager" : "lazy"}
+              // @ts-ignore
+              placeholder={photo.blurDataURL ? "blur" : undefined}
+              // @ts-ignore
+              blurDataURL={photo.blurDataURL}
+              // @ts-ignore
+              width={photo.width}
+              // @ts-ignore
+              height={photo.height}
+              style={{ ...style, width: "100%", height: "auto", padding: 0 }}
               className="rounded-md"
-              preload="none"
-              // @ts-ignore
-              poster={photo.poster}
-              onEnded={() => setIsPlaying(false)}
-              src={src}
-              style={{ ...style, width: "100%", padding: 0 }}
+              onClick={(e) => {
+                // Facade was clicked -> swap in video
+                if (showFacade) setShowFacade(false);
+              }}
+              // Two columns, three columns, four columns (default)
+              sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
+              // {...restImageProps}
             />
-          </div>
+          ) : (
+            <div
+              onClick={(e) => {
+                track("Slider opened", {
+                  eventId,
+                  guestId,
+                  type,
+                  uploaderId: guest,
+                });
+
+                if (isPlaying && videoRef.current) {
+                  videoRef.current.pause();
+                  setIsPlaying(false);
+                }
+                // @ts-ignore
+                if (onClick) onClick(e);
+              }}
+            >
+              <video
+                // @ts-ignore
+                ref={videoRef}
+                className="rounded-md"
+                preload="none"
+                autoPlay={autoplay}
+                // @ts-ignore
+                poster={photo.poster}
+                onEnded={() => setIsPlaying(false)}
+                src={src}
+                style={{ ...style, width: "100%", padding: 0 }}
+              />
+            </div>
+          )}
 
           <div
             onClick={() => {
+              // Facade was clicked -> swap in autoplaying video
+              if (showFacade) {
+                setShowFacade(false);
+                setAutoplay(true);
+                setIsPlaying(true);
+                return;
+              }
               if (!videoRef.current) return;
               if (videoRef.current.paused) {
                 track("Media video played inline", {
