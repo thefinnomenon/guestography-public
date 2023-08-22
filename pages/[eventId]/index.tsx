@@ -51,6 +51,7 @@ export default function Home(props: Props) {
   const { title, interview, media, unsorted, eventId } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
+  const [showInterviewFacade, setShowInterviewFacade] = useState(true);
   const [isDownloadingInterview, setIsDownloadingInterview] = useState(false);
   const [
     interviewVideoPercentageComplete,
@@ -151,40 +152,87 @@ export default function Home(props: Props) {
                 <>
                   <h2 className="text-2xl font-bold mb-4">Interview</h2>
                   <div className="relative">
-                    <video
-                      id="interview-video"
-                      className="rounded-md"
-                      onPlay={() => {
-                        track("Interview video played", { eventId, guestId });
-                      }}
-                      onTimeUpdate={() => {
-                        const video = document.getElementById(
-                          "interview-video"
-                        ) as HTMLVideoElement;
-                        const percentageComplete = Math.floor(
-                          (video.currentTime / video.duration) * 100
-                        );
-                        if (
-                          percentageComplete >
-                          interviewVideoPercentageComplete + 9
-                        ) {
-                          setInterviewVideoPercentageComplete(
-                            percentageComplete
+                    {showInterviewFacade ? (
+                      <div
+                        onClick={(e) => {
+                          // Facade was clicked -> swap in video
+                          if (showInterviewFacade)
+                            setShowInterviewFacade(false);
+                        }}
+                      >
+                        <div className="w-full h-full absolute flex justify-center items-center">
+                          <svg
+                            className="play-btn w-20 h-20 fill-white cursor-pointer"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 311.69 311.69"
+                          >
+                            <path d="M155.84,0A155.85,155.85,0,1,0,311.69,155.84,155.84,155.84,0,0,0,155.84,0Zm0,296.42A140.58,140.58,0,1,1,296.42,155.84,140.58,140.58,0,0,1,155.84,296.42Z"></path>
+                            <polygon points="218.79 155.84 119.22 94.34 119.22 217.34 218.79 155.84"></polygon>
+                          </svg>
+                        </div>
+
+                        <Image
+                          alt={`Interview video for ${title}`}
+                          src={interview.posterUrl}
+                          priority
+                          // @ts-ignore
+                          placeholder={
+                            interview.blurDataURL ? "blur" : undefined
+                          }
+                          // @ts-ignore
+                          blurDataURL={interview.blurDataURL}
+                          // @ts-ignore
+                          width={interview.metadata.width}
+                          // @ts-ignore
+                          height={interview.metadata.height}
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            padding: 0,
+                          }}
+                          className="rounded-md"
+                          // Two columns, three columns, four columns (default)
+                          sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
+                          // {...restImageProps}
+                        />
+                      </div>
+                    ) : (
+                      <video
+                        id="interview-video"
+                        className="rounded-md"
+                        autoPlay
+                        onPlay={() => {
+                          track("Interview video played", { eventId, guestId });
+                        }}
+                        onTimeUpdate={() => {
+                          const video = document.getElementById(
+                            "interview-video"
+                          ) as HTMLVideoElement;
+                          const percentageComplete = Math.floor(
+                            (video.currentTime / video.duration) * 100
                           );
-                          track(
-                            `${percentageComplete}% of interview video watched`,
-                            { eventId, guestId }
-                          );
-                        }
-                      }}
-                      onEnded={() => {
-                        track("Interview video ended", { eventId, guestId });
-                      }}
-                      src={`${interview.publicUrl}`}
-                      preload="none"
-                      poster={interview.posterUrl}
-                      controls
-                    />
+                          if (
+                            percentageComplete >
+                            interviewVideoPercentageComplete + 9
+                          ) {
+                            setInterviewVideoPercentageComplete(
+                              percentageComplete
+                            );
+                            track(
+                              `${percentageComplete}% of interview video watched`,
+                              { eventId, guestId }
+                            );
+                          }
+                        }}
+                        onEnded={() => {
+                          track("Interview video ended", { eventId, guestId });
+                        }}
+                        src={`${interview.publicUrl}`}
+                        preload="none"
+                        poster={interview.posterUrl}
+                        controls
+                      />
+                    )}
                     <button
                       aria-label="Download"
                       className="absolute top-2 right-2"
@@ -302,6 +350,10 @@ const renderPhoto: RenderPhoto = ({
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [isPlaying, setIsPlaying] = useState(false);
   // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [showFacade, setShowFacade] = useState(true);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [autoplay, setAutoplay] = useState(false);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const videoRef = useRef<HTMLVideoElement>();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const { eventId, guestId } = useContext(EventAndGuestContext);
@@ -364,38 +416,85 @@ const renderPhoto: RenderPhoto = ({
           <div
             className={`gallery-item-overlay ${loading && "force-display"}`}
           />
-          <div
-            onClick={(e) => {
-              track("Slider opened", {
-                eventId,
-                guestId,
-                type,
-                uploaderId: guest,
-              });
 
-              if (isPlaying && videoRef.current) {
-                videoRef.current.pause();
-                setIsPlaying(false);
-              }
+          {showFacade ? (
+            <Image
+              alt={`Image by ${getGuestNameFromId(guest ? guest : "")}`}
               // @ts-ignore
-              if (onClick) onClick(e);
-            }}
-          >
-            <video
+              src={photo.poster}
               // @ts-ignore
-              ref={videoRef}
+              priority={photo.priority}
+              // @ts-ignore
+              // loading={photo.priority ? "eager" : "lazy"}
+              // @ts-ignore
+              placeholder={photo.blurDataURL ? "blur" : undefined}
+              // @ts-ignore
+              blurDataURL={photo.blurDataURL}
+              // @ts-ignore
+              width={photo.width}
+              // @ts-ignore
+              height={photo.height}
+              style={{ ...style, width: "100%", height: "auto", padding: 0 }}
               className="rounded-md"
-              preload="none"
-              // @ts-ignore
-              poster={photo.poster}
-              onEnded={() => setIsPlaying(false)}
-              src={src}
-              style={{ ...style, width: "100%", padding: 0 }}
+              onClick={(e) => {
+                // Facade was clicked -> swap in video
+                if (showFacade) setShowFacade(false);
+                if (onClick) {
+                  track("Slider opened", {
+                    eventId,
+                    guestId,
+                    type,
+                    uploaderId: guest,
+                  });
+                  onClick(e);
+                }
+              }}
+              // Two columns, three columns, four columns (default)
+              sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
+              // {...restImageProps}
             />
-          </div>
+          ) : (
+            <div
+              onClick={(e) => {
+                track("Slider opened", {
+                  eventId,
+                  guestId,
+                  type,
+                  uploaderId: guest,
+                });
+
+                if (isPlaying && videoRef.current) {
+                  videoRef.current.pause();
+                  setIsPlaying(false);
+                }
+                // @ts-ignore
+                if (onClick) onClick();
+              }}
+            >
+              <video
+                // @ts-ignore
+                ref={videoRef}
+                className="rounded-md"
+                preload="none"
+                autoPlay={autoplay}
+                // @ts-ignore
+                poster={photo.poster}
+                onEnded={() => setIsPlaying(false)}
+                src={src}
+                style={{ ...style, width: "100%", padding: 0 }}
+              />
+            </div>
+          )}
 
           <div
             onClick={() => {
+              // Facade was clicked -> swap in autoplaying video
+              if (showFacade) {
+                setShowFacade(false);
+                setAutoplay(true);
+                setIsPlaying(true);
+                return;
+              }
               if (!videoRef.current) return;
               if (videoRef.current.paused) {
                 track("Media video played inline", {
@@ -527,6 +626,8 @@ const NextJsImage = ({ slide, rect }: any) => {
       <Image
         alt=""
         src={slide.poster || slide}
+        height={height}
+        width={width}
         // @ts-ignore
         placeholder={slide.blurDataURL ? "blur" : undefined}
         blurDataURL={slide.blurDataURL}
