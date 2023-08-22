@@ -392,11 +392,13 @@ const renderPhoto: RenderPhoto = ({
                 // Facade was clicked -> swap in video
                 if (showFacade) setShowFacade(false);
                 if (onClick) {
-                  console.log("Opening slider: ", {
-                    e,
-                    onClick,
-                    restImageProps,
+                  track("Slider opened", {
+                    eventId,
+                    guestId,
+                    type,
+                    uploaderId: guest,
                   });
+                  onClick(e);
                 }
               }}
               // Two columns, three columns, four columns (default)
@@ -570,8 +572,6 @@ const NextJsImage = ({ slide, rect }: any) => {
         Math.min(rect.height, (rect.width / slide.width) * slide.height)
       )
     : rect.height;
-
-  console.log("Slide image", { slide, width, height });
 
   return (
     <div style={{ position: "relative", width, height }}>
