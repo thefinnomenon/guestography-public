@@ -313,8 +313,6 @@ const renderPhoto: RenderPhoto = ({
   // @ts-ignore
   const type = photo.type;
 
-  if (photo.priority) console.log("Priority photo: ", { photo });
-
   return (
     <div
       className="gallery-item-wrapper"
