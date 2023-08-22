@@ -343,7 +343,7 @@ const renderPhoto: RenderPhoto = ({
             // @ts-ignore
             priority={photo.priority}
             // @ts-ignore
-            loading={photo.priority ? "eager" : "lazy"}
+            // loading={photo.priority ? "eager" : "lazy"}
             // @ts-ignore
             placeholder={photo.blurDataURL ? "blur" : undefined}
             // @ts-ignore
