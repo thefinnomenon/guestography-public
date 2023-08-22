@@ -241,7 +241,6 @@ export default function Home(props: Props) {
                       setIndex(media ? media.length + index : index)
                     }
                     defaultContainerWidth={1200}
-                    sizes={{ size: "calc(100vw - 240px)" }}
                   />
                 )}
                 {slides && (
@@ -340,7 +339,7 @@ const renderPhoto: RenderPhoto = ({
             alt={`Image by ${getGuestNameFromId(guest ? guest : "")}`}
             src={src}
             // @ts-ignore
-            // placeholder={"blurDataURL" in photo ? "blur" : undefined}
+            placeholder={photo.blurDataURL ? "blur" : undefined}
             // @ts-ignore
             blurDataURL={photo.blurDataURL}
             // @ts-ignore
