@@ -341,7 +341,7 @@ const renderPhoto: RenderPhoto = ({
             alt={`Image by ${getGuestNameFromId(guest ? guest : "")}`}
             src={src}
             // @ts-ignore
-            loading={photo.eager ? "eager" : "lazy"}
+            priority={photo.priority}
             // @ts-ignore
             placeholder={photo.blurDataURL ? "blur" : undefined}
             // @ts-ignore
@@ -633,7 +633,7 @@ export async function getStaticProps(
         blurDataURL: m.blurDataURL || null,
         poster: m.posterUrl || null,
         // Don't lazy load the first 12 images (above the fold)
-        eager: index < 12,
+        priority: index < 12,
         type: m.metadata?.mimeType?.includes("image") ? "image" : "video",
         guest: m.guestId,
       };
