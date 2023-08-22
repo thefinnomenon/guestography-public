@@ -65,7 +65,7 @@ export interface GuestTag {
 export interface Metadata {
   fileExt: string;
   location?: { lat?: number; long?: number; alt?: number };
-  device?: { make?: string; model?: string, version?: string };
+  device?: { make?: string; model?: string; version?: string };
   mimeType?: string;
   camera?: string;
   createdAt?: string;
@@ -82,7 +82,8 @@ export interface Interview {
   guestId: string;
   guest: GuestTag[];
   publicUrl: string;
-  posterUrl?: string;
+  posterUrl: string;
+  blurDataURL: string;
   url: string;
   metadata: Metadata;
 }

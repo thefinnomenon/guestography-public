@@ -51,6 +51,7 @@ export default function Home(props: Props) {
   const { title, interview, media, unsorted, eventId } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
+  const [showInterviewFacade, setShowInterviewFacade] = useState(true);
   const [isDownloadingInterview, setIsDownloadingInterview] = useState(false);
   const [
     interviewVideoPercentageComplete,
@@ -151,40 +152,87 @@ export default function Home(props: Props) {
                 <>
                   <h2 className="text-2xl font-bold mb-4">Interview</h2>
                   <div className="relative">
-                    <video
-                      id="interview-video"
-                      className="rounded-md"
-                      onPlay={() => {
-                        track("Interview video played", { eventId, guestId });
-                      }}
-                      onTimeUpdate={() => {
-                        const video = document.getElementById(
-                          "interview-video"
-                        ) as HTMLVideoElement;
-                        const percentageComplete = Math.floor(
-                          (video.currentTime / video.duration) * 100
-                        );
-                        if (
-                          percentageComplete >
-                          interviewVideoPercentageComplete + 9
-                        ) {
-                          setInterviewVideoPercentageComplete(
-                            percentageComplete
+                    {showInterviewFacade ? (
+                      <div
+                        onClick={(e) => {
+                          // Facade was clicked -> swap in video
+                          if (showInterviewFacade)
+                            setShowInterviewFacade(false);
+                        }}
+                      >
+                        <div className="w-full h-full absolute flex justify-center items-center">
+                          <svg
+                            className="play-btn w-20 h-20 fill-white cursor-pointer"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 311.69 311.69"
+                          >
+                            <path d="M155.84,0A155.85,155.85,0,1,0,311.69,155.84,155.84,155.84,0,0,0,155.84,0Zm0,296.42A140.58,140.58,0,1,1,296.42,155.84,140.58,140.58,0,0,1,155.84,296.42Z"></path>
+                            <polygon points="218.79 155.84 119.22 94.34 119.22 217.34 218.79 155.84"></polygon>
+                          </svg>
+                        </div>
+
+                        <Image
+                          alt={`Interview video for ${title}`}
+                          src={interview.posterUrl}
+                          priority
+                          // @ts-ignore
+                          placeholder={
+                            interview.blurDataURL ? "blur" : undefined
+                          }
+                          // @ts-ignore
+                          blurDataURL={interview.blurDataURL}
+                          // @ts-ignore
+                          width={interview.metadata.width}
+                          // @ts-ignore
+                          height={interview.metadata.height}
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            padding: 0,
+                          }}
+                          className="rounded-md"
+                          // Two columns, three columns, four columns (default)
+                          sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
+                          // {...restImageProps}
+                        />
+                      </div>
+                    ) : (
+                      <video
+                        id="interview-video"
+                        className="rounded-md"
+                        autoPlay
+                        onPlay={() => {
+                          track("Interview video played", { eventId, guestId });
+                        }}
+                        onTimeUpdate={() => {
+                          const video = document.getElementById(
+                            "interview-video"
+                          ) as HTMLVideoElement;
+                          const percentageComplete = Math.floor(
+                            (video.currentTime / video.duration) * 100
                           );
-                          track(
-                            `${percentageComplete}% of interview video watched`,
-                            { eventId, guestId }
-                          );
-                        }
-                      }}
-                      onEnded={() => {
-                        track("Interview video ended", { eventId, guestId });
-                      }}
-                      src={`${interview.publicUrl}`}
-                      preload="none"
-                      poster={interview.posterUrl}
-                      controls
-                    />
+                          if (
+                            percentageComplete >
+                            interviewVideoPercentageComplete + 9
+                          ) {
+                            setInterviewVideoPercentageComplete(
+                              percentageComplete
+                            );
+                            track(
+                              `${percentageComplete}% of interview video watched`,
+                              { eventId, guestId }
+                            );
+                          }
+                        }}
+                        onEnded={() => {
+                          track("Interview video ended", { eventId, guestId });
+                        }}
+                        src={`${interview.publicUrl}`}
+                        preload="none"
+                        poster={interview.posterUrl}
+                        controls
+                      />
+                    )}
                     <button
                       aria-label="Download"
                       className="absolute top-2 right-2"
