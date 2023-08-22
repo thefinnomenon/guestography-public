@@ -339,6 +339,10 @@ const renderPhoto: RenderPhoto = ({
             alt={`Image by ${getGuestNameFromId(guest ? guest : "")}`}
             src={src}
             // @ts-ignore
+            priority={photo.priority}
+            // @ts-ignore
+            // loading={photo.priority ? "eager" : "lazy"}
+            // @ts-ignore
             placeholder={photo.blurDataURL ? "blur" : undefined}
             // @ts-ignore
             blurDataURL={photo.blurDataURL}
@@ -351,7 +355,7 @@ const renderPhoto: RenderPhoto = ({
             onClick={onClick}
             // Two columns, three columns, four columns (default)
             sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
-            {...restImageProps}
+            // {...restImageProps}
           />
         </>
       ) : (
@@ -523,8 +527,8 @@ const NextJsImage = ({ slide, rect }: any) => {
       <Image
         alt=""
         src={slide.poster || slide}
-        loading="eager"
-        placeholder={"blurDataURL" in slide ? "blur" : undefined}
+        // @ts-ignore
+        placeholder={slide.blurDataURL ? "blur" : undefined}
         blurDataURL={slide.blurDataURL}
         draggable={false}
         style={{ objectFit: cover ? "cover" : "contain" }}
@@ -621,19 +625,21 @@ export async function getStaticProps(
       ? JSON.parse(JSON.stringify(unsortedMedia))
       : null;
 
-    const galleryMedia = media.map((m) => {
+    const galleryMedia = media.map((m, index) => {
       return {
         src: m.publicUrl,
         height: m.metadata.height,
         width: m.metadata.width,
         blurDataURL: m.blurDataURL || null,
         poster: m.posterUrl || null,
+        // Don't lazy load the first 12 images (above the fold)
+        priority: index < 12,
         type: m.metadata?.mimeType?.includes("image") ? "image" : "video",
         guest: m.guestId,
       };
     });
 
-    const galleryUnsortedMedia = unsortedMedia.map((m) => {
+    const galleryUnsortedMedia = unsortedMedia.map((m, index) => {
       return {
         src: m.publicUrl,
         height: m.metadata.height,
