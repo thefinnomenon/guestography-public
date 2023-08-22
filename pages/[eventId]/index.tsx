@@ -530,7 +530,7 @@ const NextJsImage = ({ slide, rect }: any) => {
         alt=""
         src={slide.poster || slide}
         // @ts-ignore
-        placeholder={"blurDataURL" in slide.blurDataURL ? "blur" : undefined}
+        placeholder={slide.blurDataURL ? "blur" : undefined}
         blurDataURL={slide.blurDataURL}
         draggable={false}
         style={{ objectFit: cover ? "cover" : "contain" }}
