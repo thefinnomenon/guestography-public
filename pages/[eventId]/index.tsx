@@ -313,6 +313,8 @@ const renderPhoto: RenderPhoto = ({
   // @ts-ignore
   const type = photo.type;
 
+  if (photo.priority) console.log("Priority photo: ", { photo });
+
   return (
     <div
       className="gallery-item-wrapper"
@@ -343,6 +345,8 @@ const renderPhoto: RenderPhoto = ({
             // @ts-ignore
             priority={photo.priority}
             // @ts-ignore
+            loading={photo.priority ? "eager" : "lazy"}
+            // @ts-ignore
             placeholder={photo.blurDataURL ? "blur" : undefined}
             // @ts-ignore
             blurDataURL={photo.blurDataURL}
@@ -355,7 +359,7 @@ const renderPhoto: RenderPhoto = ({
             onClick={onClick}
             // Two columns, three columns, four columns (default)
             sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
-            {...restImageProps}
+            // {...restImageProps}
           />
         </>
       ) : (
