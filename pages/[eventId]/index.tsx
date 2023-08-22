@@ -66,8 +66,6 @@ export default function Home(props: Props) {
     setSlides([...slidesMedia, ...slidesUnsorted]);
   }, [media, unsorted]);
 
-  console.log({ media });
-
   return (
     <div>
       <Head>
