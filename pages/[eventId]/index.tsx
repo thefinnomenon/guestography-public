@@ -391,6 +391,13 @@ const renderPhoto: RenderPhoto = ({
               onClick={(e) => {
                 // Facade was clicked -> swap in video
                 if (showFacade) setShowFacade(false);
+                if (onClick) {
+                  console.log("Opening slider: ", {
+                    e,
+                    onClick,
+                    restImageProps,
+                  });
+                }
               }}
               // Two columns, three columns, four columns (default)
               sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
@@ -411,7 +418,7 @@ const renderPhoto: RenderPhoto = ({
                   setIsPlaying(false);
                 }
                 // @ts-ignore
-                if (onClick) onClick(e);
+                if (onClick) onClick();
               }}
             >
               <video
@@ -564,11 +571,15 @@ const NextJsImage = ({ slide, rect }: any) => {
       )
     : rect.height;
 
+  console.log("Slide image", { slide, width, height });
+
   return (
     <div style={{ position: "relative", width, height }}>
       <Image
         alt=""
         src={slide.poster || slide}
+        height={height}
+        width={width}
         // @ts-ignore
         placeholder={slide.blurDataURL ? "blur" : undefined}
         blurDataURL={slide.blurDataURL}
