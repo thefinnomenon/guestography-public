@@ -66,6 +66,8 @@ export default function Home(props: Props) {
     setSlides([...slidesMedia, ...slidesUnsorted]);
   }, [media, unsorted]);
 
+  console.log({ media });
+
   return (
     <div>
       <Head>
@@ -241,7 +243,6 @@ export default function Home(props: Props) {
                       setIndex(media ? media.length + index : index)
                     }
                     defaultContainerWidth={1200}
-                    sizes={{ size: "calc(100vw - 240px)" }}
                   />
                 )}
                 {slides && (
@@ -312,6 +313,8 @@ const renderPhoto: RenderPhoto = ({
   // @ts-ignore
   const type = photo.type;
 
+  if (photo.eager) console.log("Eagerly load photo", { photo });
+
   return (
     <div
       className="gallery-item-wrapper"
@@ -340,7 +343,9 @@ const renderPhoto: RenderPhoto = ({
             alt={`Image by ${getGuestNameFromId(guest ? guest : "")}`}
             src={src}
             // @ts-ignore
-            // placeholder={"blurDataURL" in photo ? "blur" : undefined}
+            loading={photo.eager ? "eager" : "lazy"}
+            // @ts-ignore
+            placeholder={photo.blurDataURL ? "blur" : undefined}
             // @ts-ignore
             blurDataURL={photo.blurDataURL}
             // @ts-ignore
@@ -524,8 +529,8 @@ const NextJsImage = ({ slide, rect }: any) => {
       <Image
         alt=""
         src={slide.poster || slide}
-        loading="eager"
-        placeholder={"blurDataURL" in slide ? "blur" : undefined}
+        // @ts-ignore
+        placeholder={"blurDataURL" in slide.blurDataURL ? "blur" : undefined}
         blurDataURL={slide.blurDataURL}
         draggable={false}
         style={{ objectFit: cover ? "cover" : "contain" }}
@@ -622,19 +627,21 @@ export async function getStaticProps(
       ? JSON.parse(JSON.stringify(unsortedMedia))
       : null;
 
-    const galleryMedia = media.map((m) => {
+    const galleryMedia = media.map((m, index) => {
       return {
         src: m.publicUrl,
         height: m.metadata.height,
         width: m.metadata.width,
         blurDataURL: m.blurDataURL || null,
         poster: m.posterUrl || null,
+        // Don't lazy load the first 12 images (above the fold)
+        eager: index < 12,
         type: m.metadata?.mimeType?.includes("image") ? "image" : "video",
         guest: m.guestId,
       };
     });
 
-    const galleryUnsortedMedia = unsortedMedia.map((m) => {
+    const galleryUnsortedMedia = unsortedMedia.map((m, index) => {
       return {
         src: m.publicUrl,
         height: m.metadata.height,
