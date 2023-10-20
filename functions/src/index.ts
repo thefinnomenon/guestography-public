@@ -757,15 +757,6 @@ const getImageMetadata = async (file: string) => {
 
   console.log("Rotation: ", rotation);
 
-  // if exif[orientation] == 3:
-  //       image = image.rotate(180, expand = True)
-  //   elif exif[orientation] == 6:
-  //       image = image.rotate(270, expand = True)
-  //   elif exif[orientation] == 8:
-  //       image = image.rotate(90, expand = True)
-  //   else:
-  //       need_rotate = False
-
   // If portrait, switch height & width
   // http://nsiteful.com/wp-content/uploads/exif-orientation-examples-2016-05-05_10-52-32.png
   let tmp;
