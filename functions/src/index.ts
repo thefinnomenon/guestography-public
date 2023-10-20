@@ -755,9 +755,25 @@ const getImageMetadata = async (file: string) => {
     width = dims.width || null;
   }
 
+  console.log("Rotation: ", rotation);
+
+  // if exif[orientation] == 3:
+  //       image = image.rotate(180, expand = True)
+  //   elif exif[orientation] == 6:
+  //       image = image.rotate(270, expand = True)
+  //   elif exif[orientation] == 8:
+  //       image = image.rotate(90, expand = True)
+  //   else:
+  //       need_rotate = False
+
+  // If portrait, switch height & width
+  // http://nsiteful.com/wp-content/uploads/exif-orientation-examples-2016-05-05_10-52-32.png
   let tmp;
   switch (rotation) {
-    case "Rotate 90 CW":
+    case "top-left":
+    case "top-right":
+    case "bottom-left":
+    case "bottom-right":
       tmp = height;
       height = width;
       width = tmp;
@@ -885,6 +901,7 @@ const getVideoMetadata = async (
   if (location && location.lat && location.long) md.location = location;
   if (device && device.make) md.device = device;
   if (mimeType) md.mimeType = mimeType;
+  if (rotation) md.rotation = rotation;
   if (duration) md.duration = duration;
   md.createdAt = createdAt || null;
   if (height) md.height = height;

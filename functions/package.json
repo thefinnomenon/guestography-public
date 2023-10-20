@@ -8,7 +8,7 @@
     "emulateScheduledFunctions": "cat ./src/emulateScheduledFunctions.sh /dev/stdin | firebase functions:shell",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
-    "kill": "kill -9 $(lsof -ti:8080)",
+    "kill": "kill -9 $(lsof -ti:8080) && kill -9 $(lsof -ti:8085)",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "db:export": "firestore-export -a ../lib/serviceAccountKey.json -b ./data/firestore.json",
