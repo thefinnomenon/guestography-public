@@ -642,7 +642,11 @@ export const handleMediaUpload = functions
 // On interview video upload (including generated one (i.e. interviewId = interview)),
 // extract metadata, and create poster and placeholder
 export const handleInterviewUpload = functions
-  .runWith({ secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey] })
+  .runWith({
+    secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey],
+    timeoutSeconds: 300,
+    memory: "1GB",
+  })
   .firestore.document("events/{eventId}/interviews/{interviewId}")
   .onCreate(async (interviewSnapshot, context) => {
     const { eventId, interviewId } = context.params;
