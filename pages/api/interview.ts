@@ -54,13 +54,13 @@ export default async function handler(
       res.status(200).json({ url });
       return;
     } catch (error) {
-      console.error('Failed to create signed interview url');
+      console.error("Failed to create signed interview url");
       throw error;
     }
   }
 
   if (req.method === "POST") {
-    const { eventId, guestId, url, metadata, guests } = req.body;
+    const { eventId, guestId, url, guests } = req.body;
 
     const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}${
       new URL(url).pathname
@@ -83,7 +83,6 @@ export default async function handler(
         .set({
           guestId,
           url,
-          metadata,
           publicUrl,
           guests: guestMap,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -92,7 +91,7 @@ export default async function handler(
       return;
     } catch (e) {
       console.error(e);
-      throw (e);
+      throw e;
     }
   }
 

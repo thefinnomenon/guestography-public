@@ -114,14 +114,14 @@ export default function Home(props: Props) {
 
     setError(err);
 
-    track("Interview selected", { 
+    track("Interview selected", {
       eventId,
       guestId,
-      orientation: videoOrientation, 
+      orientation: videoOrientation,
       videoHeight: video.videoHeight,
-      videoWidth: video.videoWidth, 
-      duration: video.duration, 
-      error: err 
+      videoWidth: video.videoWidth,
+      duration: video.duration,
+      error: err,
     });
   };
 
@@ -166,7 +166,6 @@ export default function Home(props: Props) {
           eventId,
           guestId,
           url,
-          metadata: videoMetadata,
           guests: tags,
         }),
         headers: {
@@ -174,7 +173,9 @@ export default function Home(props: Props) {
         },
       });
       setIsSubmitting(false);
-      router.push(`/success?eventId=${eventId}&guestId=${guestId}&type=interview_upload`);
+      router.push(
+        `/success?eventId=${eventId}&guestId=${guestId}&type=interview_upload`
+      );
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);

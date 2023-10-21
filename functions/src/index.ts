@@ -650,12 +650,18 @@ export const handleInterviewUpload = functions
     console.log(`Interview generated for event ${eventId}`, interview);
     console.log("Generating poster and placeholder...");
 
-    // TODO: Fix video orientation based on metadata rotation (e.g. 180 is upside down)
-
     try {
       const db = admin.firestore();
       const posterFilename = "interview-poster.jpg";
       const tempFilePath = path.join(os.tmpdir(), posterFilename);
+
+      const mediaInfo = await getMediaInfoJS();
+      const metadata = await getVideoMetadata(
+        mediaInfo,
+        interview.id,
+        interview.publicUrl
+      );
+      console.log("Generated metadata", { metadata });
 
       // Generate poster from first frame of interview video (via publicUrl)
       // and save to tempFilePath
@@ -690,18 +696,18 @@ export const handleInterviewUpload = functions
       });
       console.log(`Uploaded poster to R2 with key: ${r2Key}`);
 
-      // Update interview entry with poster and placeholder
+      // Update interview entry with poster, placeholder, & metadata
       const posterUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
       await db
         .doc(`events/${eventId}/interviews/interview`)
-        .update({ blurDataURL: base64, posterUrl });
+        .update({ blurDataURL: base64, posterUrl, metadata });
       console.log(
         `Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`
       );
       mixpanel.track("Interview uploaded", {
         eventId,
         guestId: interview.guestId,
-        metadata: interview.metadata,
+        metadata,
       });
     } catch (error) {
       console.error("Failed to generate poster for interview", error);
@@ -858,7 +864,6 @@ const getVideoMetadata = async (
   const rotation = Number(Rotation);
 
   // Fix height & width based on rotation
-  // TODO: Do we need to flip videos to fix for rotation (e.g. is a video with 180 going to be upside-down?)
   if (rotation === 90 || rotation === 270) [height, width] = [width, height];
 
   // Apple specific metadata
