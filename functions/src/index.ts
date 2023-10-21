@@ -639,23 +639,35 @@ export const handleMediaUpload = functions
     }
   });
 
-// On generated interview video upload, create poster and placeholder
+// On interview video upload (including generated one (i.e. interviewId = interview)),
+// extract metadata, and create poster and placeholder
 export const handleInterviewUpload = functions
   .runWith({ secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey] })
-  .firestore.document("events/{eventId}/interviews/interview")
+  .firestore.document("events/{eventId}/interviews/{interviewId}")
   .onCreate(async (interviewSnapshot, context) => {
-    const { eventId } = context.params;
+    const { eventId, interviewId } = context.params;
     const interview = interviewSnapshot.data() as any;
 
-    console.log(`Interview generated for event ${eventId}`, interview);
-    console.log("Generating poster and placeholder...");
-
-    // TODO: Fix video orientation based on metadata rotation (e.g. 180 is upside down)
+    if (interviewId === "interview")
+      console.log(`Interview video generated for event ${eventId}`, interview);
+    else
+      console.log(`Interview video uploaded for event ${eventId}`, interview);
 
     try {
       const db = admin.firestore();
-      const posterFilename = "interview-poster.jpg";
+      const posterFilename = `${interviewId}-poster.jpg`;
       const tempFilePath = path.join(os.tmpdir(), posterFilename);
+
+      const mediaInfo = await getMediaInfoJS();
+      const metadata = await getVideoMetadata(
+        mediaInfo,
+        interviewId,
+        interview.publicUrl
+      );
+      console.log("Extracted metadata", { metadata });
+
+      if (!metadata)
+        throw Error(`Failed to extract metadata for interview ${interviewId}`);
 
       // Generate poster from first frame of interview video (via publicUrl)
       // and save to tempFilePath
@@ -690,21 +702,21 @@ export const handleInterviewUpload = functions
       });
       console.log(`Uploaded poster to R2 with key: ${r2Key}`);
 
-      // Update interview entry with poster and placeholder
+      // Update interview entry with poster, placeholder, & metadata
       const posterUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${r2Key}`;
       await db
-        .doc(`events/${eventId}/interviews/interview`)
-        .update({ blurDataURL: base64, posterUrl });
+        .doc(`events/${eventId}/interviews/${interviewId}`)
+        .update({ blurDataURL: base64, posterUrl, metadata });
       console.log(
         `Updated db entry with blurDataUrl: ${base64} and posterUrl: ${posterUrl}`
       );
       mixpanel.track("Interview uploaded", {
         eventId,
         guestId: interview.guestId,
-        metadata: interview.metadata,
+        metadata,
       });
     } catch (error) {
-      console.error("Failed to generate poster for interview", error);
+      console.error("Failed to process interview", interviewId, error);
       Sentry.captureException(error);
       await Sentry.flush(2000);
       throw error;
@@ -756,15 +768,6 @@ const getImageMetadata = async (file: string) => {
   }
 
   console.log("Rotation: ", rotation);
-
-  // if exif[orientation] == 3:
-  //       image = image.rotate(180, expand = True)
-  //   elif exif[orientation] == 6:
-  //       image = image.rotate(270, expand = True)
-  //   elif exif[orientation] == 8:
-  //       image = image.rotate(90, expand = True)
-  //   else:
-  //       need_rotate = False
 
   // If portrait, switch height & width
   // http://nsiteful.com/wp-content/uploads/exif-orientation-examples-2016-05-05_10-52-32.png
@@ -867,7 +870,6 @@ const getVideoMetadata = async (
   const rotation = Number(Rotation);
 
   // Fix height & width based on rotation
-  // TODO: Do we need to flip videos to fix for rotation (e.g. is a video with 180 going to be upside-down?)
   if (rotation === 90 || rotation === 270) [height, width] = [width, height];
 
   // Apple specific metadata

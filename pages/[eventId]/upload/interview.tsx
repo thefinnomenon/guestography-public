@@ -9,6 +9,7 @@ import { BiError } from "react-icons/bi";
 import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
 import { track, identify } from "../../../lib/mixpanel";
+import { checkIpad, checkIphone } from "../../../utils/platformDetection";
 
 interface Props {
   title: string;
@@ -114,14 +115,14 @@ export default function Home(props: Props) {
 
     setError(err);
 
-    track("Interview selected", { 
+    track("Interview selected", {
       eventId,
       guestId,
-      orientation: videoOrientation, 
+      orientation: videoOrientation,
       videoHeight: video.videoHeight,
-      videoWidth: video.videoWidth, 
-      duration: video.duration, 
-      error: err 
+      videoWidth: video.videoWidth,
+      duration: video.duration,
+      error: err,
     });
   };
 
@@ -166,7 +167,6 @@ export default function Home(props: Props) {
           eventId,
           guestId,
           url,
-          metadata: videoMetadata,
           guests: tags,
         }),
         headers: {
@@ -174,7 +174,9 @@ export default function Home(props: Props) {
         },
       });
       setIsSubmitting(false);
-      router.push(`/success?eventId=${eventId}&guestId=${guestId}&type=interview_upload`);
+      router.push(
+        `/success?eventId=${eventId}&guestId=${guestId}&type=interview_upload`
+      );
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);
@@ -328,6 +330,11 @@ export default function Home(props: Props) {
                     {videoSrc && (
                       <video
                         src={videoSrc}
+                        // Only need to autoplay and pause on iPhones and iPads
+                        // since they don't load the first frame as a poster
+                        autoPlay={checkIphone() || checkIpad()}
+                        // @ts-ignore
+                        onLoad={(e) => e.target.pause()}
                         className={`${
                           videoSrc ? "show" : "hide"
                         } mt-4 rounded-md`}

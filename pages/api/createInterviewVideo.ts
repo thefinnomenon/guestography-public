@@ -158,6 +158,7 @@ export default async function handler(
           },
           VideoSelector: {
             ColorSpace: "FOLLOW",
+            Rotate: "AUTO",
           },
           FilterEnable: "AUTO",
           PsiControl: "USE_PSI",
@@ -183,6 +184,6 @@ export default async function handler(
     res.status(200).send("okay");
   } catch (error) {
     console.error("Failed to create MediaConvert job", error);
-    throw error
+    throw error;
   }
 }
