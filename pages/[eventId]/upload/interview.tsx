@@ -9,6 +9,7 @@ import { BiError } from "react-icons/bi";
 import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
 import { track, identify } from "../../../lib/mixpanel";
+import { checkIpad, checkIphone } from "../../../utils/platformDetection";
 
 interface Props {
   title: string;
@@ -329,6 +330,11 @@ export default function Home(props: Props) {
                     {videoSrc && (
                       <video
                         src={videoSrc}
+                        // Only need to autoplay and pause on iPhones and iPads
+                        // since they don't load the first frame as a poster
+                        autoPlay={checkIphone() || checkIpad()}
+                        // @ts-ignore
+                        onLoad={(e) => e.target.pause()}
                         className={`${
                           videoSrc ? "show" : "hide"
                         } mt-4 rounded-md`}
