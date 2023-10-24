@@ -1,0 +1,85 @@
+import React from "react";
+import Uppy from "@uppy/core";
+import AwsS3Multipart from "@uppy/aws-s3-multipart";
+import { UploadType } from "../types";
+import { Tag } from "react-tag-autocomplete";
+
+const fetchUploadApiEndpoint = async (endpoint: string, data: any) => {
+  const res = await fetch(`/api/multipart-upload/${endpoint}`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: {
+      accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  });
+
+  return res.json();
+};
+
+export function MultipartFileUploader({
+  eventId,
+  guestId,
+  guests,
+  uploadType,
+  onProgressUpdate,
+  onUploadSuccess,
+  onUploadFail,
+}: {
+  eventId: string;
+  guestId: string;
+  guests: Tag[];
+  uploadType: UploadType;
+  onProgressUpdate: (fileId: string, progress: number) => void;
+  onUploadSuccess: (fileId: string) => void;
+  onUploadFail: (fileId: string) => void;
+}) {
+  const uppy = new Uppy().use(AwsS3Multipart, {
+    createMultipartUpload: async (file) => {
+      return fetchUploadApiEndpoint("create-multipart-upload", {
+        uploadType,
+        fileName: file.name,
+        fileExt: file.extension,
+        eventId,
+        guestId,
+        contentType: file.type,
+      });
+    },
+    prepareUploadParts: (file, partData) =>
+      fetchUploadApiEndpoint("prepare-upload-parts", {
+        partData,
+      }),
+    completeMultipartUpload: (file, props) =>
+      fetchUploadApiEndpoint("complete-multipart-upload", {
+        eventId,
+        guestId,
+        guests,
+        ...props,
+      }),
+    listParts: (file, props) =>
+      fetchUploadApiEndpoint("list-parts", { ...props }),
+    abortMultipartUpload: (file, props) =>
+      fetchUploadApiEndpoint("abort-multipart-upload", {
+        ...props,
+      }),
+  });
+
+  uppy.on("upload-progress", (file, progress) => {
+    if (!file) throw Error("File is undefined");
+    onProgressUpdate(
+      file.id,
+      Math.round((100 * progress.bytesUploaded) / progress.bytesTotal)
+    );
+  });
+  uppy.on("upload-success", (file) => {
+    if (!file) throw Error("File is undefined");
+    onUploadSuccess(file.id);
+  });
+  uppy.on("upload-error", (file, error) => {
+    if (!file) throw Error("File is undefined");
+    console.warn("File upload error: ", file, error);
+    onUploadFail(file.id);
+  });
+
+  return uppy;
+}
