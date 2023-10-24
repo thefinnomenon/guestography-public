@@ -171,7 +171,10 @@ export default function Home(props: Props) {
     setIsSubmitting(true);
 
     try {
-      await multipartFileUploader.upload();
+      // If previous upload failed -> trigger retry
+      if (error === "Upload failed!")
+        await multipartFileUploader.retryUpload(fileId);
+      else await multipartFileUploader.upload();
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);
