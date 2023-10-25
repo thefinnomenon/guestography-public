@@ -9,6 +9,9 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as admin from "firebase-admin";
+import Mixpanel from "mixpanel";
+
+const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -144,7 +147,8 @@ export async function completeMultipartUpload(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { key, uploadId, parts, eventId, guestId, guests } = req.body;
+  const { uploadType, key, uploadId, parts, eventId, guestId, guests } =
+    req.body;
 
   try {
     const params = {
@@ -159,26 +163,52 @@ export async function completeMultipartUpload(
     const url = `https://${process.env.CLOUDFLARE_BUCKET_NAME}.${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
     const publicUrl = `${process.env.CLOUDFLARE_PUBLIC_BUCKET_URL}/${key}`;
 
-    // Remap guest array to map so it is queryable
-    let guestMap: { [key: string]: any } = {};
-    guests.forEach((guest: any) => {
-      guestMap[guest.id as string] = { id: guest.id, name: guest.name };
-    });
-
     const db = admin.firestore();
-
-    await db
-      .collection("events")
-      .doc(eventId)
-      .collection("interviews")
-      .doc(guestId)
-      .set({
-        guestId,
-        url,
-        publicUrl,
-        guests: guestMap,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    if (uploadType === "interview") {
+      // Remap guest array to map so it is queryable
+      let guestMap: { [key: string]: any } = {};
+      guests.forEach((guest: any) => {
+        guestMap[guest.id as string] = { id: guest.id, name: guest.name };
       });
+
+      await db
+        .collection("events")
+        .doc(eventId)
+        .collection("interviews")
+        .doc(guestId)
+        .set({
+          guestId,
+          url,
+          publicUrl,
+          guests: guestMap,
+          uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+      mixpanel.track("Interview uploaded", {
+        eventId,
+        guestId,
+        guests: guests.length,
+      });
+    } else {
+      const filename = key.split("/").pop();
+
+      await db
+        .collection("events")
+        .doc(eventId)
+        .collection("media")
+        .doc(filename)
+        .set({
+          guestId,
+          url,
+          publicUrl,
+          uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+      mixpanel.track("Media uploaded", {
+        eventId,
+        guestId,
+      });
+    }
 
     return res.status(200).json(response);
   } catch (err) {

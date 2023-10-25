@@ -25,17 +25,28 @@ export function MultipartFileUploader({
   onProgressUpdate,
   onUploadSuccess,
   onUploadFail,
+  onComplete,
+  onUploadStart,
 }: {
   eventId: string;
   guestId: string;
-  guests: Tag[];
+  guests?: Tag[];
   uploadType: UploadType;
   onProgressUpdate: (fileId: string, progress: number) => void;
   onUploadSuccess: (fileId: string) => void;
   onUploadFail: (fileId: string) => void;
+  onComplete?: (isComplete: boolean) => void;
+  onUploadStart?: (fileIds: string[]) => void;
 }) {
   const uppy = new Uppy().use(AwsS3Multipart, {
     createMultipartUpload: async (file) => {
+      console.log(
+        "Create multipart upload ",
+        uploadType,
+        file.name,
+        eventId,
+        guestId
+      );
       return fetchUploadApiEndpoint("create-multipart-upload", {
         uploadType,
         fileName: file.name,
@@ -51,6 +62,7 @@ export function MultipartFileUploader({
       }),
     completeMultipartUpload: (file, props) =>
       fetchUploadApiEndpoint("complete-multipart-upload", {
+        uploadType,
         eventId,
         guestId,
         guests,
@@ -64,7 +76,12 @@ export function MultipartFileUploader({
       }),
   });
 
+  uppy.on("upload", (data) => {
+    console.log("Upload start ", data);
+    if (onUploadStart) onUploadStart(data.fileIDs);
+  });
   uppy.on("upload-progress", (file, progress) => {
+    console.log("Upload progress ", file, progress);
     if (!file) throw Error("File is undefined");
     onProgressUpdate(
       file.id,
@@ -72,13 +89,19 @@ export function MultipartFileUploader({
     );
   });
   uppy.on("upload-success", (file) => {
+    console.log("Upload success ", file);
     if (!file) throw Error("File is undefined");
     onUploadSuccess(file.id);
   });
   uppy.on("upload-error", (file, error) => {
+    console.log("Upload error ", file, error);
     if (!file) throw Error("File is undefined");
     console.warn("File upload error: ", file, error);
     onUploadFail(file.id);
+  });
+  uppy.on("complete", (result) => {
+    console.log("Uploads complete ", result);
+    if (onComplete) onComplete(result.failed.length === 0);
   });
 
   return uppy;
