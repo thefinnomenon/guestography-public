@@ -1,13 +1,17 @@
 import Head from "next/head";
 import { GetStaticPropsContext } from "next";
 import router from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getEvent, getEvents } from "../../../lib/firebase";
 import { ClipLoader } from "react-spinners";
 import { Event, Metadata } from "../../../types";
 import { GoFileMedia } from "react-icons/go";
-import { MdOutlineCheckCircleOutline, MdErrorOutline } from "react-icons/md";
+import { MdOutlineCheckCircleOutline, MdRefresh } from "react-icons/md";
 import { track, identify } from "../../../lib/mixpanel";
+import { CircularProgressbar } from "react-circular-progressbar";
+import { MultipartFileUploader } from "../../../utils/uppy";
+import Uppy from "@uppy/core";
+import "react-circular-progressbar/dist/styles.css";
 
 interface Props {
   title: string;
@@ -19,101 +23,185 @@ type MediaStatus = "queued" | "uploading" | "complete" | "error";
 interface MediaItem {
   status: MediaStatus;
   file: File;
-  signedUrl: string;
+  type: "image" | "video";
+  src?: string;
+  fileId: string;
+  progress: number;
   metadata?: Metadata;
 }
 
 export default function Home(props: Props) {
   const { title, eventId } = props;
-  const [mediainfo, setMediaInfo] = useState<unknown>();
 
   let guestId = "";
   if (typeof window !== "undefined" && router.query.guestId) {
     guestId = router.query.guestId as string;
-    identify(guestId)
+    identify(guestId);
   }
-  const [media, setMedia] = useState<MediaItem[] | null>();
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [multipartFileUploader, setMultipartFileUploader] = useState<Uppy>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [update, setUpdate] = useState<any>();
+  const [previews, setPreviews] = useState({});
 
-  // Handle Form Submission
+  // Handle updates
+  useEffect(() => {
+    if (!update) return;
+
+    switch (update?.action) {
+      case "upload-start": {
+        const updatedMedia = [...media];
+        update.fileIds.map((fileId: string) => {
+          const index = media.findIndex((m) => m.fileId === fileId);
+          updatedMedia[index] = {
+            ...updatedMedia[index],
+            status: "uploading",
+            progress: 0,
+          };
+        });
+        setUpdate(null);
+        setMedia(updatedMedia);
+        break;
+      }
+      case "progress-update": {
+        const index = media.findIndex((m) => m.fileId === update.fileId);
+        const updatedMedia = [...media];
+        updatedMedia[index] = {
+          ...updatedMedia[index],
+          progress: update.progress,
+        };
+        setUpdate(null);
+        setMedia(updatedMedia);
+        break;
+      }
+      case "upload-error": {
+        const index = media.findIndex((m) => m.fileId === update.fileId);
+        const updatedMedia = [...media];
+        updatedMedia[index] = {
+          ...updatedMedia[index],
+          progress: 0,
+          status: "error",
+        };
+        setUpdate(null);
+        setMedia(updatedMedia);
+        break;
+      }
+      case "upload-success": {
+        const index = media.findIndex((m) => m.fileId === update.fileId);
+        const updatedMedia = [...media];
+        updatedMedia[index] = {
+          ...updatedMedia[index],
+          status: "complete",
+        };
+        setUpdate(null);
+        setMedia(updatedMedia);
+      }
+      case "preview-loaded": {
+        const updatedMedia = [...media];
+        updatedMedia[update.index] = {
+          ...updatedMedia[update.index],
+          src: update.src,
+        };
+        setUpdate(null);
+        setMedia(updatedMedia);
+      }
+    }
+  }, [JSON.stringify(media), JSON.stringify(update)]);
+
+  // Initialize Uppy instance
+  useEffect(() => {
+    const onUploadStart = (fileIds: string[]) => {
+      console.log("Uploads starting... ", fileIds);
+      setUpdate({ action: "upload-start", fileIds });
+    };
+
+    const onProgressUpdate = (fileId: string, progress: number) => {
+      setUpdate({ action: "progress-update", fileId, progress });
+    };
+
+    const onUploadFail = (fileId: string) => {
+      setUpdate({ action: "upload-error", fileId });
+    };
+
+    const onUploadSuccess = async (fileId: string) => {
+      setUpdate({ action: "upload-success", fileId });
+    };
+
+    const onComplete = async (isComplete: boolean) => {
+      if (isComplete) {
+        setIsSubmitting(false);
+        router.push(
+          `/success?eventId=${eventId}&guestId=${guestId}&type=media_upload`
+        );
+      }
+    };
+
+    setMultipartFileUploader(
+      MultipartFileUploader({
+        eventId,
+        guestId,
+        uploadType: "media",
+        onProgressUpdate,
+        onUploadSuccess,
+        onUploadFail,
+        onComplete,
+        onUploadStart,
+      })
+    );
+  }, [eventId, guestId]);
+
+  // Load selected files and set media previews
+  useEffect(() => {
+    if (!media) return;
+    media.map((m, i) => {
+      if (m.src || m.type === "video") return;
+
+      const reader = new FileReader();
+      reader.readAsDataURL(m.file);
+      reader.onload = () =>
+        setUpdate({
+          action: "preview-loaded",
+          index: i,
+          src: reader.result as string,
+        });
+    });
+  }, [media]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSubmitting(true);
-
     if (!media) return;
 
+    setIsSubmitting(true);
+
     try {
-      // Upload media
-      await Promise.all(
-        media.map(async (m, index) => {
-          const uploadingMedia = [...media];
-          uploadingMedia[index].status = "uploading";
-          setMedia(uploadingMedia);
-
-          const res = await fetch(m.signedUrl, {
-            method: "PUT",
-            body: m.file,
-            headers: {
-              "Content-Type": m.file.type,
-            },
-          });
-
-          if (res.status === 200) {
-            const resMedia = [...media];
-            resMedia[index].status = "complete";
-            setMedia(resMedia);
-          } else {
-            console.error(res.body);
-            const resMedia = [...media];
-            resMedia[index].status = "error";
-            setMedia(resMedia);
-          }
-        })
-      );
-
-      const successfulUploads = media.filter((m) => m.status === "complete");
-      const files = successfulUploads.map((m) => {
-        return {
-          url: m.signedUrl.slice(0, m.signedUrl.indexOf("?")),
-          metadata: m.metadata,
-        };
-      });
-
-      // Add entries in database
-      const res2 = await fetch("/api/media", {
-        method: "POST",
-        body: JSON.stringify({ eventId, guestId, media: files }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      setIsSubmitting(false);
-      router.push(`/success?eventId=${eventId}&guestId=${guestId}&type=media_upload`);
+      if (multipartFileUploader) multipartFileUploader.upload();
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);
     }
   };
 
-  const handleMediaSelection = async (mediainfo: any, files: FileList | null) => {
-    if (!files) return;
+  const handleMediaSelection = async (files: FileList | null) => {
+    if (!files || !multipartFileUploader) return;
+
+    // Clear all files on new selection
+    multipartFileUploader.cancelAll();
 
     const fileArr = Array.from(files);
-    const fileList = fileArr.map((file) => file.name);
-
-    const res = await fetch(
-      `/api/media?eventId=${eventId}&guestId=${guestId}`,
-      { method: "PUT", body: JSON.stringify({ fileList }) }
-    );
-    const { urls } = await res.json();
-
     const mediaList: MediaItem[] = await Promise.all(
       fileArr.map(async (file, index) => {
+        const fileId = multipartFileUploader.addFile({
+          name: file.name,
+          type: file.type,
+          data: file,
+        });
+
         return {
           file,
+          fileId,
+          type: file.type.includes("image") ? "image" : "video",
+          progress: 0,
           status: "queued",
-          signedUrl: urls[index],
         };
       })
     );
@@ -123,20 +211,52 @@ export default function Home(props: Props) {
     track("Media selected", {
       eventId,
       guestId,
-      mediaMetadata: mediaList.map(media => media.metadata)
+      numberOfMedia: mediaList.length,
+      numberOfVideos: mediaList.filter((m) => m.type === "video"),
+      numberOfImages: mediaList.filter((m) => m.type === "image"),
+      mediaMetadata: mediaList.map((media) => media.metadata),
     });
   };
 
-  const getStatusIcon = (status: MediaStatus) => {
+  const getStatusIcon = (status: MediaStatus, item: MediaItem) => {
     switch (status) {
       case "queued":
         return null;
       case "uploading":
-        return <ClipLoader size="1.25rem" color="indigo" />;
+        return (
+          <span className="h-6 w-6">
+            <CircularProgressbar
+              value={item.progress}
+              text={`${item.progress}`}
+              strokeWidth={12}
+              styles={{
+                path: {
+                  stroke: "rgb(99 102 241)",
+                },
+                trail: {
+                  stroke: "rgb(224 231 255)",
+                },
+                text: {
+                  fill: "rgb(99 102 241)",
+                  fontSize: "40px",
+                },
+              }}
+            />
+          </span>
+        );
       case "complete":
-        return <MdOutlineCheckCircleOutline size="1.25rem" />;
+        return <MdOutlineCheckCircleOutline size="1.5rem" />;
       case "error":
-        return <MdErrorOutline size="1.25rem" />;
+        return (
+          <MdRefresh
+            size="1.5rem"
+            className="text-red-700 cursor-pointer"
+            onClick={() => {
+              if (multipartFileUploader)
+                multipartFileUploader.retryUpload(item.fileId);
+            }}
+          />
+        );
     }
   };
 
@@ -250,9 +370,7 @@ export default function Home(props: Props) {
                         guestId,
                       });
                     }}
-                    onChange={(e) =>
-                      handleMediaSelection(mediainfo, e.target.files)
-                    }
+                    onChange={(e) => handleMediaSelection(e.target.files)}
                     className="block w-full text-sm text-slate-500
     file:mr-4 file:py-2 file:px-4
     file:rounded-full file:border-0
@@ -269,16 +387,24 @@ export default function Home(props: Props) {
                             className="flex w-full justify-between items-center py-4"
                           >
                             <span className="flex gap-2 items-center">
-                              <GoFileMedia
-                                size="1rem"
-                                className="text-indigo-700 mt-[1px]"
-                              />
+                              {!item.src && (
+                                <GoFileMedia
+                                  size="2.5rem"
+                                  className="text-indigo-700 mt-[1px]"
+                                />
+                              )}
+                              {item.src && item.type === "image" && (
+                                <img
+                                  src={item.src}
+                                  className="h-10 w-10 rounded-md"
+                                />
+                              )}
                               <span className="text-gray-500">
                                 {item.file.name}
                               </span>
                             </span>
                             <span className="flex items-center text-indigo-500 fill-indigo-500">
-                              {getStatusIcon(item.status)}
+                              {getStatusIcon(item.status, item)}
                             </span>
                           </li>
                         ))}

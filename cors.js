@@ -18,10 +18,15 @@ async function main() {
       Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
       CORSConfiguration: {
         CORSRules: new Array({
-          AllowedHeaders: ["content-type"],
+          AllowedHeaders: [
+            "Authorization",
+            "x-amz-date",
+            "x-amz-content-sha256",
+            "content-type",
+          ],
           AllowedMethods: ["GET", "POST", "PUT", "DELETE", "HEAD"],
           AllowedOrigins: ["*"],
-          ExposeHeaders: [],
+          ExposeHeaders: ["ETag", "Location"],
           MaxAgeSeconds: 3000,
         }),
       },

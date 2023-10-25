@@ -106,3 +106,5 @@ export interface GalleryMedia {
   type: "image" | "video";
   guest: string;
 }
+
+export type UploadType = "interview" | "media";

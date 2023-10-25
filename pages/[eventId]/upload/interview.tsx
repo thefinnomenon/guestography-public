@@ -1,15 +1,17 @@
 import Head from "next/head";
 import { GetStaticPropsContext } from "next";
 import router from "next/router";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import ReactTags, { Tag, TagComponentProps } from "react-tag-autocomplete";
+import { useCallback, useEffect, useRef, useState } from "react";
+import ReactTags, { Tag } from "react-tag-autocomplete";
 import { getEvent, getEvents } from "../../../lib/firebase";
 import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { BiError } from "react-icons/bi";
-import { ClipLoader } from "react-spinners";
 import { Event } from "../../../types";
 import { track, identify } from "../../../lib/mixpanel";
 import { checkIpad, checkIphone } from "../../../utils/platformDetection";
+import { MultipartFileUploader } from "../../../utils/uppy";
+import { CircularProgressbar } from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
 
 interface Props {
   title: string;
@@ -29,15 +31,47 @@ export default function Home(props: Props) {
     ? guests.find((guest) => guest.id === guestId)
     : null;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadUrl, setUploadUrl] = useState("");
   const [videoSrc, setVideoSrc] = useState("");
+  const [fileId, setFileId] = useState("");
   const [file, setFile] = useState<File>();
-  const [fileExt, setFileExt] = useState("");
   const [videoMetadata, setVideoMetadata] = useState({});
   const [suggestions, setSuggestions] = useState<Tag[]>(guests);
   const [tags, setTags] = useState<Tag[]>([]);
   const [error, setError] = useState("");
+  const [progress, setProgress] = useState(0);
+  const [multipartFileUploader, setMultipartFileUploader] = useState<any>();
   const reactTags = useRef<ReactTags>();
+
+  const onProgressUpdate = (fileId: string, value: number) => {
+    if (value > progress) setProgress(value);
+  };
+
+  const onUploadFail = (fileId: string) => {
+    setError("Upload failed. Please retry.");
+    setIsSubmitting(false);
+    setProgress(0);
+  };
+
+  const onUploadSuccess = async (fileId: string) => {
+    setIsSubmitting(false);
+    router.push(
+      `/success?eventId=${eventId}&guestId=${guestId}&type=interview_upload`
+    );
+  };
+
+  useEffect(() => {
+    setMultipartFileUploader(
+      MultipartFileUploader({
+        eventId,
+        guestId,
+        guests,
+        uploadType: "interview",
+        onProgressUpdate,
+        onUploadSuccess,
+        onUploadFail,
+      })
+    );
+  }, [eventId, guestId, guests]);
 
   // Handle Tags
   useEffect(() => {
@@ -74,16 +108,20 @@ export default function Home(props: Props) {
   const handleInterviewSelection = (videoFile: File | null) => {
     if (!videoFile) return;
 
-    setFileExt(
-      videoFile.name.slice(
-        videoFile.name.lastIndexOf(".") + 1,
-        videoFile.name.length
-      )
-    );
-
     let blobURL = URL.createObjectURL(videoFile);
     setVideoSrc(blobURL);
     setFile(videoFile);
+
+    // Remove previous file
+    if (fileId) multipartFileUploader.removeFile(fileId);
+
+    const id = multipartFileUploader.addFile({
+      name: videoFile.name,
+      type: videoFile.type,
+      data: videoFile,
+    });
+
+    setFileId(id);
 
     setVideoMetadata({
       type: "video",
@@ -126,60 +164,21 @@ export default function Home(props: Props) {
     });
   };
 
-  useEffect(() => {
-    const retrieveUploadUrls = async () => {
-      if (!fileExt) return;
-
-      const res = await fetch(
-        `/api/interview?eventId=${eventId}&guestId=${guestId}&fileExt=${fileExt}`
-      );
-      const { url } = await res.json();
-      setUploadUrl(url);
-    };
-    retrieveUploadUrls();
-  }, [eventId, guestId, fileExt]);
-
   // Handle Form Submission
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!fileId) return;
     setIsSubmitting(true);
 
-    if (!file) return;
-
     try {
-      // Upload video
-      const res = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type,
-        },
-      });
-
-      if (res.status !== 200) throw Error("Upload failed.");
-
-      const url = uploadUrl.slice(0, uploadUrl.indexOf("?"));
-
-      // Add entry in database
-      const res2 = await fetch("/api/interview", {
-        method: "POST",
-        body: JSON.stringify({
-          eventId,
-          guestId,
-          url,
-          guests: tags,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      setIsSubmitting(false);
-      router.push(
-        `/success?eventId=${eventId}&guestId=${guestId}&type=interview_upload`
-      );
+      // If previous upload failed -> trigger retry
+      if (error === "Upload failed!")
+        await multipartFileUploader.retryUpload(fileId);
+      else await multipartFileUploader.upload();
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);
+      setProgress(0);
       setError("Upload failed!");
     }
   };
@@ -385,18 +384,25 @@ export default function Home(props: Props) {
                   <button
                     disabled={
                       !videoSrc ||
-                      !uploadUrl ||
                       tags.length === 0 ||
-                      error !== ""
+                      isSubmitting ||
+                      (error !== "" && error !== "Upload failed!")
                     }
                     type="submit"
                     className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                      (!videoSrc || !uploadUrl || tags.length === 0 || error) &&
+                      (!videoSrc ||
+                        tags.length === 0 ||
+                        (error !== "" && error !== "Upload failed!")) &&
                       "bg-indigo-200 text-indigo-400 hover:bg-indigo-200"
                     }`}
                   >
                     {isSubmitting ? (
-                      <ClipLoader size={24} color="white" />
+                      <div className="h-6 w-6">
+                        <CircularProgressbar
+                          value={progress}
+                          strokeWidth={16}
+                        />
+                      </div>
                     ) : (
                       "UPLOAD"
                     )}
@@ -408,47 +414,6 @@ export default function Home(props: Props) {
         </div>
       </main>
     </div>
-  );
-}
-
-function TagComponent({ tag, removeButtonText, onDelete }: TagComponentProps) {
-  return (
-    <span
-      id="badge-dismiss-default"
-      className="inline-flex items-center py-1 px-2 mr-2 text-sm font-medium text-indigo-800 bg-indigo-100 rounded dark:bg-indigo-200 dark:text-indigo-800"
-    >
-      <button
-        type="button"
-        className="inline-flex items-center py-0.5 mr-2 text-sm text-indigo-400 bg-transparent rounded-sm hover:bg-indigo-200 hover:text-indigo-900 dark:hover:bg-indigo-300 dark:hover:text-indigo-900"
-        data-dismiss-target="#badge-dismiss-default"
-        aria-label="Remove"
-        onClick={onDelete}
-      >
-        <svg
-          aria-hidden="true"
-          className="w-3.5 h-3.5"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-            clip-rule="evenodd"
-          ></path>
-        </svg>
-        <span className="sr-only">Remove guest</span>
-      </button>
-      {tag.name}
-    </span>
-  );
-}
-
-function SuggestionComponent({ item, query }: any) {
-  return (
-    <span id={item.id} className={"bg-slate-300"}>
-      {item.name}
-    </span>
   );
 }
 
