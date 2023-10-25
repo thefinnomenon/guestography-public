@@ -390,24 +390,24 @@ export default function Home(props: Props) {
                             key={item.file.name}
                             className="flex w-full justify-between items-center py-4"
                           >
-                            <span className="flex gap-2 items-center">
+                            <span className="flex shrink gap-2 items-center whitespace-nowrap truncate overflow-hidden min-w-0">
                               {!item.src && (
                                 <GoFileMedia
                                   size="2.5rem"
-                                  className="text-indigo-700 mt-[1px]"
+                                  className="text-indigo-700 mt-[1px] shrink-0"
                                 />
                               )}
                               {item.src && item.type === "image" && (
                                 <img
                                   src={item.src}
-                                  className="h-10 w-10 rounded-md"
+                                  className="h-10 w-10 rounded-md shrink-0"
                                 />
                               )}
-                              <span className="text-gray-500">
+                              <span className="flex whitespace-nowrap shrink truncate overflow-hidden text-gray-500 min-w-0">
                                 {item.file.name}
                               </span>
                             </span>
-                            <span className="flex items-center text-indigo-500 fill-indigo-500">
+                            <span className="flex shrink-0 items-center text-indigo-500 fill-indigo-500 ml-4">
                               {getStatusIcon(item.status, item)}
                             </span>
                           </li>
