@@ -24,7 +24,7 @@ interface MediaItem {
   status: MediaStatus;
   file: File;
   type: "image" | "video";
-  src?: string | ArrayBuffer | null;
+  src?: string;
   fileId: string;
   progress: number;
   metadata?: Metadata;
@@ -159,7 +159,11 @@ export default function Home(props: Props) {
       const reader = new FileReader();
       reader.readAsDataURL(m.file);
       reader.onload = () =>
-        setUpdate({ action: "preview-loaded", index: i, src: reader.result });
+        setUpdate({
+          action: "preview-loaded",
+          index: i,
+          src: reader.result as string,
+        });
     });
   }, [media]);
 
@@ -170,7 +174,7 @@ export default function Home(props: Props) {
     setIsSubmitting(true);
 
     try {
-      multipartFileUploader.upload();
+      if (multipartFileUploader) multipartFileUploader.upload();
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);
