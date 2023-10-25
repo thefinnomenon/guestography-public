@@ -40,13 +40,6 @@ export function MultipartFileUploader({
 }) {
   const uppy = new Uppy().use(AwsS3Multipart, {
     createMultipartUpload: async (file) => {
-      console.log(
-        "Create multipart upload ",
-        uploadType,
-        file.name,
-        eventId,
-        guestId
-      );
       return fetchUploadApiEndpoint("create-multipart-upload", {
         uploadType,
         fileName: file.name,
@@ -77,11 +70,9 @@ export function MultipartFileUploader({
   });
 
   uppy.on("upload", (data) => {
-    console.log("Upload start ", data);
     if (onUploadStart) onUploadStart(data.fileIDs);
   });
   uppy.on("upload-progress", (file, progress) => {
-    console.log("Upload progress ", file, progress);
     if (!file) throw Error("File is undefined");
     onProgressUpdate(
       file.id,
@@ -89,18 +80,15 @@ export function MultipartFileUploader({
     );
   });
   uppy.on("upload-success", (file) => {
-    console.log("Upload success ", file);
     if (!file) throw Error("File is undefined");
     onUploadSuccess(file.id);
   });
   uppy.on("upload-error", (file, error) => {
-    console.log("Upload error ", file, error);
     if (!file) throw Error("File is undefined");
-    console.warn("File upload error: ", file, error);
+    console.error("File upload error: ", file, error);
     onUploadFail(file.id);
   });
   uppy.on("complete", (result) => {
-    console.log("Uploads complete ", result);
     if (onComplete) onComplete(result.failed.length === 0);
   });
 

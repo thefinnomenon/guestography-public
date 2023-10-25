@@ -3,14 +3,10 @@ import { GetStaticPropsContext } from "next";
 import router from "next/router";
 import { useEffect, useState } from "react";
 import { getEvent, getEvents } from "../../../lib/firebase";
-import { CircleLoader, ClipLoader } from "react-spinners";
+import { ClipLoader } from "react-spinners";
 import { Event, Metadata } from "../../../types";
 import { GoFileMedia } from "react-icons/go";
-import {
-  MdOutlineCheckCircleOutline,
-  MdErrorOutline,
-  MdRefresh,
-} from "react-icons/md";
+import { MdOutlineCheckCircleOutline, MdRefresh } from "react-icons/md";
 import { track, identify } from "../../../lib/mixpanel";
 import { CircularProgressbar } from "react-circular-progressbar";
 import { MultipartFileUploader } from "../../../utils/uppy";
@@ -27,6 +23,8 @@ type MediaStatus = "queued" | "uploading" | "complete" | "error";
 interface MediaItem {
   status: MediaStatus;
   file: File;
+  type: "image" | "video";
+  src?: string | ArrayBuffer | null;
   fileId: string;
   progress: number;
   metadata?: Metadata;
@@ -44,6 +42,7 @@ export default function Home(props: Props) {
   const [multipartFileUploader, setMultipartFileUploader] = useState<Uppy>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [update, setUpdate] = useState<any>();
+  const [previews, setPreviews] = useState({});
 
   // Handle updates
   useEffect(() => {
@@ -97,9 +96,19 @@ export default function Home(props: Props) {
         setUpdate(null);
         setMedia(updatedMedia);
       }
+      case "preview-loaded": {
+        const updatedMedia = [...media];
+        updatedMedia[update.index] = {
+          ...updatedMedia[update.index],
+          src: update.src,
+        };
+        setUpdate(null);
+        setMedia(updatedMedia);
+      }
     }
   }, [JSON.stringify(media), JSON.stringify(update)]);
 
+  // Initialize Uppy instance
   useEffect(() => {
     const onUploadStart = (fileIds: string[]) => {
       console.log("Uploads starting... ", fileIds);
@@ -141,6 +150,19 @@ export default function Home(props: Props) {
     );
   }, [eventId, guestId]);
 
+  // Load selected files and set media previews
+  useEffect(() => {
+    if (!media) return;
+    media.map((m, i) => {
+      if (m.src || m.type === "video") return;
+
+      const reader = new FileReader();
+      reader.readAsDataURL(m.file);
+      reader.onload = () =>
+        setUpdate({ action: "preview-loaded", index: i, src: reader.result });
+    });
+  }, [media]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!media) return;
@@ -173,6 +195,7 @@ export default function Home(props: Props) {
         return {
           file,
           fileId,
+          type: file.type.includes("image") ? "image" : "video",
           progress: 0,
           status: "queued",
         };
@@ -184,6 +207,9 @@ export default function Home(props: Props) {
     track("Media selected", {
       eventId,
       guestId,
+      numberOfMedia: mediaList.length,
+      numberOfVideos: mediaList.filter((m) => m.type === "video"),
+      numberOfImages: mediaList.filter((m) => m.type === "image"),
       mediaMetadata: mediaList.map((media) => media.metadata),
     });
   };
@@ -222,14 +248,6 @@ export default function Home(props: Props) {
             size="1.5rem"
             className="text-red-700 cursor-pointer"
             onClick={() => {
-              // const index = media.findIndex((m) => m.fileId === item.fileId);
-              // const updatedMedia = [...media];
-              // updatedMedia[index] = {
-              //   ...updatedMedia[index],
-              //   status: "uploading",
-              //   progress: 0,
-              // };
-              // setMedia(updatedMedia);
               if (multipartFileUploader)
                 multipartFileUploader.retryUpload(item.fileId);
             }}
@@ -365,10 +383,18 @@ export default function Home(props: Props) {
                             className="flex w-full justify-between items-center py-4"
                           >
                             <span className="flex gap-2 items-center">
-                              <GoFileMedia
-                                size="1rem"
-                                className="text-indigo-700 mt-[1px]"
-                              />
+                              {!item.src && (
+                                <GoFileMedia
+                                  size="2.5rem"
+                                  className="text-indigo-700 mt-[1px]"
+                                />
+                              )}
+                              {item.src && item.type === "image" && (
+                                <img
+                                  src={item.src}
+                                  className="h-10 w-10 rounded-md"
+                                />
+                              )}
                               <span className="text-gray-500">
                                 {item.file.name}
                               </span>
