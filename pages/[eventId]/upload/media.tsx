@@ -42,7 +42,6 @@ export default function Home(props: Props) {
   const [multipartFileUploader, setMultipartFileUploader] = useState<Uppy>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [update, setUpdate] = useState<any>();
-  const [previews, setPreviews] = useState({});
 
   // Handle updates
   useEffect(() => {
@@ -189,7 +188,7 @@ export default function Home(props: Props) {
 
     const fileArr = Array.from(files);
     const mediaList: MediaItem[] = await Promise.all(
-      fileArr.map(async (file, index) => {
+      fileArr.map(async (file) => {
         const fileId = multipartFileUploader.addFile({
           name: file.name,
           type: file.type,
@@ -201,7 +200,7 @@ export default function Home(props: Props) {
           fileId,
           type: file.type.includes("image") ? "image" : "video",
           progress: 0,
-          status: "queued",
+          status: "complete",
         };
       })
     );
@@ -252,8 +251,13 @@ export default function Home(props: Props) {
             size="1.5rem"
             className="text-red-700 cursor-pointer"
             onClick={() => {
-              if (multipartFileUploader)
+              if (multipartFileUploader) {
+                track("Media upload retry", {
+                  eventId,
+                  guestId,
+                });
                 multipartFileUploader.retryUpload(item.fileId);
+              }
             }}
           />
         );
