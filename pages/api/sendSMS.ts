@@ -76,8 +76,7 @@ export default async function handler(
   let msg;
   switch (type) {
     case "interviewInitialMessage":
-      // msg = `Hi ${firstName}! We're collecting video messages using Guestography for ${eventTitle} and it’s your turn!\n${interviewLink}`;
-      msg = `Hi ${firstName}! We're collecting guest interviews using Guestography for ${eventTitle} and it’s your turn!\nPlease record a short video message (<1 minute) using your smartphone (in ${
+      msg = `Hi ${firstName}! We're collecting guest video messages using Guestography for ${eventTitle} and it’s your turn!\nPlease record a short video (<1 minute) (in ${
         orientation === "landscape" ? "landscape ↔️" : "portrait ↕️"
       }!) and upload it using the link below.\n${interviewLink}\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`;
       break;
@@ -109,7 +108,7 @@ export default async function handler(
       msg = `Hi ${firstName}! Hope you are excited for ${eventTitle}! We are using Guestography to collect photos and videos from everyone so please snap away and after the event you will receive a message asking you to upload your best shots!`;
       break;
     case "mediaCollectionMessage":
-      msg = `Hope that you had fun at ${eventTitle}! Share any photos and videos you took by uploading them using the link below.\n${mediaLink}`;
+      msg = `Hope that you had fun at ${eventTitle}! Share any photos and videos using the link below.\n${mediaLink}`;
       break;
     case "galleryReadyMessage":
       msg = `Good news ${firstName}, the gallery for ${eventTitle} is ready! Take a look here,\n${galleryLink}`;
