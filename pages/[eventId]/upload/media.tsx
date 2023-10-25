@@ -200,7 +200,7 @@ export default function Home(props: Props) {
           fileId,
           type: file.type.includes("image") ? "image" : "video",
           progress: 0,
-          status: "complete",
+          status: "queued",
         };
       })
     );
