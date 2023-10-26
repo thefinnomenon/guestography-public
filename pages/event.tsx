@@ -1,10 +1,15 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { ClipLoader } from "react-spinners";
 import Link from "next/link";
 import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { csvToJson } from "../utils/csv";
 import { track } from "../lib/mixpanel";
-const { Timestamp } = require("firebase/firestore");
+import { type SingleValue } from "react-select";
+import GooglePlacesAutocomplete, {
+  geocodeByPlaceId,
+  getLatLng,
+} from "react-google-places-autocomplete";
+import Script from "next/script";
 
 export default function Form() {
   const [hasFormBeenEdited, setHasFormBeenEdited] = useState(false);
@@ -16,7 +21,7 @@ export default function Form() {
   const [eventTitle, setEventTitle] = useState("");
   const [eventStart, setEventStart] = useState("");
   const [eventEnd, setEventEnd] = useState("");
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState<SingleValue<any>>();
   const [guestList, setGuestList] = useState<FileList | null>();
   const [isInterviewsChecked, setIsInterviewsChecked] = useState(true);
   const [isMediaChecked, setIsMediaChecked] = useState(true);
@@ -117,6 +122,21 @@ export default function Form() {
       });
     }
 
+    // Add geocode and latLng to location
+    let enhancedLocation = location;
+    try {
+      if (location?.value?.place_id) {
+        const geocode = await geocodeByPlaceId(location.value.place_id);
+        if (geocode[0]) {
+          const latLng = await getLatLng(geocode[0]);
+          enhancedLocation.geocode = geocode[0];
+          enhancedLocation.latLong = latLng;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to geocode location: ", location, err);
+    }
+
     const eventData = {
       firstName,
       lastName,
@@ -127,7 +147,7 @@ export default function Form() {
       dateEnd: new Date(
         eventEnd || getEstimatedEventEnd(eventStart)
       ).toISOString(),
-      location,
+      location: enhancedLocation,
       guests: guestListJson,
       interviews: {
         enabled: isInterviewsChecked,
@@ -186,6 +206,12 @@ export default function Form() {
 
   return (
     <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
+      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
+      <Script
+        type="text/javascript"
+        strategy="beforeInteractive"
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.GOOGLE_PLACES_API_KEY}&libraries=places`}
+      />
       <div className="relative mx-auto max-w-xl">
         <svg
           className="absolute left-full translate-x-1/2 transform"
@@ -427,7 +453,13 @@ export default function Form() {
                 Location
               </label>
               <div className="mt-1">
-                <input
+                <GooglePlacesAutocomplete
+                  selectProps={{
+                    value: location,
+                    onChange: setLocation,
+                  }}
+                />
+                {/* <input
                   type="text"
                   name="location"
                   id="location"
@@ -436,7 +468,7 @@ export default function Form() {
                   value={location}
                   required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
+                /> */}
               </div>
             </div>
             <div className="sm:col-span-2">
