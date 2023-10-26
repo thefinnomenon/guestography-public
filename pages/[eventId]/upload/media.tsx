@@ -13,6 +13,7 @@ import { CircularProgressbar } from "react-circular-progressbar";
 import { MultipartFileUploader } from "../../../utils/uppy";
 import Uppy from "@uppy/core";
 import "react-circular-progressbar/dist/styles.css";
+import { checkIos } from "../../../utils/platformDetection";
 
 interface Props {
   title: string;
@@ -44,6 +45,9 @@ export default function Home(props: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [update, setUpdate] = useState<any>();
+
+  let isIos = false;
+  if (typeof window !== "undefined") isIos = checkIos();
 
   // Handle updates
   useEffect(() => {
@@ -367,22 +371,24 @@ export default function Home(props: Props) {
               <p className="mt-4 text-lg leading-6 text-gray-500">
                 Upload the photos and videos you took of the event!
               </p>
-              <div
-                className="flex justify-start p-4 mt-8 text-sm text-yellow-700 bg-yellow-100 rounded-lg dark:bg-yellow-200 dark:text-yellow-800"
-                role="alert"
-              >
-                <div>
-                  <IoWarningOutline className="mr-2" size={24} />
-                  <span className="sr-only">Error</span>
+              {isIos && (
+                <div
+                  className="flex justify-start p-4 mt-8 text-sm text-yellow-700 bg-yellow-100 rounded-lg dark:bg-yellow-200 dark:text-yellow-800"
+                  role="alert"
+                >
+                  <div>
+                    <IoWarningOutline className="mr-2" size={24} />
+                    <span className="sr-only">Error</span>
+                  </div>
+                  <div className="text-left">
+                    iOS Users: When you click <b>Choose Files</b> and open the{" "}
+                    <b>Photo Library</b>, select <b>Option</b> in the bottom
+                    left corner and set <b>Format</b> to <b>Most Compatible</b>.
+                    Also, be patient after clicking <b>Add</b>, especially with
+                    videos as iOS will do some processing on each one.
+                  </div>
                 </div>
-                <div className="text-left">
-                  iOS Users: When you click <b>Choose Files</b> and open the{" "}
-                  <b>Photo Library</b>, select <b>Option</b> in the bottom left
-                  corner and set <b>Format</b> to <b>Most Compatible</b>. Also,
-                  be patient after clicking <b>Add</b>, especially with videos
-                  as iOS will do some processing on each one.
-                </div>
-              </div>
+              )}
             </div>
             <div className="mt-12">
               <form

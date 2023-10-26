@@ -17,3 +17,7 @@ export const checkMobile = () => {
   const u = navigator.userAgent;
   return !!u.match(/Android/i) || !!u.match(/iPhone/i);
 };
+
+export const checkIos = () => {
+  return checkIphone() || checkIpad();
+};
