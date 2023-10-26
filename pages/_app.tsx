@@ -21,6 +21,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
+        <title>Guestography</title>
         <link
           rel="apple-touch-icon"
           sizes="180x180"
