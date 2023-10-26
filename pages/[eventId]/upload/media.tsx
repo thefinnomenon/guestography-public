@@ -3,6 +3,7 @@ import { GetStaticPropsContext } from "next";
 import router from "next/router";
 import { useEffect, useState } from "react";
 import { getEvent, getEvents } from "../../../lib/firebase";
+import { IoWarningOutline } from "react-icons/io5";
 import { ClipLoader } from "react-spinners";
 import { Event, Metadata } from "../../../types";
 import { GoFileMedia } from "react-icons/go";
@@ -41,6 +42,7 @@ export default function Home(props: Props) {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [multipartFileUploader, setMultipartFileUploader] = useState<Uppy>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [update, setUpdate] = useState<any>();
 
   // Handle updates
@@ -95,15 +97,16 @@ export default function Home(props: Props) {
         setUpdate(null);
         setMedia(updatedMedia);
       }
-      case "preview-loaded": {
-        const updatedMedia = [...media];
-        updatedMedia[update.index] = {
-          ...updatedMedia[update.index],
-          src: update.src,
-        };
-        setUpdate(null);
-        setMedia(updatedMedia);
-      }
+      // Disabled due to inefficiencies
+      // case "preview-loaded": {
+      //   const updatedMedia = [...media];
+      //   updatedMedia[update.index] = {
+      //     ...updatedMedia[update.index],
+      //     src: update.src,
+      //   };
+      //   setUpdate(null);
+      //   setMedia(updatedMedia);
+      // }
     }
   }, [JSON.stringify(media), JSON.stringify(update)]);
 
@@ -149,22 +152,24 @@ export default function Home(props: Props) {
     );
   }, [eventId, guestId]);
 
-  // Load selected files and set media previews
-  useEffect(() => {
-    if (!media) return;
-    media.map((m, i) => {
-      if (m.src || m.type === "video") return;
+  // Load selected files and set media previews (disabled)
+  // Note: Since these are all high res images, ~20 already crashed the Android
+  // browser so unless there is a way to grab a smaller preview this is a no go
+  // useEffect(() => {
+  //   if (!media) return;
+  //   media.map((m, i) => {
+  //     if (m.src || m.type === "video") return;
 
-      const reader = new FileReader();
-      reader.readAsDataURL(m.file);
-      reader.onload = () =>
-        setUpdate({
-          action: "preview-loaded",
-          index: i,
-          src: reader.result as string,
-        });
-    });
-  }, [media]);
+  //     const reader = new FileReader();
+  //     reader.readAsDataURL(m.file);
+  //     reader.onload = () =>
+  //       setUpdate({
+  //         action: "preview-loaded",
+  //         index: i,
+  //         src: reader.result as string,
+  //       });
+  //   });
+  // }, [media]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -181,12 +186,24 @@ export default function Home(props: Props) {
   };
 
   const handleMediaSelection = async (files: FileList | null) => {
+    setError("");
+    setMedia([]);
     if (!files || !multipartFileUploader) return;
 
     // Clear all files on new selection
     multipartFileUploader.cancelAll();
 
+    // Check for HEIC files
     const fileArr = Array.from(files);
+    console.log(fileArr);
+    if (fileArr.filter((file) => file.type === "image/heic").length !== 0) {
+      track("Invalid media file selected", { eventId, guestId });
+      setError(
+        "Unsupported file format (HEIC). If on iOS, in the Photo Library, click Options, set Format to Most Compatible, and try the upload again."
+      );
+      return;
+    }
+
     const mediaList: MediaItem[] = await Promise.all(
       fileArr.map(async (file) => {
         const fileId = multipartFileUploader.addFile({
@@ -350,6 +367,22 @@ export default function Home(props: Props) {
               <p className="mt-4 text-lg leading-6 text-gray-500">
                 Upload the photos and videos you took of the event!
               </p>
+              <div
+                className="flex justify-start p-4 mt-8 text-sm text-yellow-700 bg-yellow-100 rounded-lg dark:bg-yellow-200 dark:text-yellow-800"
+                role="alert"
+              >
+                <div>
+                  <IoWarningOutline className="mr-2" size={24} />
+                  <span className="sr-only">Error</span>
+                </div>
+                <div className="text-left">
+                  iOS Users: When you click <b>Choose Files</b> and open the{" "}
+                  <b>Photo Library</b>, select <b>Option</b> in the bottom left
+                  corner and set <b>Format</b> to <b>Most Compatible</b>. Also,
+                  be patient after clicking <b>Add</b>, especially with videos
+                  as iOS will do some processing on each one.
+                </div>
+              </div>
             </div>
             <div className="mt-12">
               <form
@@ -382,6 +415,18 @@ export default function Home(props: Props) {
     file:bg-indigo-50 file:text-indigo-500
     hover:file:bg-indigo-100"
                   />
+                  {error && (
+                    <div
+                      className="flex justify-start p-4 mt-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800"
+                      role="alert"
+                    >
+                      <div>
+                        <IoWarningOutline className="mr-2" size={24} />
+                        <span className="sr-only">Error</span>
+                      </div>
+                      <div>{error}</div>
+                    </div>
+                  )}
                   <div>
                     <ul role="list" className="divide-y divide-indigo-200">
                       {media &&
@@ -418,10 +463,10 @@ export default function Home(props: Props) {
 
                 <div className="sm:col-span-2">
                   <button
-                    disabled={!media}
+                    disabled={media.length === 0}
                     type="submit"
                     className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                      !media &&
+                      media.length === 0 &&
                       "bg-indigo-200 text-indigo-400 hover:bg-indigo-200"
                     }`}
                   >
