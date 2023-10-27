@@ -200,6 +200,8 @@ export default function Home(props: Props) {
                       <video
                         id="interview-video"
                         className="rounded-md"
+                        width={interview.metadata.width}
+                        height={interview.metadata.height}
                         autoPlay
                         onPlay={() => {
                           track("Interview video played", { eventId, guestId });
