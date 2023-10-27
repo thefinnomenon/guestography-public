@@ -402,7 +402,7 @@ export default function Home(props: Props) {
                 <div className="sm:col-span-2">
                   <label
                     htmlFor="interview"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block mb-2 text-sm font-medium text-gray-700"
                   >
                     Media
                   </label>
