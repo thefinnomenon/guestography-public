@@ -245,23 +245,27 @@ export default function Home(props: Props) {
       case "uploading":
         return (
           <span className="h-6 w-6">
-            <CircularProgressbar
-              value={item.progress}
-              text={`${item.progress}`}
-              strokeWidth={12}
-              styles={{
-                path: {
-                  stroke: "rgb(99 102 241)",
-                },
-                trail: {
-                  stroke: "rgb(224 231 255)",
-                },
-                text: {
-                  fill: "rgb(99 102 241)",
-                  fontSize: "40px",
-                },
-              }}
-            />
+            {item.progress === 0 ? (
+              <ClipLoader size={20} color="rgb(99 102 241)" />
+            ) : (
+              <CircularProgressbar
+                value={item.progress}
+                text={`${item.progress}`}
+                strokeWidth={12}
+                styles={{
+                  path: {
+                    stroke: "rgb(99 102 241)",
+                  },
+                  trail: {
+                    stroke: "rgb(224 231 255)",
+                  },
+                  text: {
+                    fill: "rgb(99 102 241)",
+                    fontSize: "40px",
+                  },
+                }}
+              />
+            )}
           </span>
         );
       case "complete":
@@ -398,7 +402,7 @@ export default function Home(props: Props) {
                 <div className="sm:col-span-2">
                   <label
                     htmlFor="interview"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block mb-2 text-sm font-medium text-gray-700"
                   >
                     Media
                   </label>
