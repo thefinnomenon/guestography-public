@@ -79,7 +79,7 @@ export const getMedia = async (eventId: string) => {
       .where("metadata.createdAt", "!=", null)
       .orderBy("metadata.createdAt", "asc")
       .get();
-    const media = snapshot.docs.map((doc) => {
+    let media = snapshot.docs.map((doc) => {
       return {
         ...(doc.data() as Media),
         id: doc.id,
@@ -91,12 +91,18 @@ export const getMedia = async (eventId: string) => {
       .collection(`events/${eventId}/media`)
       .where("metadata.createdAt", "==", null)
       .get();
-    const unsortedMedia = snapshot2.docs.map((doc) => {
+    let unsortedMedia = snapshot2.docs.map((doc) => {
       return {
         ...(doc.data() as Media),
         id: doc.id,
       };
     });
+
+    // Filter out any media that doesn't have height & widths
+    media = media.filter((m) => m.metadata.height && m.metadata.width);
+    unsortedMedia = unsortedMedia.filter(
+      (m) => m.metadata.height && m.metadata.width
+    );
 
     return { media, unsortedMedia };
   } catch (e) {

@@ -22,6 +22,9 @@ const got = require("got");
 import { fromStream } from "file-type";
 // eslint-disable-next-line import/default
 import MediaInfo from "mediainfo.js";
+import { createHash } from "crypto";
+const url = require("url");
+const https = require("https");
 
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
@@ -532,6 +535,9 @@ export const handleMediaUpload = functions
         try {
           // Extract metadata for image
           const metadata = await getImageMetadata(media.publicUrl);
+          if (!metadata.height || !metadata.width)
+            throw Error("Failed to determine image height & width");
+
           metadata.mimeType = mime;
           console.log("Extracted image metadata", { metadata });
 
@@ -567,10 +573,7 @@ export const handleMediaUpload = functions
         );
         try {
           const db = admin.firestore();
-          const posterFilename = `${sanitize(mediaId).replaceAll(
-            "%",
-            ""
-          )}-poster.jpg`;
+          const posterFilename = `${media.guestId}-${hash(mediaId)}-poster.jpg`;
           const tempFilePath = path.join(os.tmpdir(), posterFilename);
 
           // Extract metadata
@@ -776,14 +779,23 @@ const getImageMetadata = async (file: string) => {
       : null;
   }
 
-  let height = metadata.file?.["Image Height"]?.value || null;
-  let width = metadata.file?.["Image Width"]?.value || null;
+  let height =
+    metadata.file?.["Image Height"]?.value ||
+    metadata.png?.["Image Height"]?.value ||
+    null;
+  let width =
+    metadata.file?.["Image Width"]?.value ||
+    metadata.png?.["Image Width"]?.value ||
+    null;
 
   // If failed to get height and width from metadata, we need to get it from the file buffer
   if (!height || !width) {
-    const dims = await sizeOf(file);
-    height = dims.height || null;
-    width = dims.width || null;
+    const options = url.parse(file);
+    await https.get(options, async (stream: any) => {
+      const { height, width } = await getStreamImageSize(stream);
+      if (!height || !width)
+        throw Error("Failed to extract height and width using sizeOf");
+    });
   }
 
   console.log("Rotation: ", rotation);
@@ -962,3 +974,21 @@ export const flattenObject = (obj: object, parentKey?: string) => {
 
   return result;
 };
+
+function hash(str: string) {
+  return createHash("sha256").update(str).digest("hex");
+}
+
+async function getStreamImageSize(stream: any) {
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+    try {
+      return sizeOf(Buffer.concat(chunks));
+    } catch (error) {
+      /* Not ready yet */
+    }
+  }
+
+  return sizeOf(Buffer.concat(chunks));
+}
