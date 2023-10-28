@@ -13,7 +13,6 @@ import { MultipartFileUploader } from "../../../utils/uppy";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { ClipLoader } from "react-spinners";
-import { toSafeFilename } from "../../../utils/format";
 
 interface Props {
   title: string;
