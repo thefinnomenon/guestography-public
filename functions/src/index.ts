@@ -240,9 +240,11 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
         console.log(`Updated event ${eventObj.eventId} with status SCHEDULED`);
 
         const eventForAnalytics = {
-          ...eventObj,
+          ...eventObj.event,
+          phone: null,
+          email: null,
           guests: null,
-          numberOfGuests: eventObj.guests.length,
+          numberOfGuests: eventObj.event.guests.length,
         };
         mixpanel.track("Event scheduled", { event: eventForAnalytics });
 
