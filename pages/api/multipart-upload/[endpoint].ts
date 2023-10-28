@@ -10,6 +10,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as admin from "firebase-admin";
 import Mixpanel from "mixpanel";
+import { toSafeFilename } from "../../../utils/format";
 
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
@@ -68,7 +69,7 @@ export async function createMultipartUpload(
   const Key =
     uploadType === "interview"
       ? `events/${eventId}/${uploadType}/${guestId}.${fileExt || ""}`
-      : `events/${eventId}/media/${guestId}-${fileName}`;
+      : `events/${eventId}/media/${guestId}-${toSafeFilename(fileName)}`;
 
   try {
     const params = {
