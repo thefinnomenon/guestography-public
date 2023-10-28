@@ -821,7 +821,7 @@ export default function Form() {
                     Schedule
                   </label>
                   <p className="text-gray-500 text-sm mt-1">
-                    We recommend scheduling the message at the morning after the
+                    We recommend scheduling the message on the morning after the
                     event ends.
                   </p>
                   <div className="mt-1">
@@ -836,7 +836,6 @@ export default function Form() {
                         mediaCollectionMessageTime || getNextMorning(eventStart)
                       }
                       min={mediaInitialMessageTime}
-                      max={eventEnd}
                       required={isMediaChecked}
                       className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
