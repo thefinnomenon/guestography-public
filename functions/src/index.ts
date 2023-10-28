@@ -945,11 +945,9 @@ export const flattenObject = (obj: object, parentKey?: string) => {
 
   Object.entries(obj).forEach(([key, value]) => {
     const _key = parentKey ? parentKey + "." + key : key;
-    if (typeof value === "object") {
+    if (value && typeof value === "object")
       result = { ...result, ...flattenObject(value, _key) };
-    } else {
-      result[_key] = value;
-    }
+    else result[_key] = value;
   });
 
   return result;
