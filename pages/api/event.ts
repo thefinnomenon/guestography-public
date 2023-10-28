@@ -97,7 +97,7 @@ export default async function handler(
     });
   if (event.media.enabled)
     line_items.push({
-      price: process.env.STRIPE_INTERVIEW_SERVICE_PRICE_ID,
+      price: process.env.STRIPE_MEDIA_SERVICE_PRICE_ID,
       quantity: event.guests.length,
     });
 
