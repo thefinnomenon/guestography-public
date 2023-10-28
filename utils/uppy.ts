@@ -1,4 +1,4 @@
-import React from "react";
+import React, { MutableRefObject } from "react";
 import Uppy from "@uppy/core";
 import AwsS3Multipart from "@uppy/aws-s3-multipart";
 import { UploadType } from "../types";
@@ -30,7 +30,7 @@ export function MultipartFileUploader({
 }: {
   eventId: string;
   guestId: string;
-  guests?: Tag[];
+  guests?: MutableRefObject<Tag[]>;
   uploadType: UploadType;
   onProgressUpdate: (fileId: string, progress: number) => void;
   onUploadSuccess: (fileId: string) => void;
@@ -58,7 +58,7 @@ export function MultipartFileUploader({
         uploadType,
         eventId,
         guestId,
-        guests,
+        guests: guests?.current,
         ...props,
       }),
     listParts: (file, props) =>

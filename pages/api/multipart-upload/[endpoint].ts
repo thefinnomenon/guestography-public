@@ -167,9 +167,12 @@ export async function completeMultipartUpload(
     if (uploadType === "interview") {
       // Remap guest array to map so it is queryable
       let guestMap: { [key: string]: any } = {};
+      console.log("Interview video uploaded with tagged guests: ", guests);
       guests.forEach((guest: any) => {
         guestMap[guest.id as string] = { id: guest.id, name: guest.name };
       });
+
+      console.log("guestMap: ", guestMap);
 
       await db
         .collection("events")

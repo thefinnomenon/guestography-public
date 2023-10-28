@@ -12,6 +12,7 @@ import { checkIpad, checkIphone } from "../../../utils/platformDetection";
 import { MultipartFileUploader } from "../../../utils/uppy";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
+import { ClipLoader } from "react-spinners";
 
 interface Props {
   title: string;
@@ -37,10 +38,16 @@ export default function Home(props: Props) {
   const [videoMetadata, setVideoMetadata] = useState({});
   const [suggestions, setSuggestions] = useState<Tag[]>(guests);
   const [tags, setTags] = useState<Tag[]>([]);
+  const tagsRef = useRef<Tag[]>([]);
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
   const [multipartFileUploader, setMultipartFileUploader] = useState<any>();
   const reactTags = useRef<ReactTags>();
+
+  // Store tags in a ref and pass it to the uploader
+  useEffect(() => {
+    tagsRef.current = tags;
+  }, [tags]);
 
   const onProgressUpdate = (fileId: string, value: number) => {
     if (value > progress) setProgress(value);
@@ -64,14 +71,14 @@ export default function Home(props: Props) {
       MultipartFileUploader({
         eventId,
         guestId,
-        guests,
+        guests: tagsRef,
         uploadType: "interview",
         onProgressUpdate,
         onUploadSuccess,
         onUploadFail,
       })
     );
-  }, [eventId, guestId, guests]);
+  }, [eventId, guestId]);
 
   // Handle Tags
   useEffect(() => {
@@ -398,10 +405,27 @@ export default function Home(props: Props) {
                   >
                     {isSubmitting ? (
                       <div className="h-6 w-6">
-                        <CircularProgressbar
-                          value={progress}
-                          strokeWidth={16}
-                        />
+                        {progress === 0 ? (
+                          <ClipLoader size={24} color="white" />
+                        ) : (
+                          <CircularProgressbar
+                            value={progress}
+                            text={`${progress}`}
+                            strokeWidth={10}
+                            styles={{
+                              path: {
+                                stroke: "white",
+                              },
+                              trail: {
+                                stroke: "rgb(224 231 255)",
+                              },
+                              text: {
+                                fill: "white",
+                                fontSize: "32px",
+                              },
+                            }}
+                          />
+                        )}
                       </div>
                     ) : (
                       "UPLOAD"

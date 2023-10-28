@@ -501,7 +501,7 @@ const getEarlyNextMorning = (start: string) => {
 export const handleMediaUpload = functions
   .runWith({
     secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey],
-    timeoutSeconds: 300,
+    timeoutSeconds: 540,
     memory: "1GB",
   })
   .firestore.document("events/{eventId}/media/{mediaId}")
@@ -621,17 +621,23 @@ export const handleMediaUpload = functions
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
             .update({ metadata, blurDataURL: base64, posterUrl });
+
           console.log("Updated db entry", {
             metadata,
             blurDataUrl: base64,
             posterUrl,
           });
+
           mixpanel.track("Media uploaded", {
             eventId,
             guestId: media.guestId,
             type: "video",
             ...flattenObject(metadata),
           });
+
+          // Delete temp file
+          await fs.unlink(tempFilePath);
+          console.log("Cleaned up temp file");
         } catch (error) {
           console.error("Failed to process video", error);
           Sentry.captureException(error);
@@ -649,7 +655,7 @@ export const handleMediaUpload = functions
 export const handleInterviewUpload = functions
   .runWith({
     secrets: [cloudflareAccessKeyId, cloudflareSecretAccessKey],
-    timeoutSeconds: 300,
+    timeoutSeconds: 540,
     memory: "1GB",
   })
   .firestore.document("events/{eventId}/interviews/{interviewId}")
@@ -724,6 +730,10 @@ export const handleInterviewUpload = functions
         guestId: interview.guestId,
         metadata,
       });
+
+      // Delete temp file
+      await fs.unlink(tempFilePath);
+      console.log("Cleaned up temp file");
     } catch (error) {
       console.error("Failed to process interview", interviewId, error);
       Sentry.captureException(error);
