@@ -81,7 +81,7 @@ export default async function handler(
       .doc(eventId)
       .collection("interviews")
       .doc("interview")
-      .set({
+      .create({
         guestId: "",
         url: "",
         metadata: {

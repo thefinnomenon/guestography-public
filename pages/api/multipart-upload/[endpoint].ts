@@ -174,6 +174,15 @@ export async function completeMultipartUpload(
 
       console.log("guestMap: ", guestMap);
 
+      // Delete previous entry if exists (noop if it doesn't exist)
+      await db
+        .collection("events")
+        .doc(eventId)
+        .collection("interviews")
+        .doc(guestId)
+        .delete();
+
+      // Add new entry
       await db
         .collection("events")
         .doc(eventId)
