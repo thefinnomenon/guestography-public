@@ -272,7 +272,7 @@ export default function Home(props: Props) {
                     // @ts-ignore
                     renderPhoto={renderPhoto}
                     onClick={({ index }) => setIndex(index)}
-                    defaultContainerWidth={1200}
+                    defaultContainerWidth={399}
                   />
                 )}
                 <h2 className="text-2xl font-bold mt-8 mb-4">Unsorted Media</h2>
@@ -290,7 +290,7 @@ export default function Home(props: Props) {
                     onClick={({ index }) =>
                       setIndex(media ? media.length + index : index)
                     }
-                    defaultContainerWidth={1200}
+                    defaultContainerWidth={399}
                   />
                 )}
                 {slides && (
