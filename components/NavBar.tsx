@@ -22,12 +22,11 @@ export default function NavBar() {
       };
       break;
     case "/[eventId]":
-      buttonData = {
-        title: "UPLOAD",
-        href: `${query.eventId}/upload/media${
-          query.guestId ? `?guestId=${query.guestId}` : ""
-        }`,
-      };
+      buttonData = query.eventId &&
+        query.guestId && {
+          title: "UPLOAD",
+          href: `${query.eventId}/upload/media?guestId=${query.guestId}`,
+        };
   }
 
   return (
