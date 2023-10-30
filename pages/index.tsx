@@ -51,9 +51,14 @@ const eventColors = [
 ];
 
 export default function Example() {
-  const [index, setIndex] = useState(Math.round(Math.random() * 100));
+  const [index, setIndex] = useState<number | null>(null);
 
   useEffect(() => {
+    if (!index) {
+      setIndex(Math.round(Math.random() * 100));
+      return;
+    }
+
     const interval = setInterval(() => setIndex(index + 1), 4000);
     return () => clearInterval(interval);
   }, [index]);
@@ -111,10 +116,11 @@ export default function Example() {
                     Capture your{" "}
                     <span
                       style={{
-                        color: eventColors[index % (eventColors.length - 1)],
+                        color:
+                          eventColors[(index || 0) % (eventColors.length - 1)],
                       }}
                     >
-                      {eventTypes[index % (eventTypes.length - 1)]}
+                      {eventTypes[(index || 0) % (eventTypes.length - 1)]}
                     </span>{" "}
                     through the eyes of your guests
                   </h1>
@@ -146,7 +152,7 @@ export default function Example() {
                       <img
                         src={
                           exampleImages[
-                            (index * 5) % (exampleImages.length - 1)
+                            ((index || 0) * 5) % (exampleImages.length - 1)
                           ]
                         }
                         alt="Example event image"
@@ -160,7 +166,7 @@ export default function Example() {
                       <img
                         src={
                           exampleImages[
-                            (index * 5 + 1) % (exampleImages.length - 1)
+                            ((index || 0) * 5 + 1) % (exampleImages.length - 1)
                           ]
                         }
                         alt="Example event image"
@@ -172,7 +178,7 @@ export default function Example() {
                       <img
                         src={
                           exampleImages[
-                            (index * 5 + 2) % (exampleImages.length - 1)
+                            ((index || 0) * 5 + 2) % (exampleImages.length - 1)
                           ]
                         }
                         alt="Example event image"
@@ -186,7 +192,7 @@ export default function Example() {
                       <img
                         src={
                           exampleImages[
-                            (index * 5 + 3) % (exampleImages.length - 1)
+                            ((index || 0) * 5 + 3) % (exampleImages.length - 1)
                           ]
                         }
                         alt="Example event image"
@@ -198,7 +204,7 @@ export default function Example() {
                       <img
                         src={
                           exampleImages[
-                            (index * 5 + 4) % (exampleImages.length - 1)
+                            ((index || 0) * 5 + 4) % (exampleImages.length - 1)
                           ]
                         }
                         alt="Example event image"
