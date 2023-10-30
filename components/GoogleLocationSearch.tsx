@@ -1,9 +1,5 @@
-import GooglePlacesAutocomplete, {
-  geocodeByPlaceId,
-  getLatLng,
-} from "react-google-places-autocomplete";
+import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 
-import Script from "next/script";
 import { SingleValue } from "react-select";
 
 type Props = {
