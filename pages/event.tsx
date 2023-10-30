@@ -5,11 +5,13 @@ import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
 import { csvToJson } from "../utils/csv";
 import { track } from "../lib/mixpanel";
 import { type SingleValue } from "react-select";
-import GooglePlacesAutocomplete, {
-  geocodeByPlaceId,
-  getLatLng,
-} from "react-google-places-autocomplete";
+
+import dynamic from "next/dynamic";
 import Script from "next/script";
+const GoogleLocationSearch = dynamic(
+  () => import("../components/GoogleLocationSearch"),
+  { ssr: false }
+);
 
 export default function Form() {
   const [hasFormBeenEdited, setHasFormBeenEdited] = useState(false);
@@ -453,11 +455,9 @@ export default function Form() {
                 Location
               </label>
               <div className="mt-1">
-                <GooglePlacesAutocomplete
-                  selectProps={{
-                    value: location,
-                    onChange: setLocation,
-                  }}
+                <GoogleLocationSearch
+                  location={location}
+                  setLocation={setLocation}
                 />
                 {/* <input
                   type="text"
