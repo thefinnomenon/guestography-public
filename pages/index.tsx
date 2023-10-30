@@ -229,7 +229,7 @@ export default function Example() {
               <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800">
                 <img
                   className="object-cover object-center  w-[272px] h-[572px]"
-                  src={exampleImages[index % (exampleImages.length - 1)]}
+                  src={exampleImages[(index || 0) % (exampleImages.length - 1)]}
                   alt="iPhone mockup with example event images"
                 />
               </div>
