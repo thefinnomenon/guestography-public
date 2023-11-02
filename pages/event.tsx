@@ -1,12 +1,10 @@
 import { FormEvent, useState } from "react";
 import { ClipLoader } from "react-spinners";
-import Link from "next/link";
 import {
   IoPhoneLandscapeSharp,
   IoPhonePortraitSharp,
   IoWarningOutline,
 } from "react-icons/io5";
-import { csvToJson } from "../utils/csv";
 import { track } from "../lib/mixpanel";
 import { type SingleValue } from "react-select";
 
