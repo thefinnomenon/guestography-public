@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { formatPhoneNumber } from "./format";
 
 export const csvToJson = (file: File) => {
   return new Promise((resolve, reject) => {
@@ -40,8 +41,8 @@ export const csvToJson = (file: File) => {
       },
       transform: (value, header) => {
         switch (header) {
-          case "rsvp":
-            return value === "Attending";
+          case "phone":
+            return formatPhoneNumber(value);
         }
 
         return value;

@@ -19,24 +19,12 @@ export interface Event {
   interviews: InterviewsService;
   media: MediaService;
 }
-
-export interface Address {
-  line1?: string;
-  line2?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
-}
-
 export interface Guest {
   id: string;
-  address: Address;
-  email: string;
   phone: string;
+  email?: string;
   firstName: string;
   lastName: string;
-  rsvp: boolean;
 }
 
 export interface InterviewsService {
