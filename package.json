@@ -17,6 +17,7 @@
     "@heroicons/react": "^2.0.13",
     "@sentry/nextjs": "^7.51.2",
     "@stripe/stripe-js": "^1.52.0",
+    "@tanstack/react-table": "^8.10.7",
     "@types/mixpanel-browser": "^2.38.1",
     "@uppy/aws-s3-multipart": "^3.8.0",
     "@uppy/core": "^3.6.1",

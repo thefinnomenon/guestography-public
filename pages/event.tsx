@@ -1,14 +1,23 @@
 import { FormEvent, useState } from "react";
 import { ClipLoader } from "react-spinners";
-import Link from "next/link";
-import { IoPhoneLandscapeSharp, IoPhonePortraitSharp } from "react-icons/io5";
-import { csvToJson } from "../utils/csv";
+import {
+  IoPhoneLandscapeSharp,
+  IoPhonePortraitSharp,
+  IoWarningOutline,
+} from "react-icons/io5";
 import { track } from "../lib/mixpanel";
 import { type SingleValue } from "react-select";
 
 import dynamic from "next/dynamic";
 import Script from "next/script";
 import { geocodeByPlaceId, getLatLng } from "react-google-places-autocomplete";
+import GuestsTable from "../components/GuestsTable";
+import { Guest } from "../types";
+import { parseGuestListCSV } from "../utils/format";
+import {
+  ImportGuestsFromContacts,
+  determineValidGuests,
+} from "../utils/contacts";
 const GoogleLocationSearch = dynamic(
   () => import("../components/GoogleLocationSearch"),
   { ssr: false }
@@ -25,7 +34,11 @@ export default function Form() {
   const [eventStart, setEventStart] = useState("");
   const [eventEnd, setEventEnd] = useState("");
   const [location, setLocation] = useState<SingleValue<any>>();
-  const [guestList, setGuestList] = useState<FileList | null>();
+  const [guestList, setGuestList] = useState<Omit<Guest, "id">[]>([]);
+  const [addGuestFirstName, setAddGuestFirstName] = useState("");
+  const [addGuestLastName, setAddGuestLastName] = useState("");
+  const [addGuestPhone, setAddGuestPhone] = useState("");
+  const [guestImportError, setGuestImportError] = useState("");
   const [isInterviewsChecked, setIsInterviewsChecked] = useState(true);
   const [isMediaChecked, setIsMediaChecked] = useState(true);
   const [interviewOrientation, setInterviewOrientation] = useState("landscape");
@@ -86,45 +99,6 @@ export default function Form() {
 
     setIsSubmitting(true);
 
-    let guestListJson;
-    if (guestList && guestList[0]) {
-      // Convert CSV to JSON
-      guestListJson = (await csvToJson(guestList[0])) as [any];
-      // Filter out guests with no phone number
-      guestListJson = guestListJson.filter((guest) => guest.phone);
-      // Filter out extra properties
-      guestListJson = guestListJson.map((guest) => {
-        const {
-          firstName,
-          lastName,
-          phone,
-          email,
-          address1,
-          address2,
-          city,
-          state,
-          zip,
-          country,
-          rsvp,
-        } = guest;
-        return {
-          firstName,
-          lastName,
-          phone,
-          email,
-          address: {
-            line1: address1,
-            line2: address2,
-            city,
-            state,
-            zip,
-            country,
-          },
-          rsvp,
-        };
-      });
-    }
-
     // Add geocode and latLng to location
     let enhancedLocation = location;
     try {
@@ -151,7 +125,7 @@ export default function Form() {
         eventEnd || getEstimatedEventEnd(eventStart)
       ).toISOString(),
       location: enhancedLocation,
-      guests: guestListJson,
+      guests: guestList,
       interviews: {
         enabled: isInterviewsChecked,
         orientation: interviewOrientation,
@@ -479,45 +453,170 @@ export default function Form() {
               >
                 Guest List
               </label>
-              <p className="block text-sm text-gray-500 mt-1">
-                Export your guest list from The Knot and upload it here:
+              <p className="block text-sm text-gray-500 mt-1 mb-3">
+                Import a CSV of your guest list, add them directly from your
+                phone contacts, or manually add each guest.
               </p>
-              <ul className="list-disc ml-4 text-sm text-gray-500 mb-2">
-                <li>
-                  Login to{" "}
-                  <Link
-                    href="https://www.theknot.com/our-guest-list"
-                    target="_blank"
-                    className="hover:underline text-indigo-500"
+              <div className="flex gap-4 items-center">
+                <div>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    onClick={() => {
+                      setGuestImportError("");
+                      document?.getElementById("guest-list")?.click();
+                    }}
                   >
-                    The Knot Guest List
-                  </Link>
-                </li>
-                <li>
-                  Click <i>Download List</i> and then <i>Entire Guest List</i>
-                </li>
-                <li>Upload the downloaded .csv file here.</li>
-              </ul>
+                    Import CSV
+                  </button>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    name="guest-list"
+                    id="guest-list"
+                    onChange={async (e) => {
+                      if (e.target.files) {
+                        const uniqueGuests = determineValidGuests(
+                          guestList,
+                          await parseGuestListCSV(e.target.files)
+                        );
+                        if (uniqueGuests.length !== 0)
+                          setGuestList([...uniqueGuests, ...guestList]);
+                      }
+                    }}
+                    style={{ display: "none" }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  onClick={async () => {
+                    setGuestImportError("");
+                    try {
+                      const uniqueGuests = determineValidGuests(
+                        guestList,
+                        await ImportGuestsFromContacts()
+                      );
+                      if (uniqueGuests.length !== 0)
+                        setGuestList([...uniqueGuests, ...guestList]);
+                    } catch (err: any) {
+                      setGuestImportError(err.message);
+                    }
+                  }}
+                >
+                  Import From Phone
+                </button>
+              </div>
+              {guestImportError !== "" && (
+                <div
+                  className="flex justify-start p-4 mt-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200"
+                  role="alert"
+                >
+                  <div>
+                    <IoWarningOutline className="mr-2" size={24} />
+                    <span className="sr-only">Info</span>
+                  </div>
+                  <div
+                    className="text-left"
+                    dangerouslySetInnerHTML={{ __html: guestImportError }}
+                  />
+                </div>
+              )}
+              <GuestsTable guests={guestList} setGuests={setGuestList} />
+              <div className="flex gap-4 mb-3">
+                <div>
+                  <label
+                    htmlFor="guestFirstName"
+                    className="text-sm font-medium leading-6 text-gray-900"
+                  >
+                    First Name
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="guestFirstName"
+                      id="guestFirstName"
+                      placeholder="Michael"
+                      value={addGuestFirstName}
+                      onChange={(e) => setAddGuestFirstName(e.target.value)}
+                      className="w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    />
+                  </div>
+                </div>
 
-              <div className="mt-1">
-                <input
-                  type="file"
-                  accept=".csv"
-                  name="guest-list"
-                  id="guest-list"
-                  onChange={(e) => setGuestList(e.target.files)}
-                  required
-                  className="block w-full text-sm text-slate-500
-      file:mr-4 file:py-2 file:px-4
-      file:rounded-full file:border-0
-      file:text-md file:font-semibold
-      file:bg-indigo-50 file:text-indigo-500
-      hover:file:bg-indigo-100
-    "
-                />
+                <div>
+                  <label
+                    htmlFor="guestLastName"
+                    className="text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Last Name
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="guetsLastName"
+                      id="guestLastName"
+                      placeholder="Scott"
+                      value={addGuestLastName}
+                      onChange={(e) => setAddGuestLastName(e.target.value)}
+                      className="w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="guestPhone"
+                    className="text-sm font-medium leading-6 text-gray-900"
+                  >
+                    Phone
+                  </label>
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      name="guestPhone"
+                      id="guestPhone"
+                      placeholder="570-555-4118"
+                      value={addGuestPhone}
+                      onChange={(e) => setAddGuestPhone(e.target.value)}
+                      className="w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    />
+                  </div>
+                </div>
+              </div>
+              <button
+                disabled={
+                  !addGuestPhone || (!addGuestFirstName && !addGuestLastName)
+                }
+                type="button"
+                className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm ${
+                  !addGuestPhone || (!addGuestFirstName && !addGuestLastName)
+                    ? "bg-indigo-300"
+                    : "hover:bg-indigo-700"
+                } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+                onClick={() => {
+                  setGuestImportError("");
+                  const uniqueGuests = determineValidGuests(guestList, [
+                    {
+                      firstName: addGuestFirstName,
+                      lastName: addGuestLastName,
+                      phone: addGuestPhone,
+                    },
+                  ]);
+                  if (uniqueGuests.length !== 0)
+                    setGuestList([...uniqueGuests, ...guestList]);
+                  setAddGuestFirstName("");
+                  setAddGuestLastName("");
+                  setAddGuestPhone("");
+                }}
+              >
+                ADD GUEST
+              </button>
+              <div className="float-right text-lg mt-2">
+                Guest Count: {guestList.length}
               </div>
             </div>
-            <fieldset className="space-y-5 mt-8 sm:col-span-2">
+            <fieldset className="space-y-5 mt-6 sm:col-span-2">
               <h1 className="text-2xl sm:col-span-2">Services</h1>
               <legend className="sr-only">Services</legend>
               <div className="relative flex items-start">
