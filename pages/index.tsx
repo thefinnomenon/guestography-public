@@ -139,7 +139,7 @@ export default function Example() {
                       Create Event
                     </a>
                     <a
-                      href="#"
+                      href="https://guestography.com/alyssa-mikes-wedding-QUCb"
                       className="text-md font-semibold leading-6 text-gray-900"
                     >
                       See Demo Gallery <span aria-hidden="true">→</span>
