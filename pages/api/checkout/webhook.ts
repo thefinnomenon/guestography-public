@@ -4,6 +4,8 @@ import * as admin from "firebase-admin";
 import { buffer } from "micro";
 import Stripe from "stripe";
 import Mixpanel from "mixpanel";
+import { iMessageLookup } from "../../../lib/loop";
+import { Event } from "../../../types";
 
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
@@ -46,7 +48,7 @@ export default async function handler(
     event = stripe.webhooks.constructEvent(payload, sig || "", endpointSecret);
   } catch (error: any) {
     console.error("Webhook Error: ", error.message);
-    throw error
+    throw error;
   }
 
   const db = admin.firestore();
@@ -75,6 +77,13 @@ export default async function handler(
         );
         console.log(`Updated event ${eventId} status to ${status}`);
 
+        if (status === "PAID") {
+          const guests = (
+            (await db.collection("events").doc(eventId).get()).data() as Event
+          ).guests;
+          await iMessageLookup(eventId, guests);
+        }
+
         mixpanel.track(`Event ${status === "PAID"} ? 'paid' : 'unpaid'`, {
           eventId,
           total: session.amount_total,
@@ -101,6 +110,13 @@ export default async function handler(
           { merge: true }
         );
         console.log(`Updated event ${eventId} status to PAID`);
+
+        // Send lookup request to determine iMessage users
+        const guests = (
+          (await db.collection("events").doc(eventId).get()).data() as Event
+        ).guests;
+        await iMessageLookup(eventId, guests);
+
         mixpanel.track("Event paid", {
           eventId,
           total: session.amount_total,
@@ -108,7 +124,7 @@ export default async function handler(
         });
       } catch (error) {
         console.error("Failed to update event");
-        throw error
+        throw error;
       }
 
       break;

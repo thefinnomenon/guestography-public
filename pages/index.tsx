@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MdOutlineMailOutline } from "react-icons/md";
+import { iMessageLookup } from "../lib/loop";
 
 const navigation = [
   {
@@ -178,6 +179,15 @@ export default function Example() {
               }}
             />
           </div>
+          <button
+            onClick={async () => {
+              await fetch("http://localhost:3000/api/testLoop", {
+                method: "POST",
+              });
+            }}
+          >
+            Test Loop Lookup
+          </button>
           <div className="overflow-hidden">
             <div className="mx-auto max-w-7xl px-6 pb-12 pt-16 lg:px-8 lg:pt-24">
               <div className="mx-auto max-w-2xl gap-x-14 lg:mx-0 lg:flex lg:max-w-none lg:items-center">

@@ -25,6 +25,7 @@ export interface Guest {
   email?: string;
   firstName: string;
   lastName: string;
+  iMessage?: boolean;
 }
 
 export interface InterviewsService {
