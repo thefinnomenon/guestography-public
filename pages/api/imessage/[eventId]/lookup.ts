@@ -36,8 +36,10 @@ export default async function handler(
   // https://docs.loopmessage.com/lookup-api/lookup/webhooks#response-format
   const phoneDetails = req.body;
   const phone = phoneDetails.contact;
+  // Sometimes iMessage says unavailable so let's also check the Facetime status
   const iMessage =
-    phoneDetails.result_v1.apple_services.imessage.status === "available";
+    phoneDetails.result_v1.apple_services.imessage.status === "available" ||
+    phoneDetails.result_v1.apple_services.facetime.status === "available";
 
   console.log(phoneDetails, phone, iMessage);
 
