@@ -147,6 +147,12 @@ export const handleEventStatusChange = functions
       case "SCHEDULED":
         console.log("Event scheduled!", eventId);
         break;
+      case "ACTIVE":
+        console.log("Event active!", eventId);
+        break;
+      case "COMPLETED":
+        console.log("Event completed!", eventId);
+        break;
       default:
         console.error(`Event ${eventId} has unhandled status ${event.status}`);
         Sentry.captureException(
