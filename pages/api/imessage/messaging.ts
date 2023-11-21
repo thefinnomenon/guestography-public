@@ -79,7 +79,6 @@ export default async function handler(
         mixpanel.track("guest opt-in", { eventId: guestRecord.eventId });
 
         await iMessageSend(
-          guestRecord.eventId,
           guest.phone,
           "",
           "Thanks for joining! Send any messages, audios, photos, and videos you take right here and they will be added to the event gallery!"
