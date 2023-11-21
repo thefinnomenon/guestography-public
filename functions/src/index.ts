@@ -306,50 +306,50 @@ const createTasks = (secret: string, eventId: string, event: any) => {
   // Iterate through guests & create tasks
   const tasks: any[] = [];
 
+  // Event Status Update Tasks
+  // Set active an hour before event start
+  const setEventActiveTask = {
+    httpRequest: {
+      headers: {
+        "Content-Type": "text/json",
+      },
+      httpMethod: "POST",
+      url: "https://guestography.com/api/event-status",
+      body: formatBody({
+        secret,
+        eventId,
+        status: "ACTIVE",
+      }),
+    },
+    scheduleTime: {
+      seconds: formatTime(get1HourBefore(event.date)),
+    },
+  };
+  tasks.push(setEventActiveTask);
+
+  // Set inactive a week after event ends
+  const setEventCompletedTask = {
+    httpRequest: {
+      headers: {
+        "Content-Type": "text/json",
+      },
+      httpMethod: "POST",
+      url: "https://guestography.com/api/event-status",
+      body: formatBody({
+        secret,
+        eventId,
+        status: "COMPLETED",
+      }),
+    },
+    scheduleTime: {
+      seconds: formatTime(get1WeekAfter(event.date)),
+    },
+  };
+  tasks.push(setEventCompletedTask);
+
   // Add guest tasks
   event.guests.map((guest: any) => {
     const guestId = guest.id;
-
-    // Event Status Update Tasks
-    // Set active an hour before event start
-    const setEventActiveTask = {
-      httpRequest: {
-        headers: {
-          "Content-Type": "text/json",
-        },
-        httpMethod: "POST",
-        url: "https://guestography.com/api/event-status",
-        body: formatBody({
-          secret,
-          eventId,
-          status: "ACTIVE",
-        }),
-      },
-      scheduleTime: {
-        seconds: formatTime(get1HourBefore(event.date)),
-      },
-    };
-    tasks.push(setEventActiveTask);
-
-    // Set inactive a week after event ends
-    const setEventCompletedTask = {
-      httpRequest: {
-        headers: {
-          "Content-Type": "text/json",
-        },
-        httpMethod: "POST",
-        url: "https://guestography.com/api/event-status",
-        body: formatBody({
-          secret,
-          eventId,
-          status: "COMPLETED",
-        }),
-      },
-      scheduleTime: {
-        seconds: formatTime(get1WeekAfter(event.date)),
-      },
-    };
-    tasks.push(setEventCompletedTask);
 
     // Interview Service Tasks
     if (event.interviews.enabled) {
