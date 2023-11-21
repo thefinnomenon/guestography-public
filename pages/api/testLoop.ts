@@ -12,7 +12,6 @@ export default async function handler(
   // ]);
 
   await iMessageSend(
-    "melissas-modown-kYZ5",
     "+17817891371",
     "Melissa's Modown",
     "React with 👍🏼 to join!"
