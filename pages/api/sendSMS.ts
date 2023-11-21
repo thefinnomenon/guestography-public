@@ -149,6 +149,13 @@ export default async function handler(
     try {
       if (type === "mediaInitialMessage")
         msg = `Hi ${firstName}! We're using Guestography to collect photos, videos, audios, & messages from everyone for ${event.title}.\n\nReply with 'join' to join`;
+
+      // If not initial message and guest hasn't opted-in -> don't send message
+      if (!guestRecord.optedIn && type !== "mediaInitialMessage") {
+        res.status(200).send("okay");
+        return;
+      }
+
       await iMessageSend(guest.phone, event.title, msg);
       console.log("iMessage sent");
       mixpanel.track("iMessage sent", { eventId, guestId, type });
