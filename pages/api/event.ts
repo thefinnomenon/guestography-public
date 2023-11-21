@@ -74,6 +74,11 @@ export default async function handler(
   event.guests = event.guests.map((guest: any) => {
     return {
       ...guest,
+      // Add +1 country code if no country code & remove ()'s, -'s, and spaces
+      phone:
+        guest.phone.indexOf("+") === -1
+          ? `+1${guest.phone.replace(/[^+\d]+/g, "")}`
+          : guest.phone.replace(/[^+\d]+/g, ""),
       id: `${guest.firstName}-${guest.lastName}-${uid()}`,
     };
   });
