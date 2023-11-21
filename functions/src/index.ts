@@ -160,7 +160,8 @@ export const handleEventStatusChange = functions
   });
 
 // Every day at midnight find and schedule events with
-// status WAITING and that start within 30 days
+// status WAITING and that start within 20 days
+// (Google Cloud Tasks has 30 day limit but 20 gives us a buffer)
 exports.scheduledWaitingEvents = functions
   .runWith({ secrets: [webhookSecret] })
   .pubsub.schedule("0 0 * * *")
@@ -171,14 +172,14 @@ exports.scheduledWaitingEvents = functions
     try {
       const db = admin.firestore();
 
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+      const twentyDaysFromNow = new Date();
+      twentyDaysFromNow.setDate(twentyDaysFromNow.getDate() + 20);
 
       // Query for WAITING events that start within 30 days
       const eventsToBeScheduledRes = await db
         .collection("events")
         .where("status", "==", "WAITING")
-        .where("date", "<", thirtyDaysFromNow.toISOString())
+        .where("date", "<", twentyDaysFromNow.toISOString())
         .get();
 
       console.log(
@@ -302,6 +303,47 @@ const createTasks = (secret: string, eventId: string, event: any) => {
   // Add guest tasks
   event.guests.map((guest: any) => {
     const guestId = guest.id;
+
+    // Event Status Update Tasks
+    // Set active an hour before event start
+    const setEventActiveTask = {
+      httpRequest: {
+        headers: {
+          "Content-Type": "text/json",
+        },
+        httpMethod: "POST",
+        url: "https://guestography.com/api/event-status",
+        body: formatBody({
+          secret,
+          eventId,
+          status: "ACTIVE",
+        }),
+      },
+      scheduleTime: {
+        seconds: formatTime(get1HourBefore(event.date)),
+      },
+    };
+    tasks.push(setEventActiveTask);
+
+    // Set inactive a week after event ends
+    const setEventCompletedTask = {
+      httpRequest: {
+        headers: {
+          "Content-Type": "text/json",
+        },
+        httpMethod: "POST",
+        url: "https://guestography.com/api/event-status",
+        body: formatBody({
+          secret,
+          eventId,
+          status: "COMPLETED",
+        }),
+      },
+      scheduleTime: {
+        seconds: formatTime(get1WeekAfter(event.date)),
+      },
+    };
+    tasks.push(setEventCompletedTask);
 
     // Interview Service Tasks
     if (event.interviews.enabled) {
@@ -498,6 +540,18 @@ const getEarlyNextMorning = (start: string) => {
   d.setUTCHours(5);
   d.setMinutes(0);
   return d.toISOString().slice(0, -1);
+};
+
+const get1HourBefore = (start: string) => {
+  if (!start) return "";
+  const d = new Date(start).getTime();
+  return new Date(d - 60 * 60 * 1000).toISOString().slice(0, -1);
+};
+
+const get1WeekAfter = (start: string) => {
+  if (!start) return "";
+  const d = new Date(start).getTime();
+  return new Date(d + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, -1);
 };
 
 // On media upload, extract metadata and create placeholders

@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import Mixpanel from "mixpanel";
-import { Event } from "../../../../types";
+import { Event, GuestEventRecord } from "../../../../types";
 
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
@@ -46,26 +46,26 @@ export default async function handler(
   if (iMessage) {
     try {
       const db = admin.firestore();
-      const event = (
-        await db.collection("events").doc(eventId).get()
-      ).data() as Event;
 
-      const guest = event.guests.find((g) => g.phone === phone);
-      if (!guest) throw Error(`No guest found for ${phone}`);
+      // Find guest by phone number with most recent active event
+      const guestQuery = (
+        await db
+          .collection("guests")
+          .where("phone", "==", phone)
+          .where("eventStatus", "==", "ACTIVE")
+          .orderBy("updatedAt", "desc")
+          .get()
+      ).docs;
 
-      // Update guest record with iMessage = true
-      // Firestore doesn't allow updating an array index so we must remove the element & then add the updated one
-      await db
-        .collection("events")
-        .doc(eventId)
-        .update({ guests: admin.firestore.FieldValue.arrayRemove(guest) });
-      guest.iMessage = true;
-      await db
-        .collection("events")
-        .doc(eventId)
-        .update({ guests: admin.firestore.FieldValue.arrayUnion(guest) });
+      if (guestQuery.length === 0) throw Error("Failed to find guest record");
 
-      console.log("Found iMessage user and updated record", guest);
+      console.log(
+        `Found iMessage user for phone ${phone}. Updating record...`,
+        { ...guestQuery[0].data(), iMessage: true }
+      );
+
+      // Update iMessage flag
+      await guestQuery[0].ref.update({ iMessage: true });
 
       mixpanel.track("iMessage user found", {
         eventId,

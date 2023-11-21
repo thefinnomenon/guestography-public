@@ -125,6 +125,25 @@ export default async function handler(
     return;
   }
 
+  // Store guests in db
+  try {
+    const guestRecordPromises = event.guests.map((g) => {
+      return db.collection("guests").add({
+        ...g,
+        eventId: eventId,
+        eventState: "inactive",
+        iMessage: false,
+        optedIn: false,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+    await Promise.all(guestRecordPromises);
+  } catch (e) {
+    console.error("Failed to create guest records", e);
+    res.status(400).send(e);
+    return;
+  }
+
   // Store event in db
   try {
     await db.collection("events").doc(eventId).create(event);

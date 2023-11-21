@@ -1,5 +1,20 @@
 import { Guest } from "../types";
 
+type Effect =
+  | "slam"
+  | "loud"
+  | "gentle"
+  | "invisibleInk"
+  | "echo"
+  | "spotlight"
+  | "balloons"
+  | "confetti"
+  | "love"
+  | "lasers"
+  | "fireworks"
+  | "shootingStar"
+  | "celebration";
+
 const loopHeaders: HeadersInit = new Headers();
 
 if (!process.env.LOOP_AUTH_KEY || !process.env.LOOP_SECRET_API_KEY)
@@ -38,6 +53,44 @@ export const iMessageLookup = async (eventId: string, guests: Guest[]) => {
     console.error("iMessage Lookup request failed", resJson);
     throw Error(
       `iMessage Lookup request failed: ${resJson.code} ${resJson.message}`
+    );
+  }
+};
+
+export const iMessageSend = async (
+  eventId: string,
+  recipient: string,
+  subject: string,
+  text: string,
+  attachments?: string[],
+  effect?: Effect
+) => {
+  const res = await fetch(
+    "https://lookup.loopmessage.com/api/v1/message/send/",
+    {
+      method: "POST",
+      headers: loopHeaders,
+      body: JSON.stringify({
+        recipient,
+        subject: subject ? subject : undefined,
+        text,
+        sender_name: process.env.LOOP_SENDER_NAME,
+        attachments,
+        effect,
+        passthrough: JSON.stringify({ eventId }),
+        status_callback: `${webhookUrl("")}messaging`,
+        status_callback_header: process.env.LOOP_WEBHOOK_SECRET,
+      }),
+    }
+  );
+
+  const resJson = await res.json();
+  console.log("iMessage send: ", resJson);
+
+  if (!resJson.success) {
+    console.error("iMessage Send request failed", resJson);
+    throw Error(
+      `iMessage Send request failed: ${resJson.code} ${resJson.message}`
     );
   }
 };

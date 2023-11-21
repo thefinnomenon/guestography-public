@@ -1,12 +1,20 @@
+export type EventStatus =
+  | "PENDING"
+  | "UNPAID"
+  | "PAID"
+  | "SCHEDULED"
+  | "ACTIVE"
+  | "COMPLETED";
 export interface Event {
   /**
    * PENDING: Checkout not completed
    * UNPAID: Checkout completed but payment hasn't finished
    * PAID: Payment received
    * SCHEDULED: In task queue
+   * ACTIVE: Event active
    * COMPLETED: Event completed
    */
-  status: "PENDING" | "UNPAID" | "PAID" | "SCHEDULED" | "COMPLETED";
+  status: EventStatus;
   firstName: string;
   lastName: string;
   email: string;
@@ -25,7 +33,6 @@ export interface Guest {
   email?: string;
   firstName: string;
   lastName: string;
-  iMessage?: boolean;
 }
 
 export interface InterviewsService {
@@ -97,3 +104,16 @@ export interface GalleryMedia {
 }
 
 export type UploadType = "interview" | "media";
+
+export type GuestEventRecord = {
+  id: string;
+  phone: string;
+  email?: string;
+  firstName: string;
+  lastName: string;
+  eventId: string;
+  eventStatus: EventStatus;
+  iMessage: boolean;
+  optedIn: boolean;
+  updatedAt: string;
+};
