@@ -58,7 +58,6 @@ export const iMessageLookup = async (eventId: string, guests: Guest[]) => {
 };
 
 export const iMessageSend = async (
-  eventId: string,
   recipient: string,
   subject: string,
   text: string,
@@ -77,7 +76,6 @@ export const iMessageSend = async (
         sender_name: process.env.LOOP_SENDER_NAME,
         attachments,
         effect,
-        passthrough: JSON.stringify({ eventId }),
         status_callback: `${webhookUrl("")}messaging`,
         status_callback_header: process.env.LOOP_WEBHOOK_SECRET,
       }),
