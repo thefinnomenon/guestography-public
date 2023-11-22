@@ -264,14 +264,6 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
         return true;
       } catch (error) {
         console.error("Failed to schedule event", error);
-        const eventForAnalytics = {
-          ...eventObj.event,
-          phone: null,
-          email: null,
-          guests: null,
-          numberOfGuests: eventObj.event.guests.length,
-        };
-        mixpanel.track("Event failed", { event: eventForAnalytics });
         Sentry.captureException(error);
         await Sentry.flush(2000);
 
@@ -322,7 +314,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
       }),
     },
     scheduleTime: {
-      seconds: formatTime(get1HourBefore(event.date)),
+      seconds: formatTime(get1HourBefore(event.startAt)),
     },
   };
   tasks.push(setEventActiveTask);
@@ -342,7 +334,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
       }),
     },
     scheduleTime: {
-      seconds: formatTime(get1WeekAfter(event.date)),
+      seconds: formatTime(get1WeekAfter(event.endAt)),
     },
   };
   tasks.push(setEventCompletedTask);
@@ -351,95 +343,47 @@ const createTasks = (secret: string, eventId: string, event: any) => {
   event.guests.map((guest: any) => {
     const guestId = guest.id;
 
-    // Interview Service Tasks
-    if (event.interviews.enabled) {
-      // Initial Message Task
-      const interviewInitialMessageTask = {
-        httpRequest: {
-          headers: {
-            "Content-Type": "text/json",
-          },
-          httpMethod: "POST",
-          url: "https://guestography.com/api/sendSMS",
-          body: formatBody({
-            secret,
-            eventId,
-            guestId,
-            type: "interviewInitialMessage",
-          }),
+    // Initial Message Task
+    const mediaInitialMessageTask = {
+      httpRequest: {
+        headers: {
+          "Content-Type": "text/json",
         },
-        scheduleTime: {
-          seconds: formatTime(event.interviews.initialMessage.schedule),
-        },
-      };
-      tasks.push(interviewInitialMessageTask);
+        httpMethod: "POST",
+        url: "https://guestography.com/api/send",
+        body: formatBody({
+          secret,
+          eventId,
+          guestId,
+          type: "mediaInitialMessage",
+        }),
+      },
+      scheduleTime: {
+        seconds: formatTime(event.media.initialMessage.schedule),
+      },
+    };
+    tasks.push(mediaInitialMessageTask);
 
-      // Reminder Message Task
-      const interviewReminderMessageTask = {
-        httpRequest: {
-          headers: {
-            "Content-Type": "text/json",
-          },
-          httpMethod: "POST",
-          url: "https://guestography.com/api/sendSMS",
-          body: formatBody({
-            secret,
-            eventId,
-            guestId,
-            type: "interviewReminderMessage",
-          }),
+    // Collection Message Task
+    const mediaCollectionMessageTask = {
+      httpRequest: {
+        headers: {
+          "Content-Type": "text/json",
         },
-        scheduleTime: {
-          seconds: formatTime(event.interviews.reminderMessage.schedule),
-        },
-      };
-      tasks.push(interviewReminderMessageTask);
-    }
-
-    // Media Service Tasks
-    if (event.media.enabled) {
-      // Initial Message Task
-      const mediaInitialMessageTask = {
-        httpRequest: {
-          headers: {
-            "Content-Type": "text/json",
-          },
-          httpMethod: "POST",
-          url: "https://guestography.com/api/sendSMS",
-          body: formatBody({
-            secret,
-            eventId,
-            guestId,
-            type: "mediaInitialMessage",
-          }),
-        },
-        scheduleTime: {
-          seconds: formatTime(event.media.initialMessage.schedule),
-        },
-      };
-      tasks.push(mediaInitialMessageTask);
-
-      // Collection Message Task
-      const mediaCollectionMessageTask = {
-        httpRequest: {
-          headers: {
-            "Content-Type": "text/json",
-          },
-          httpMethod: "POST",
-          url: "https://guestography.com/api/sendSMS",
-          body: formatBody({
-            secret,
-            eventId,
-            guestId,
-            type: "mediaCollectionMessage",
-          }),
-        },
-        scheduleTime: {
-          seconds: formatTime(event.media.collectionMessage.schedule),
-        },
-      };
-      tasks.push(mediaCollectionMessageTask);
-    }
+        httpMethod: "POST",
+        url: "https://guestography.com/api/send",
+        body: formatBody({
+          secret,
+          eventId,
+          guestId,
+          type: "mediaCollectionMessage",
+        }),
+      },
+      scheduleTime: {
+        seconds: formatTime(event.endAt),
+      },
+    };
+    tasks.push(mediaCollectionMessageTask);
 
     // Gallery Ready Message Task
     const galleryReadyMessageTask = {
@@ -448,7 +392,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
           "Content-Type": "text/json",
         },
         httpMethod: "POST",
-        url: "https://guestography.com/api/sendSMS",
+        url: "https://guestography.com/api/send",
         body: formatBody({
           secret,
           eventId,
@@ -470,7 +414,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
         "Content-Type": "text/json",
       },
       httpMethod: "POST",
-      url: "https://guestography.com/api/sendSMS",
+      url: "https://guestography.com/api/send",
       body: formatBody({
         secret,
         eventId,
@@ -483,25 +427,6 @@ const createTasks = (secret: string, eventId: string, event: any) => {
     },
   };
   tasks.push(galleryReadyMessageTask);
-
-  // Add event tasks
-  if (event.interviews.enabled) {
-    // Video Generation Task
-    const videoGenerationTask = {
-      httpRequest: {
-        headers: {
-          "Content-Type": "text/json",
-        },
-        httpMethod: "POST",
-        url: `https://guestography.com/api/createInterviewVideo?eventId=${eventId}`,
-        body: formatBody({ secret }),
-      },
-      scheduleTime: {
-        seconds: formatTime(getEarlyNextMorning(event.dateEnd)),
-      },
-    };
-    tasks.push(videoGenerationTask);
-  }
 
   return tasks;
 };
@@ -535,15 +460,6 @@ const getNextMorning = (start: string) => {
   const d = new Date(start);
   d.setDate(d.getDate() + 1);
   d.setUTCHours(10);
-  d.setMinutes(0);
-  return d.toISOString().slice(0, -1);
-};
-
-const getEarlyNextMorning = (start: string) => {
-  if (!start) return "";
-  const d = new Date(start);
-  d.setDate(d.getDate() + 1);
-  d.setUTCHours(5);
   d.setMinutes(0);
   return d.toISOString().slice(0, -1);
 };

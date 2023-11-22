@@ -2,10 +2,8 @@ import { Twilio } from "twilio";
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import { Event, GuestEventRecord } from "../../types";
-import Mixpanel from "mixpanel";
+import { track } from "../../lib/mixpanel";
 import { iMessageSend } from "../../lib/loop";
-
-const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -48,7 +46,7 @@ export default async function handler(
     event = (await db.collection("events").doc(eventId).get()).data() as Event;
   } catch (e: any) {
     console.error(`Failed to retrieve event ${eventId}`);
-    res.status(500).send(`Failed to retrieve event ${eventId}`);
+    res.status(400).send(`Failed to retrieve event ${eventId}`);
     return;
   }
 
@@ -60,7 +58,7 @@ export default async function handler(
   if (!guest) {
     console.error(`Failed to find guest ${guestId} for event ${eventId}`);
     res
-      .status(404)
+      .status(400)
       .send(`Failed to find guest ${guestId} for event ${eventId}`);
     return;
   }
@@ -92,43 +90,13 @@ export default async function handler(
   }
 
   // Format message
+  // TODO: Determine sending method and format accordingly
   const firstName = guest.firstName;
   const eventTitle = event.title;
-  const orientation = event.interviews.orientation;
-  const interviewLink = `https://guestography.com/${eventId}/upload/interview?guestId=${guestId}`;
   const mediaLink = `https://guestography.com/${eventId}/upload/media?guestId=${guestId}`;
   const galleryLink = `https://guestography.com/${eventId}?guestId=${guestId}`;
   let msg;
   switch (type) {
-    case "interviewInitialMessage":
-      msg = `Hi ${firstName}! We're collecting guest video messages using Guestography for ${eventTitle} and it’s your turn!\nPlease record a short video (<1 minute) (in ${
-        orientation === "landscape" ? "landscape ↔️" : "portrait ↕️"
-      }!) and upload it using the link below.\n${interviewLink}\nFeel free to include other guests in your video but please mark them in the participants list on the upload page so we know that we already got them!`;
-      break;
-    case "interviewReminderMessage":
-      // Don't send reminder if guest already uploaded interview
-      const guestUploadSnapshot = await db
-        .collection(`events/${eventId}/interviews`)
-        .doc(guestId)
-        .get();
-      if (guestUploadSnapshot.exists) {
-        res.status(200).send("okay");
-        return;
-      }
-
-      // Don't send reminder if guest is tagged in uploaded interview
-      const guestTaggedQuerySnapshot = await db
-        .collection(`events/${eventId}/interviews`)
-        .where(`guests.${guestId}`, "!=", null)
-        .get();
-      console.log(guestTaggedQuerySnapshot.size);
-      if (guestTaggedQuerySnapshot.size !== 0) {
-        res.status(200).send("okay");
-        return;
-      }
-
-      msg = `Just a friendly reminder that there’s still time to record and submit a video message for ${eventTitle}.\n${interviewLink}`;
-      break;
     case "mediaInitialMessage":
       msg = `Hi ${firstName}! Hope you are excited for ${eventTitle}! We are using Guestography to collect photos and videos from everyone so please snap away and after the event you will receive a message asking you to upload your best shots!`;
       break;
@@ -140,8 +108,8 @@ export default async function handler(
       break;
     default:
       console.error(`Unknown message type ${type}`);
-      res.status(500).send(`Unknown message type ${type}`);
-      throw Error(`Unknown message type ${type}`);
+      res.status(400).send(`Unknown message type ${type}`);
+      return;
   }
 
   // If iMessage -> send iMessage
@@ -158,13 +126,13 @@ export default async function handler(
 
       await iMessageSend(guest.phone, event.title, msg);
       console.log("iMessage sent");
-      mixpanel.track("iMessage sent", { eventId, guestId, type });
+      track("iMessage sent", { eventId, guestId, type });
 
       res.status(200).send("okay");
       return;
     } catch (e) {
       console.error("Failed to send iMessage", e);
-      mixpanel.track("iMessage send failure", { eventId, guestId, type });
+      track("iMessage send failure", { eventId, guestId, type });
       res.status(500).send(e);
     }
   }
@@ -176,13 +144,13 @@ export default async function handler(
       body: msg,
     });
     console.log("SMS sent: ", twilioMsgRes.sid);
-    mixpanel.track("SMS sent", { eventId, guestId, type });
+    track("SMS sent", { eventId, guestId, type });
 
     res.status(200).send("okay");
     return;
   } catch (e) {
     console.error("Failed to send SMS", e);
-    mixpanel.track("SMS send failure", { eventId, guestId, type });
+
     res.status(500).send(e);
   }
 }
