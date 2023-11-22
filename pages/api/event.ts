@@ -1,13 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
-//import serviceAccount from "../../lib/serviceAccountKey.json";
-import { slugify } from "../../utils/format";
+import { formatPhoneNumber, slugify } from "../../utils/format";
 import ShortUniqueId from "short-unique-id";
 import { Event } from "../../types";
-import Mixpanel from "mixpanel";
-
-const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
+import { track } from "../../lib/mixpanel";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -31,41 +28,18 @@ export default async function handler(
   const event: Event = req.body;
 
   // Validate event info
-  try {
-    if (event.endDate < event.date)
-      throw Error("End date must be after start date");
-    if (event.interviews.enabled) {
-      if (
-        event.interviews.initialMessage.schedule < event.date ||
-        event.interviews.initialMessage.schedule > event.endDate ||
-        event.interviews.initialMessage.schedule >
-          event.interviews.reminderMessage.schedule
-      )
-        throw Error("Invalid interview initial message schedule");
-
-      if (
-        event.interviews.reminderMessage.schedule < event.date ||
-        event.interviews.reminderMessage.schedule > event.endDate
-      )
-        throw Error("Invalid interview reminder message schedule");
-    }
-    if (event.media.enabled) {
-      if (
-        event.media.initialMessage.schedule > event.endDate ||
-        event.media.initialMessage.schedule >
-          event.media.collectionMessage.schedule
-      )
-        throw Error("Invalid media initial message schedule");
-
-      if (
-        event.media.collectionMessage.schedule < event.date ||
-        event.media.collectionMessage.schedule > event.endDate
-      )
-        throw Error("Invalid media collection message schedule");
-    }
-  } catch (e) {
-    console.error("Invalid event: ", e);
-    res.status(400).send(e);
+  if (
+    !event ||
+    !event.firstName ||
+    !event.lastName ||
+    !event.phone ||
+    !event.title ||
+    event.endAt <= event.startAt ||
+    !event.guests ||
+    event.guests.length === 0
+  ) {
+    console.error("Invalid event: ", event);
+    res.status(400).send(event);
     return;
   }
 
@@ -74,15 +48,12 @@ export default async function handler(
   event.guests = event.guests.map((guest: any) => {
     return {
       ...guest,
-      // Add +1 country code if no country code & remove ()'s, -'s, and spaces
-      phone:
-        guest.phone.indexOf("+") === -1
-          ? `+1${guest.phone.replace(/[^+\d]+/g, "")}`
-          : guest.phone.replace(/[^+\d]+/g, ""),
+      phone: formatPhoneNumber(guest.phone),
       id: `${guest.firstName}-${guest.lastName}-${uid()}`,
     };
   });
 
+  // Set initial event status
   event.status = "PENDING";
 
   // Generate URL safe event ids
@@ -94,27 +65,20 @@ export default async function handler(
 
   // Generate Stripe Checkout Session
   let checkoutSession: Stripe.Checkout.Session;
-  const line_items = [];
-  if (event.interviews.enabled)
-    line_items.push({
-      price: process.env.STRIPE_INTERVIEW_SERVICE_PRICE_ID,
-      quantity: event.guests.length,
-    });
-  if (event.media.enabled)
-    line_items.push({
-      price: process.env.STRIPE_MEDIA_SERVICE_PRICE_ID,
-      quantity: event.guests.length,
-    });
-
   try {
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
       payment_method_types: ["card"],
       customer_email: event.email,
-      line_items,
+      line_items: [
+        {
+          price: process.env.STRIPE_MEDIA_SERVICE_PRICE_ID,
+          quantity: event.guests.length,
+        },
+      ],
       allow_promotion_codes: true,
       metadata: { eventId },
-      success_url: `${req.headers.origin}/checkout/success?eventId=${eventId}&type=schedule`,
+      success_url: `${req.headers.origin}/success?eventId=${eventId}&type=schedule`,
       cancel_url: `${req.headers.origin}/event?eventId=${eventId}`,
     };
 
@@ -156,10 +120,9 @@ export default async function handler(
   // Redirect to Stripe checkout page
   if (checkoutSession.url) {
     res.status(200).json({ checkoutUrl: checkoutSession.url });
-    mixpanel.track("Event created", { eventId });
+    track("Event created", { eventId, numOfGuests: event.guests.length });
   } else {
     console.error("Failed to generate checkout session");
-    mixpanel.track("Failed to create event", { eventId });
     throw Error("Failed to generate checkout session");
   }
 }

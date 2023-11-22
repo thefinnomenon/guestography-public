@@ -1,3 +1,11 @@
+/**
+ * PENDING: Checkout not completed
+ * UNPAID: Checkout completed but payment hasn't finished
+ * PAID: Payment received
+ * SCHEDULED: In task queue
+ * ACTIVE: Event active
+ * COMPLETED: Event completed
+ */
 export type EventStatus =
   | "PENDING"
   | "UNPAID"
@@ -5,27 +13,24 @@ export type EventStatus =
   | "SCHEDULED"
   | "ACTIVE"
   | "COMPLETED";
+
 export interface Event {
-  /**
-   * PENDING: Checkout not completed
-   * UNPAID: Checkout completed but payment hasn't finished
-   * PAID: Payment received
-   * SCHEDULED: In task queue
-   * ACTIVE: Event active
-   * COMPLETED: Event completed
-   */
   status: EventStatus;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   title: string;
-  date: string;
-  endDate: string;
-  location: string;
+  startAt: string;
+  endAt: string;
+  location: Location;
   guests: Guest[];
-  interviews: InterviewsService;
-  media: MediaService;
+}
+
+export interface Location {
+  address: string;
+  label?: string;
+  latLng: { lat: string; lng: string };
 }
 export interface Guest {
   id: string;
