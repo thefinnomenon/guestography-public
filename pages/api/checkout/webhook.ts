@@ -1,11 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-//import serviceAccount from "../../../lib/serviceAccountKey.json";
 import { buffer } from "micro";
 import Stripe from "stripe";
 import Mixpanel from "mixpanel";
-import { iMessageLookup } from "../../../lib/loop";
-import { Event } from "../../../types";
 
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 

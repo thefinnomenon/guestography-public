@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import Mixpanel from "mixpanel";
-import { Event, GuestEventRecord } from "../../../../types";
+import { Event, GuestEventRecord } from "../../../types";
 
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 

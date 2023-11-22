@@ -13,7 +13,7 @@ import Script from "next/script";
 import { geocodeByPlaceId, getLatLng } from "react-google-places-autocomplete";
 import GuestsTable from "../components/GuestsTable";
 import { Guest } from "../types";
-import { parseGuestListCSV } from "../utils/format";
+import { formatPhoneNumber, parseGuestListCSV } from "../utils/format";
 import {
   ImportGuestsFromContacts,
   determineValidGuests,
@@ -600,7 +600,7 @@ export default function Form() {
                     {
                       firstName: addGuestFirstName,
                       lastName: addGuestLastName,
-                      phone: addGuestPhone,
+                      phone: formatPhoneNumber(addGuestPhone),
                     },
                   ]);
                   if (uniqueGuests.length !== 0)

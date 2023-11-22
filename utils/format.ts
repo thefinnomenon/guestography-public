@@ -35,9 +35,7 @@ export const parseGuestListCSV = async (guestList: FileList | null) => {
 };
 
 export const formatPhoneNumber = (phone: string) => {
-  return phone
-    .replaceAll("(", "")
-    .replaceAll(")", "")
-    .replaceAll(" ", "-")
-    .replaceAll("-", "");
+  return phone.indexOf("+") === -1
+    ? `+1${phone.replace(/[^+\d]+/g, "")}`
+    : phone.replace(/[^+\d]+/g, "");
 };
