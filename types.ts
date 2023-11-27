@@ -25,6 +25,7 @@ export interface Event {
   endAt: string;
   location: Location;
   guests: Guest[];
+  managementKey: string;
 }
 
 export interface Location {

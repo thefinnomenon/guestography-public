@@ -1,7 +1,7 @@
 import { Twilio } from "twilio";
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import { Event, GuestEventRecord } from "../../types";
+import { Event, Guest, GuestEventRecord } from "../../types";
 import { track } from "../../lib/mixpanel";
 import { iMessageSend } from "../../lib/loop";
 
@@ -43,16 +43,29 @@ export default async function handler(
   const db = admin.firestore();
   let event;
   try {
-    event = (await db.collection("events").doc(eventId).get()).data() as Event;
+    event = (
+      await db.collection("events").doc(eventId).get()
+    ).data() as Event | null;
   } catch (e: any) {
     console.error(`Failed to retrieve event ${eventId}`);
     res.status(400).send(`Failed to retrieve event ${eventId}`);
     return;
   }
 
-  let guest;
-  if (guestId === "owner" && type === "galleryReadyMessage")
-    guest = { firstName: event.firstName, phone: event.phone };
+  if (!event) {
+    console.error(`Failed to find event ${eventId}`);
+    res.status(400).send(`Failed to find event ${eventId}`);
+    return;
+  }
+
+  let guest: Guest | undefined;
+  if (guestId === "organizer" && type === "galleryReadyMessage")
+    guest = {
+      id: "organizer",
+      firstName: event.firstName,
+      lastName: event.lastName,
+      phone: event.phone,
+    };
   else guest = event.guests.find((guest) => guest.id === guestId);
 
   if (!guest) {
@@ -90,34 +103,18 @@ export default async function handler(
   }
 
   // Format message
-  // TODO: Determine sending method and format accordingly
-  const firstName = guest.firstName;
-  const eventTitle = event.title;
-  const mediaLink = `https://guestography.com/${eventId}/upload/media?guestId=${guestId}`;
-  const galleryLink = `https://guestography.com/${eventId}?guestId=${guestId}`;
   let msg;
-  switch (type) {
-    case "mediaInitialMessage":
-      msg = `Hi ${firstName}! Hope you are excited for ${eventTitle}! We are using Guestography to collect photos and videos from everyone so please snap away and after the event you will receive a message asking you to upload your best shots!`;
-      break;
-    case "mediaCollectionMessage":
-      msg = `Hope that you had fun at ${eventTitle}! Share any photos and videos using the link below.\n${mediaLink}`;
-      break;
-    case "galleryReadyMessage":
-      msg = `Good news ${firstName}, the gallery for ${eventTitle} is ready! Take a look here,\n${galleryLink}`;
-      break;
-    default:
-      console.error(`Unknown message type ${type}`);
-      res.status(400).send(`Unknown message type ${type}`);
-      return;
+  try {
+    msg = formatMessage(type, eventId, event, guest, guestRecord);
+  } catch (e) {
+    console.error("Failed to format message", e);
+    res.status(400).send(e);
+    return;
   }
 
-  // If iMessage -> send iMessage
-  if (guestRecord?.iMessage) {
+  // If iMessage -> Send iMessage
+  if (guestRecord.iMessage) {
     try {
-      if (type === "mediaInitialMessage")
-        msg = `Hi ${firstName}! We're using Guestography to collect photos, videos, audios, & messages from everyone for ${event.title}.\n\nReply with 'join' to join`;
-
       // If not initial message and guest hasn't opted-in -> don't send message
       if (!guestRecord.optedIn && type !== "mediaInitialMessage") {
         res.status(200).send("okay");
@@ -134,9 +131,11 @@ export default async function handler(
       console.error("Failed to send iMessage", e);
       track("iMessage send failure", { eventId, guestId, type });
       res.status(500).send(e);
+      return;
     }
   }
 
+  // Send SMS
   try {
     const twilioMsgRes = await client.messages.create({
       messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
@@ -150,7 +149,60 @@ export default async function handler(
     return;
   } catch (e) {
     console.error("Failed to send SMS", e);
-
+    track("SMS send failure", { eventId, guestId, type });
     res.status(500).send(e);
   }
 }
+
+const formatMessage = (
+  type: string,
+  eventId: string,
+  event: Event,
+  guest: Guest,
+  guestRecord: GuestEventRecord
+) => {
+  const firstName = guest.firstName;
+  const eventTitle = event.title;
+  const mediaLink = `https://guestography.com/${eventId}/upload/media?guestId=${guest.id}`;
+  const galleryLink = `https://guestography.com/${eventId}?guestId=${guest.id}`;
+  const managementLink = `https://guestography.com/${eventId}?guestId=${guest.id}&key=${event.managementKey}`;
+
+  if (guestRecord.iMessage) {
+    // iMessage
+    switch (type) {
+      case "organizerEventStart":
+        return `Hi ${firstName}! Thanks for choosing Guestography. I hope you are excited for your event ${eventTitle}!\n\nReply 'join' to get started.`;
+      case "mediaInitialMessage":
+        return `Hi ${firstName}! Hope you're excited for ${eventTitle}! This event is using Guestography to collect photos, videos, and text and audio messages from everyone.\n\n Reply 'join' to join the event!`;
+      case "optedIn":
+        let msg = `Okay, you're in! Any photos, videos, texts, & audios you send in this chat will be added to the event gallery. Enjoy the event and don't forget to share here!`;
+        // If organizer, include management link
+        if (guest.id === "organizer")
+          msg += `\n\n Also, since you are the organizer, use this link to manage the event,\n\n${managementLink}.`;
+        return msg;
+      case "galleryReadyMessage":
+        return `Good news ${firstName}, the gallery is ready! Take a look here,\n\n${galleryLink}`;
+      default:
+        throw Error(`Unknown message type ${type}`);
+    }
+  } else {
+    // SMS
+    switch (type) {
+      case "mediaInitialMessage":
+        return `Hi ${firstName}! Hope you're excited for ${eventTitle}! This event is using Guestography to collect photos, videos, and text and audio messages from everyone. Use this link to share to the event gallery,\n\n${mediaLink}`;
+      // This really shouldn't happen but I suppose there is a chance an iMessage user gets downgraded to SMS after the initial message so we should handle it
+      case "optedIn":
+        let msg = `Okay, you're in! Share any photos, videos, texts, & audios to the event gallery using this link,\n\n${mediaLink}.`;
+        // If organizer, include management link
+        if (guest.id === "organizer")
+          msg += `\n\n Also, since you are the organizer, use this link to manage the event,\n\n${managementLink}.`;
+        return msg;
+      case "galleryReadyMessage":
+        return `Good news ${firstName}, the gallery for ${eventTitle} is ready! Take a look,\n\n${galleryLink}`;
+      default:
+        throw Error(
+          `Unknown message type ${type} for ${guest.id} in event ${eventId}`
+        );
+    }
+  }
+};
