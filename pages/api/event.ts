@@ -58,6 +58,11 @@ export default async function handler(
   // Set initial event status
   event.status = "PENDING";
 
+  // Generate and add event management key
+  event.managementKey = new ShortUniqueId({
+    length: 16,
+  })();
+
   // Generate URL safe event ids
   const eventId = `${slugify(event.title)}-${new ShortUniqueId({
     length: 4,
