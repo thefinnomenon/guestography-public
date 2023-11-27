@@ -42,8 +42,8 @@ Sentry.GCPFunction.init({
   tracesSampleRate: 1.0,
 });
 
-// Represents 30 days in seconds
-const MAX_SCHEDULE_LIMIT = 30 * 60 * 60 * 24;
+// Represents 20 days in seconds
+const MAX_SCHEDULE_LIMIT = 20 * 60 * 60 * 24;
 
 // Get random offset into message window
 const MESSAGE_WINDOW_SECONDS = 5 * 60;
@@ -181,7 +181,7 @@ exports.scheduledWaitingEvents = functions
       const twentyDaysFromNow = new Date();
       twentyDaysFromNow.setDate(twentyDaysFromNow.getDate() + 20);
 
-      // Query for WAITING events that start within 30 days
+      // Query for WAITING events that start within 20 days
       const eventsToBeScheduledRes = await db
         .collection("events")
         .where("status", "==", "WAITING")
@@ -299,7 +299,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
   const tasks: any[] = [];
 
   // Event Status Update Tasks
-  // Set active an hour before event start
+  // Set active 30 minutes before event
   const setEventActiveTask = {
     httpRequest: {
       headers: {
@@ -314,30 +314,10 @@ const createTasks = (secret: string, eventId: string, event: any) => {
       }),
     },
     scheduleTime: {
-      seconds: formatTime(get1HourBefore(event.startAt)),
+      seconds: formatTime(get30MinutesBefore(event.startAt)),
     },
   };
   tasks.push(setEventActiveTask);
-
-  // Set inactive a week after event ends
-  const setEventCompletedTask = {
-    httpRequest: {
-      headers: {
-        "Content-Type": "text/json",
-      },
-      httpMethod: "POST",
-      url: "https://guestography.com/api/event-status",
-      body: formatBody({
-        secret,
-        eventId,
-        status: "COMPLETED",
-      }),
-    },
-    scheduleTime: {
-      seconds: formatTime(get1WeekAfter(event.endAt)),
-    },
-  };
-  tasks.push(setEventCompletedTask);
 
   // Add guest tasks
   event.guests.map((guest: any) => {
@@ -442,9 +422,9 @@ const formatTime = (date: string) => {
   const dateDiffInSeconds =
     (convertedDate.getTime() - currentDate.getTime()) / 1000;
 
-  // Restrict schedule time to the 30 day maximum.
+  // Restrict schedule time to the 20 day maximum.
   if (dateDiffInSeconds > MAX_SCHEDULE_LIMIT)
-    throw new Error("Schedule time is over 30 day maximum.");
+    throw new Error("Schedule time is over 20 day maximum.");
 
   return (
     dateDiffInSeconds + Date.now() / 1000 + getSecondsOffsetInMessageWindow()
@@ -464,16 +444,10 @@ const getNextMorning = (start: string) => {
   return d.toISOString().slice(0, -1);
 };
 
-const get1HourBefore = (start: string) => {
+const get30MinutesBefore = (start: string) => {
   if (!start) return "";
   const d = new Date(start).getTime();
-  return new Date(d - 60 * 60 * 1000).toISOString().slice(0, -1);
-};
-
-const get1WeekAfter = (start: string) => {
-  if (!start) return "";
-  const d = new Date(start).getTime();
-  return new Date(d + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, -1);
+  return new Date(d - 30 * 60 * 1000).toISOString().slice(0, -1);
 };
 
 // On media upload, extract metadata and create placeholders

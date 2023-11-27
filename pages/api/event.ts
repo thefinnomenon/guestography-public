@@ -34,7 +34,9 @@ export default async function handler(
     !event.lastName ||
     !event.phone ||
     !event.title ||
-    event.endAt <= event.startAt ||
+    !event.startAt ||
+    new Date(event.startAt) <=
+      new Date(new Date().getTime() + 60 * 60 * 1000) ||
     !event.guests ||
     event.guests.length === 0
   ) {

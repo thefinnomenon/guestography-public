@@ -28,17 +28,18 @@ export default function Form() {
   const [phone, setPhone] = useState("");
   const [eventTitle, setEventTitle] = useState("");
   const [eventStart, setEventStart] = useState("");
-  const [eventEnd, setEventEnd] = useState("");
   const [location, setLocation] = useState<SingleValue<any>>();
   const [guestList, setGuestList] = useState<Omit<Guest, "id">[]>([]);
   const [addGuestFirstName, setAddGuestFirstName] = useState("");
   const [addGuestLastName, setAddGuestLastName] = useState("");
   const [addGuestPhone, setAddGuestPhone] = useState("");
   const [guestImportError, setGuestImportError] = useState("");
+  const [error, setError] = useState("");
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
+    setError("");
 
     // Add geocode and latLng to location
     let enhancedLocation;
@@ -60,6 +61,26 @@ export default function Form() {
       console.error("Failed to geocode location: ", location, err);
     }
 
+    // Check that eventStart is at least an hour in the future
+    if (
+      new Date(eventStart) <= new Date(new Date().getTime() + 60 * 60 * 1000)
+    ) {
+      setError(
+        "Event must be scheduled for at least an hour in the future. Please modify the event start and click SCHEDULE again."
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Check that there is at least one guest
+    if (guestList.length === 0) {
+      setError(
+        "Event must have at least one guest. Please add guest(s) and click SCHEDULE again."
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
     // Format event data
     const eventData = {
       firstName,
@@ -68,7 +89,6 @@ export default function Form() {
       phone,
       title: eventTitle,
       startAt: new Date(eventStart).toISOString(),
-      endAt: new Date(eventEnd).toISOString(),
       location: enhancedLocation,
       guests: guestList,
     };
@@ -92,6 +112,7 @@ export default function Form() {
       }
     } catch (error) {
       console.error("Failed to submit event form", error);
+      setError("Failed to create event. Please try again");
     }
   };
 
@@ -316,29 +337,6 @@ export default function Form() {
                   id="startAt"
                   onChange={(e) => setEventStart(e.target.value)}
                   required
-                  min={new Date().toLocaleDateString()}
-                  max={eventEnd}
-                  className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-            {/* EVENT END */}
-            <div className="sm:col-span-2">
-              <label
-                htmlFor="date"
-                className="block text-sm font-medium text-gray-700"
-              >
-                End Date & Time
-              </label>
-              <div className="mt-1">
-                <input
-                  type="datetime-local"
-                  name="date"
-                  id="date"
-                  min={eventStart}
-                  onChange={(e) => setEventEnd(e.target.value)}
-                  value={eventEnd}
-                  required
                   className="block w-full rounded-md border-gray-300 py-3 px-4 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -545,6 +543,20 @@ export default function Form() {
                   <ClipLoader size={24} color="white" />
                 )}
               </button>
+            </div>
+            <div className="sm:col-span-2 mt-[-1.5rem]">
+              {error && (
+                <div
+                  className="flex justify-start p-4 mt-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800"
+                  role="alert"
+                >
+                  <div>
+                    <IoWarningOutline className="mr-2" size={24} />
+                    <span className="sr-only">Error</span>
+                  </div>
+                  <div className="mt-[0.1rem]">{error}</div>
+                </div>
+              )}
             </div>
           </form>
         </div>
