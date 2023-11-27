@@ -300,6 +300,9 @@ const createTasks = (secret: string, eventId: string, event: any) => {
 
   // Event Status Update Tasks
   // Set active 30 minutes before event
+  // - Updates event record to active
+  // - Updates all guest records for event to active
+  // - Triggers iMessage lookups for all event guests
   const setEventActiveTask = {
     httpRequest: {
       headers: {
@@ -343,70 +346,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
       },
     };
     tasks.push(mediaInitialMessageTask);
-
-    // Collection Message Task
-    const mediaCollectionMessageTask = {
-      httpRequest: {
-        headers: {
-          "Content-Type": "text/json",
-        },
-        httpMethod: "POST",
-        url: "https://guestography.com/api/send",
-        body: formatBody({
-          secret,
-          eventId,
-          guestId,
-          type: "mediaCollectionMessage",
-        }),
-      },
-      scheduleTime: {
-        seconds: formatTime(event.endAt),
-      },
-    };
-    tasks.push(mediaCollectionMessageTask);
-
-    // Gallery Ready Message Task
-    const galleryReadyMessageTask = {
-      httpRequest: {
-        headers: {
-          "Content-Type": "text/json",
-        },
-        httpMethod: "POST",
-        url: "https://guestography.com/api/send",
-        body: formatBody({
-          secret,
-          eventId,
-          guestId,
-          type: "galleryReadyMessage",
-        }),
-      },
-      scheduleTime: {
-        seconds: formatTime(getNextMorning(event.dateEnd)),
-      },
-    };
-    tasks.push(galleryReadyMessageTask);
   });
-
-  // Add Gallery Ready Message Task for event owner
-  const galleryReadyMessageTask = {
-    httpRequest: {
-      headers: {
-        "Content-Type": "text/json",
-      },
-      httpMethod: "POST",
-      url: "https://guestography.com/api/send",
-      body: formatBody({
-        secret,
-        eventId,
-        guestId: "owner",
-        type: "galleryReadyMessage",
-      }),
-    },
-    scheduleTime: {
-      seconds: formatTime(getNextMorning(event.dateEnd)),
-    },
-  };
-  tasks.push(galleryReadyMessageTask);
 
   return tasks;
 };
@@ -433,15 +373,6 @@ const formatTime = (date: string) => {
 
 const formatBody = (payload: { [key: string]: any }) => {
   return Buffer.from(JSON.stringify(payload)).toString("base64");
-};
-
-const getNextMorning = (start: string) => {
-  if (!start) return "";
-  const d = new Date(start);
-  d.setDate(d.getDate() + 1);
-  d.setUTCHours(10);
-  d.setMinutes(0);
-  return d.toISOString().slice(0, -1);
 };
 
 const get30MinutesBefore = (start: string) => {
