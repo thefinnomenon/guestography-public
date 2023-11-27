@@ -43,9 +43,17 @@ export default async function handler(
     // If event just became active, let's trigger iMessage lookups
     console.log("Initiating iMessage Lookups...");
     if (status === "ACTIVE") {
-      const guests = (
-        (await db.collection("events").doc(eventId).get()).data() as Event
-      ).guests;
+      const event = (
+        await db.collection("events").doc(eventId).get()
+      ).data() as Event;
+      const { guests } = event;
+      // Add organizer
+      guests.push({
+        id: "organizer",
+        firstName: event.firstName,
+        lastName: event.lastName,
+        phone: event.phone,
+      });
       await iMessageLookup(eventId, guests);
     }
   } catch (e) {
