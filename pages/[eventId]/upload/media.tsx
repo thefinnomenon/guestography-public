@@ -507,13 +507,8 @@ export async function getStaticPaths() {
         notFound: true,
       };
 
-    // Filter out events without media enabled
-    const eventsWithMedia = events.filter(
-      (event) => (event.data() as Event).media.enabled
-    );
-
     // Create paths from events
-    const paths = eventsWithMedia.map((event) => {
+    const paths = events.map((event) => {
       return { params: { eventId: event.id } };
     });
 
@@ -546,7 +541,7 @@ export async function getStaticProps(
     const event = await getEvent(eventId);
 
     // If event doesn't exist or doesn't have media service enabled -> 404
-    if (!event || !event.media.enabled)
+    if (!event)
       return {
         notFound: true,
       };

@@ -25,6 +25,7 @@ import MediaInfo from "mediainfo.js";
 import { createHash } from "crypto";
 const url = require("url");
 const https = require("https");
+import { Event } from "../../types.js";
 
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
@@ -208,7 +209,10 @@ exports.scheduledWaitingEvents = functions
     }
   });
 
-const scheduleEvents = async (webhookSecret: string, events: any) => {
+const scheduleEvents = async (
+  webhookSecret: string,
+  events: { eventId: string; event: Event }[]
+) => {
   console.log(
     "Scheduling events: ",
     events.map((event: any) => event.eventId)
@@ -222,7 +226,7 @@ const scheduleEvents = async (webhookSecret: string, events: any) => {
   );
 
   // Create event scheduling function array
-  const eventsFuncArr = await events.map((eventObj: any) => {
+  const eventsFuncArr = await events.map((eventObj) => {
     return async () => {
       try {
         console.log("WEBHOOK SECRET: ", webhookSecret);
@@ -294,7 +298,7 @@ const scheduleTask = async (parent: any, task: any) => {
   }
 };
 
-const createTasks = (secret: string, eventId: string, event: any) => {
+const createTasks = (secret: string, eventId: string, event: Event) => {
   // Iterate through guests & create tasks
   const tasks: any[] = [];
 
@@ -342,7 +346,7 @@ const createTasks = (secret: string, eventId: string, event: any) => {
         }),
       },
       scheduleTime: {
-        seconds: formatTime(event.media.initialMessage.schedule),
+        seconds: formatTime(event.startAt),
       },
     };
     tasks.push(mediaInitialMessageTask);
