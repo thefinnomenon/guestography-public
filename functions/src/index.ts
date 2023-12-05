@@ -326,11 +326,34 @@ const createTasks = (secret: string, eventId: string, event: Event) => {
   };
   tasks.push(setEventActiveTask);
 
+  // Organizer Event Start
+  // Send intial message to event organizer at event startAt
+  const setOrganizerEventStart = {
+    httpRequest: {
+      headers: {
+        "Content-Type": "text/json",
+      },
+      httpMethod: "POST",
+      url: "https://guestography.com/api/send",
+      body: formatBody({
+        secret,
+        eventId,
+        guestId: "organizer",
+        type: "organizerEventStart",
+      }),
+    },
+    scheduleTime: {
+      seconds: formatTime(event.startAt),
+    },
+  };
+  tasks.push(setOrganizerEventStart);
+
   // Add guest tasks
   event.guests.map((guest: any) => {
     const guestId = guest.id;
 
     // Initial Message Task
+    // Send initial message (Hi, this event is using Guestography...) at event startAt
     const mediaInitialMessageTask = {
       httpRequest: {
         headers: {

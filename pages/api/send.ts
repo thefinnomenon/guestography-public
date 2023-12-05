@@ -188,6 +188,8 @@ const formatMessage = (
   } else {
     // SMS
     switch (type) {
+      case "organizerEventStart":
+        return `Hi ${firstName}! Thanks for choosing Guestography. I hope you are excited for your event ${eventTitle}! Use this link to manage the event,\n\n${managementLink}.`;
       case "mediaInitialMessage":
         return `Hi ${firstName}! Hope you're excited for ${eventTitle}! This event is using Guestography to collect photos, videos, and text and audio messages from everyone. Use this link to share to the event gallery,\n\n${mediaLink}`;
       // This really shouldn't happen but I suppose there is a chance an iMessage user gets downgraded to SMS after the initial message so we should handle it

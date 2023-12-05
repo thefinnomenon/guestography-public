@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import { Event } from "../../types";
 import { iMessageLookup } from "../../lib/loop";
-//import serviceAccount from "../../../lib/serviceAccountKey.json";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
