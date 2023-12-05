@@ -540,7 +540,7 @@ export async function getStaticProps(
     // Get event from db
     const event = await getEvent(eventId);
 
-    // If event doesn't exist or doesn't have media service enabled -> 404
+    // If event doesn't exist -> 404
     if (!event)
       return {
         notFound: true,
