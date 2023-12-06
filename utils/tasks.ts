@@ -1,5 +1,6 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
-const client = new CloudTasksClient();
+const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
+const client = new CloudTasksClient({ credentials: serviceAccount });
 const parent = client.queuePath(
   "guestography-37df8",
   "us-east4",
