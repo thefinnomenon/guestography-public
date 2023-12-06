@@ -229,7 +229,6 @@ const scheduleEvents = async (
   const eventsFuncArr = await events.map((eventObj) => {
     return async () => {
       try {
-        console.log("WEBHOOK SECRET: ", webhookSecret);
         // Create tasks
         const tasks = createTasks(
           webhookSecret,

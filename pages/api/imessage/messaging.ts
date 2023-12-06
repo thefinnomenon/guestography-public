@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import Mixpanel from "mixpanel";
-import { Event, GuestEventRecord } from "../../../types";
-import { iMessageSend } from "../../../lib/loop";
+import { GuestEventRecord } from "../../../types";
+import { scheduleSendTask } from "../../../utils/tasks";
 
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
@@ -32,107 +32,109 @@ export default async function handler(
     return;
   }
 
-  // https://docs.loopmessage.com/imessage-conversation-api/messaging/webhooks#webhook-events
-  const webhook = req.body;
+  try {
+    // https://docs.loopmessage.com/imessage-conversation-api/messaging/webhooks#webhook-events
+    const webhook = req.body;
 
-  const db = admin.firestore();
+    const db = admin.firestore();
 
-  // Find guest by phone number with most recent active event
-  const guestQuery = (
-    await db
-      .collection("guests")
-      .where("phone", "==", webhook.recipient)
-      .where("eventStatus", "==", "ACTIVE")
-      .orderBy("updatedAt", "desc")
-      .get()
-  ).docs;
+    // Find guest by phone number with most recent active event
+    const guestQuery = (
+      await db
+        .collection("guests")
+        .where("phone", "==", webhook.recipient)
+        .where("eventStatus", "==", "ACTIVE")
+        .orderBy("updatedAt", "desc")
+        .get()
+    ).docs;
 
-  if (guestQuery.length === 0) throw Error("Failed to find guest record");
+    if (guestQuery.length === 0) throw Error("Failed to find guest record");
 
-  const guestRecord = guestQuery[0].data() as GuestEventRecord;
+    const guestRecord = guestQuery[0].data() as GuestEventRecord;
 
-  console.log(
-    `Found iMessage user for phone ${webhook.recipient}`,
-    guestRecord
-  );
+    console.log(
+      `Found iMessage user for phone ${webhook.recipient}`,
+      guestRecord
+    );
 
-  switch (webhook.alert_type) {
-    case "message_inbound":
-      console.log(
-        `Inbound ${webhook.message_type} message received from ${guestRecord.firstName} ${guestRecord.lastName} for event ${guestRecord.eventId}: ${webhook.text} ${webhook.attachments}`,
-        webhook
-      );
-
-      const guest = {
-        id: guestRecord.id,
-        phone: guestRecord.phone,
-        firstName: guestRecord.firstName,
-        lastName: guestRecord.lastName,
-      };
-
-      // Set optedIn if not set already & send follow-up message
-      if (!guestRecord.optedIn) {
-        console.log("User opted in", guest, webhook);
-
-        await guestQuery[0].ref.update({ optedIn: true });
-
-        mixpanel.track("guest opt-in", { eventId: guestRecord.eventId });
-
-        await iMessageSend(
-          guest.phone,
-          "",
-          "Thanks for joining! Send any messages, audios, photos, and videos you take right here and they will be added to the event gallery!"
+    switch (webhook.alert_type) {
+      case "message_inbound":
+        console.log(
+          `Inbound ${webhook.message_type} message received from ${guestRecord.firstName} ${guestRecord.lastName} for event ${guestRecord.eventId}: ${webhook.text} ${webhook.attachments}`,
+          webhook
         );
 
-        // If optedIn text -> early return
-        if (webhook.text && webhook.text.toLowercase() === "join") {
+        const guest = {
+          id: guestRecord.id,
+          phone: guestRecord.phone,
+          firstName: guestRecord.firstName,
+          lastName: guestRecord.lastName,
+        };
+
+        // Set optedIn if not set already & send follow-up message
+        if (!guestRecord.optedIn) {
+          console.log("User opted in", guest, webhook);
+
+          await guestQuery[0].ref.update({ optedIn: true });
+
+          mixpanel.track("guest opt-in", { eventId: guestRecord.eventId });
+
+          // Add opted-in follow-up message task for guest to queue
+          await scheduleSendTask(guestRecord.eventId, guest.id, "optedIn");
+
+          // If it is a any text message (besides stop) let's assume it is the opt-in and early return
+          if (webhook.text && webhook.text.toLowercase() !== "stop") {
+            res.status(200).end();
+            return;
+          }
+        }
+
+        // If a text message -> Add to event message collection
+        if (!webhook.attachments && webhook.text) {
+          await db
+            .collection("events")
+            .doc(guestRecord.eventId)
+            .collection("messages")
+            .add({
+              guest,
+              type: "text",
+              content: webhook.text,
+            });
+
           res.status(200).end();
           return;
         }
-      }
 
-      // If a text message -> Add to event message collection
-      if (!webhook.attachments && webhook.text) {
-        await db
-          .collection("events")
-          .doc(guestRecord.eventId)
-          .collection("messages")
-          .add({
-            guest,
-            type: "text",
-            content: webhook.text,
-          });
+        // If attachment -> Add
+        console.log("Need to handle attachments...", webhook);
 
-        res.status(200).end();
-        return;
-      }
+        break;
+      case "message_scheduled":
+        console.log("Message sent", webhook);
+        break;
+      case "message_sent":
+        console.log("Message sent", webhook);
+        break;
+      case "message_reaction":
+        console.log(`Recieved reaction: ${webhook.reaction}`, webhook);
+        break;
+      case "group_created":
+        console.warn("Not doing anything with groups currently.", webhook);
+        break;
+      // https://docs.loopmessage.com/imessage-conversation-api/messaging/send-message#handling-failed-cases
+      case "message_failed":
+        console.warn("Message send failed", webhook);
+        break;
+      case "message_timeout":
+        console.warn("Message timed out", webhook);
+        break;
+      default:
+        console.warn("Unknown alert_type", webhook);
+    }
 
-      // If attachment -> Add
-      console.log("Need to handle attachments...", webhook);
-
-      break;
-    case "message_scheduled":
-      console.log("Message sent", webhook);
-      break;
-    case "message_sent":
-      console.log("Message sent", webhook);
-      break;
-    case "message_reaction":
-      console.log(`Recieved reaction: ${webhook.reaction}`, webhook);
-      break;
-    case "group_created":
-      console.warn("Not doing anything with groups currently.", webhook);
-      break;
-    // https://docs.loopmessage.com/imessage-conversation-api/messaging/send-message#handling-failed-cases
-    case "message_failed":
-      console.warn("Message send failed", webhook);
-      break;
-    case "message_timeout":
-      console.warn("Message timed out", webhook);
-      break;
-    default:
-      console.warn("Unknown alert_type", webhook);
+    res.status(200).end();
+  } catch (e) {
+    console.error(e);
+    res.status(500).send(e);
   }
-
-  res.status(200).end();
 }
