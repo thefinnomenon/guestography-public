@@ -202,9 +202,7 @@ const formatMessage = (
       case "galleryReadyMessage":
         return `Good news ${firstName}, the gallery for ${eventTitle} is ready! Take a look,\n\n${galleryLink}`;
       default:
-        throw Error(
-          `Unknown message type ${type} for ${guest.id} in event ${eventId}`
-        );
+        throw Error(`Unknown message type ${type}`);
     }
   }
 };
