@@ -42,11 +42,16 @@ interface Props {
   interview?: Interview;
   media?: GalleryMedia[];
   unsorted?: GalleryMedia[];
+  eventStatus: string;
+  hasSentGalleryMessage: boolean;
 }
 
 export default function Home(props: Props) {
   const router = useRouter();
-  const { guestId } = router.query as { guestId: string };
+  const [isSendingGalleryReadyMessage, setIsSendingGalleryReadyMessage] =
+    useState(false);
+  const [isClosingEvent, setIsClosingEvent] = useState(false);
+  const { guestId, key } = router.query as { guestId: string; key?: string };
   if (guestId) identify(guestId);
   const { title, interview, media, unsorted, eventId } = props;
   const [slides, setSlides] = useState<any>();
@@ -76,6 +81,42 @@ export default function Home(props: Props) {
       </Head>
 
       <main>
+        {key && (
+          <div className="bg-indigo-200 h-12 flex justify-end gap-12 p-8 items-center">
+            <button
+              disabled={
+                props.hasSentGalleryMessage || isSendingGalleryReadyMessage
+              }
+              className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                (props.hasSentGalleryMessage || isSendingGalleryReadyMessage) &&
+                "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
+              }`}
+              onClick={() => setIsSendingGalleryReadyMessage(true)}
+            >
+              <>
+                <span>Send Gallery Ready Message</span>
+                {isSendingGalleryReadyMessage && (
+                  <ClipLoader className="ml-4" size={16} color="white" />
+                )}
+              </>
+            </button>
+            <button
+              disabled={props.hasSentGalleryMessage || isClosingEvent}
+              className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                (props.hasSentGalleryMessage || isClosingEvent) &&
+                "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
+              }`}
+              onClick={() => setIsClosingEvent(true)}
+            >
+              <>
+                <span>Close Event</span>
+                {isClosingEvent && (
+                  <ClipLoader className="ml-4" size={16} color="white" />
+                )}
+              </>
+            </button>
+          </div>
+        )}
         <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
           <div className="relative mx-auto max-w-5xl">
             <svg
