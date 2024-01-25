@@ -8,7 +8,7 @@ import {
   getInterview,
   getMedia,
 } from "../../lib/firebase";
-import { Interview, Media, GalleryMedia } from "../../types";
+import { Interview, Media, GalleryMedia, EventStatus } from "../../types";
 import PhotoAlbum, { RenderPhoto } from "react-photo-album";
 import Lightbox, {
   ContainerRect,
@@ -42,7 +42,7 @@ interface Props {
   interview?: Interview;
   media?: GalleryMedia[];
   unsorted?: GalleryMedia[];
-  eventStatus: string;
+  eventStatus: EventStatus;
   hasSentGalleryMessage: boolean;
 }
 
@@ -50,6 +50,9 @@ export default function Home(props: Props) {
   const router = useRouter();
   const [isSendingGalleryReadyMessage, setIsSendingGalleryReadyMessage] =
     useState(false);
+  const [hasSentGalleryMessage, setHasSentGalleryMessage] = useState(
+    props.hasSentGalleryMessage
+  );
   const [isClosingEvent, setIsClosingEvent] = useState(false);
   const { guestId, key } = router.query as { guestId: string; key?: string };
   if (guestId) identify(guestId);
@@ -84,14 +87,28 @@ export default function Home(props: Props) {
         {key && (
           <div className="bg-indigo-200 h-12 flex justify-end gap-12 p-8 items-center">
             <button
-              disabled={
-                props.hasSentGalleryMessage || isSendingGalleryReadyMessage
-              }
+              disabled={hasSentGalleryMessage || isSendingGalleryReadyMessage}
               className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                (props.hasSentGalleryMessage || isSendingGalleryReadyMessage) &&
+                (hasSentGalleryMessage || isSendingGalleryReadyMessage) &&
                 "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
               }`}
-              onClick={() => setIsSendingGalleryReadyMessage(true)}
+              onClick={async () => {
+                setIsSendingGalleryReadyMessage(true);
+                try {
+                  const res = await fetch("/api/sendGalleryMessage", {
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    method: "POST",
+                    body: JSON.stringify({ eventId, key }),
+                  });
+                  const resData = await res.json();
+                  setHasSentGalleryMessage(true);
+                } catch (error) {
+                  console.error("Failed to send gallery ready messages", error);
+                }
+                setIsSendingGalleryReadyMessage(false);
+              }}
             >
               <>
                 <span>Send Gallery Ready Message</span>
@@ -101,9 +118,9 @@ export default function Home(props: Props) {
               </>
             </button>
             <button
-              disabled={props.hasSentGalleryMessage || isClosingEvent}
+              disabled={props.eventStatus === "COMPLETED" || isClosingEvent}
               className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                (props.hasSentGalleryMessage || isClosingEvent) &&
+                (props.eventStatus === "COMPLETED" || isClosingEvent) &&
                 "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
               }`}
               onClick={() => setIsClosingEvent(true)}
@@ -795,6 +812,8 @@ export async function getStaticProps(
         interview,
         media: galleryMedia,
         unsorted: galleryUnsortedMedia,
+        hasSentGalleryMessage: event.hasSentGalleryMessage || false,
+        eventStatus: event.status,
       },
       revalidate: 60,
     };

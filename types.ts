@@ -26,6 +26,7 @@ export interface Event {
   location: Location;
   guests: Guest[];
   managementKey: string;
+  hasSentGalleryMessage?: boolean;
 }
 
 export interface Location {

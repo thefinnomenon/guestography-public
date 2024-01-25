@@ -25,7 +25,7 @@ import MediaInfo from "mediainfo.js";
 import { createHash } from "crypto";
 const url = require("url");
 const https = require("https");
-import { Event } from "../../types.js";
+import { Event, Guest } from "../../types.js";
 
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
@@ -34,6 +34,11 @@ const cloudflareSecretAccessKey = defineSecret("CLOUDFLARE_SECRET_ACCESS_KEY");
 admin.initializeApp();
 
 const client = new CloudTasksClient();
+const parent = client.queuePath(
+  "guestography-37df8",
+  "us-east4",
+  "guestography-tasks"
+);
 
 const mixpanel = Mixpanel.init(process.env.MIXPANEL_TOKEN || "");
 
@@ -59,6 +64,18 @@ export const handleEventStatusChange = functions
     const { eventId } = context.params;
     const oldEvent = change.before.data() as any;
     const event = change.after.data() as any;
+
+    // If change in hasSentGalleryMessage, schedule gallery message send for event
+    if (
+      oldEvent.hasSentGalleryMessage !== event.hasSentGalleryMessage &&
+      event.hasSentGalleryMessage
+    ) {
+      scheduleGalleryMessageSendTasks(
+        eventId,
+        event.guests,
+        webhookSecret.value()
+      );
+    }
 
     // Ignore if no status change
     if (oldEvent.status === event.status) return;
@@ -219,11 +236,6 @@ const scheduleEvents = async (
   );
 
   const db = admin.firestore();
-  const parent = client.queuePath(
-    "guestography-37df8",
-    "us-east4",
-    "guestography-tasks"
-  );
 
   // Create event scheduling function array
   const eventsFuncArr = await events.map((eventObj) => {
@@ -375,6 +387,34 @@ const createTasks = (secret: string, eventId: string, event: Event) => {
   });
 
   return tasks;
+};
+
+const scheduleGalleryMessageSendTasks = async (
+  eventId: string,
+  guests: Guest[],
+  secret: string
+) => {
+  const scheduleTasksPromises = guests.map((guest) => {
+    const task = {
+      httpRequest: {
+        headers: {
+          "Content-Type": "text/json",
+        },
+        httpMethod: "POST",
+        url: "https://guestography.com/api/send",
+        body: formatBody({
+          secret,
+          eventId,
+          guestId: guest.id,
+          type: "galleryReadyMessage",
+        }),
+      },
+    };
+    return async () => scheduleTask(parent, task);
+  });
+
+  const res = await limit(scheduleTasksPromises, 100);
+  console.log(`Scheduled galleryReadyMessage for Event ${eventId}`, res);
 };
 
 const formatTime = (date: string) => {
