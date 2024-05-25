@@ -206,7 +206,7 @@ export default function Home(props: Props) {
               {title} Gallery
             </h1>
             <div className="mt-12">
-              {interview && (
+              {/* {interview && (
                 <>
                   <h2 className="text-2xl font-bold mb-4">Interview</h2>
                   <div className="relative">
@@ -315,7 +315,7 @@ export default function Home(props: Props) {
                     </button>
                   </div>
                 </>
-              )}
+              )} */}
               <EventAndGuestContext.Provider value={{ eventId, guestId }}>
                 <h2 className="text-2xl font-bold mt-8 mb-4">Media</h2>
                 {media && (
