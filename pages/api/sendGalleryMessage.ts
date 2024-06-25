@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import { Event, Guest, GuestEventRecord } from "../../types";
-import { track } from "../../lib/mixpanel";
+import { Event } from "../../types";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 

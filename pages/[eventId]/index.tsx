@@ -53,7 +53,11 @@ export default function Home(props: Props) {
   const [hasSentGalleryMessage, setHasSentGalleryMessage] = useState(
     props.hasSentGalleryMessage
   );
+
   const [isClosingEvent, setIsClosingEvent] = useState(false);
+  const [isEventClosed, setIsEventClosed] = useState(
+    props.eventStatus === "COMPLETED"
+  );
   const { guestId, key } = router.query as { guestId: string; key?: string };
   if (guestId) identify(guestId);
   const { title, interview, media, unsorted, eventId } = props;
@@ -118,12 +122,28 @@ export default function Home(props: Props) {
               </>
             </button>
             <button
-              disabled={props.eventStatus === "COMPLETED" || isClosingEvent}
+              disabled={isEventClosed || isClosingEvent}
               className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
                 (props.eventStatus === "COMPLETED" || isClosingEvent) &&
                 "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
               }`}
-              onClick={() => setIsClosingEvent(true)}
+              onClick={async () => {
+                setIsClosingEvent(true);
+                try {
+                  const res = await fetch("/api/sendGalleryMessage", {
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    method: "POST",
+                    body: JSON.stringify({ eventId, key }),
+                  });
+                  const resData = await res.json();
+                  setIsEventClosed(true);
+                } catch (error) {
+                  console.error("Failed to send gallery ready messages", error);
+                }
+                setIsClosingEvent(false);
+              }}
             >
               <>
                 <span>Close Event</span>
