@@ -65,16 +65,19 @@ export const handleEventStatusChange = functions
     const oldEvent = change.before.data() as any;
     const event = change.after.data() as any;
 
+    console.log(`handleEventStatusChange for ${eventId}`, { oldEvent, event });
+
     // If change in hasSentGalleryMessage, schedule gallery message send for event
     if (
       oldEvent.hasSentGalleryMessage !== event.hasSentGalleryMessage &&
       event.hasSentGalleryMessage
     ) {
-      scheduleGalleryMessageSendTasks(
+      await scheduleGalleryMessageSendTasks(
         eventId,
         event.guests,
         webhookSecret.value()
       );
+      return;
     }
 
     // Ignore if no status change

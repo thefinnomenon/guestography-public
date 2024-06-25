@@ -25,6 +25,8 @@ export default async function handler(
 ) {
   const { type, eventId, guestId, secret } = JSON.parse(req.body);
 
+  console.log("Sending message", { type, eventId, guestId });
+
   // Verify secret
   if (secret !== process.env.WEBHOOK_SECRET) {
     console.error("Invalid webhook secret");
@@ -57,6 +59,8 @@ export default async function handler(
     res.status(400).send(`Failed to find event ${eventId}`);
     return;
   }
+
+  console.log("Found event", event.title);
 
   let guest: Guest | undefined;
   if (guestId === "organizer" && type === "galleryReadyMessage")
@@ -102,6 +106,8 @@ export default async function handler(
     return;
   }
 
+  console.log("Found guest", guest.id);
+
   // Format message
   let msg;
   try {
@@ -114,6 +120,7 @@ export default async function handler(
 
   // If iMessage -> Send iMessage
   if (guestRecord.iMessage) {
+    console.log("Sending iMessage to ", guest.phone);
     try {
       // If not initial message and guest hasn't opted-in -> don't send message
       if (!guestRecord.optedIn && type !== "mediaInitialMessage") {
@@ -137,6 +144,7 @@ export default async function handler(
 
   // Send SMS
   try {
+    console.log("Sending SMS to ", guest.phone);
     const twilioMsgRes = await client.messages.create({
       messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
       to: guest.phone,
