@@ -416,26 +416,28 @@ export default function Form() {
                           tier.id === plan && " !border-indigo-500 shadow-lg"
                         }`}
                       >
-                        {i == 0 && (
+                        {i == 0 && tier.id !== "enterprise" && (
                           <span className="absolute bottom-2 right-2 text-sm text-indigo-500 font-medium">
                             Recommended
                           </span>
                         )}
                         <div className="px-4 py-5 sm:p-6">
-                          <p className="text-2xl font-bold mb-2">
-                            {tier.name}
-                            <span className="text-xl float-right font-medium">
-                              {tier.price}
-                            </span>
-                          </p>
-                          <div className="flex gap-2 items-center mb-1">
-                            <FaRegFileImage className="h-5 w-5" />
-                            {tier.storage} of gallery storage
+                          <div className="flex justify-between items-center">
+                            <p className="text-2xl font-bold">{tier.name}</p>
+                            <p className="text-xl font-medium">{tier.price}</p>
                           </div>
-                          <div className="flex gap-2 items-center">
-                            <IoPeople className="h-5 w-5" />
-                            Up to {tier.guests} guests
-                          </div>
+                          {tier.id !== "enterprise" && (
+                            <>
+                              <div className="flex gap-2 items-center mt-2 mb-1">
+                                <FaRegFileImage className="h-5 w-5" />
+                                {tier.storage} of gallery storage
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                <IoPeople className="h-5 w-5" />
+                                Up to {tier.guests} guests
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
