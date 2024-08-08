@@ -385,9 +385,9 @@ export default function Form() {
                 This will help us figure out which plan works best for your
                 event.
               </p>
-              <p className="text-md float-right font-medium mb-1">
+              <p className="text-md float-right font-medium">
                 {guestimate === 10 && "< "}
-                {guestimate === 300 && "> "}
+                {guestimate === 500 && "> "}
                 {guestimate} Guests
               </p>
               <input
@@ -395,36 +395,49 @@ export default function Form() {
                 value={guestimate}
                 step={10}
                 min={10}
-                max={300}
+                max={500}
                 onChange={(e) => setGuestimate(Number(e.target.value))}
                 className="w-full h-3"
               ></input>
               <div className="mt-10">
-                {tiers.map((tier) => {
-                  return (
-                    <div
-                      key={tier.id}
-                      className="overflow-hidden rounded-lg bg-white border border-gray-300 mb-2"
-                    >
-                      <div className="px-4 py-5 sm:p-6">
-                        <p className="text-2xl font-bold mb-2">
-                          {tier.name}
-                          <span className="text-xl float-right font-medium">
-                            {tier.price}
+                {tiers
+                  .filter((tier) => {
+                    if (guestimate === 500 && tier.id === "festivity")
+                      return false;
+                    return tier.guests >= guestimate;
+                  })
+                  .map((tier, i) => {
+                    return (
+                      <div
+                        key={tier.id}
+                        className={`relative rounded-lg bg-white border border-gray-300 mb-2 cursor-pointer hover:border-indigo-500 ${
+                          i === 0 && "border-indigo-300"
+                        }`}
+                      >
+                        {i == 0 && (
+                          <span className="absolute bottom-2 right-2 text-sm text-indigo-500 font-medium">
+                            Recommended
                           </span>
-                        </p>
-                        <div className="flex gap-2 items-center mb-1">
-                          <FaRegFileImage className="h-5 w-5" />
-                          {tier.storage} of gallery storage
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <IoPeople className="h-5 w-5" />
-                          Up to {tier.guests} guests
+                        )}
+                        <div className="px-4 py-5 sm:p-6">
+                          <p className="text-2xl font-bold mb-2">
+                            {tier.name}
+                            <span className="text-xl float-right font-medium">
+                              {tier.price}
+                            </span>
+                          </p>
+                          <div className="flex gap-2 items-center mb-1">
+                            <FaRegFileImage className="h-5 w-5" />
+                            {tier.storage} of gallery storage
+                          </div>
+                          <div className="flex gap-2 items-center">
+                            <IoPeople className="h-5 w-5" />
+                            Up to {tier.guests} guests
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
 
