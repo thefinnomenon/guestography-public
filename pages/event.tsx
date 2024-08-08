@@ -63,6 +63,7 @@ export default function Form() {
   const [eventStart, setEventStart] = useState("");
   const [location, setLocation] = useState<SingleValue<any>>();
   const [guestimate, setGuestimate] = useState(10);
+  const [plan, setPlan] = useState("");
 
   const [error, setError] = useState("");
 
@@ -410,8 +411,9 @@ export default function Form() {
                     return (
                       <div
                         key={tier.id}
-                        className={`relative rounded-lg bg-white border border-gray-300 mb-2 cursor-pointer hover:border-indigo-500 ${
-                          i === 0 && "border-indigo-300"
+                        onClick={() => setPlan(tier.id)}
+                        className={`relative rounded-lg bg-white  border-gray-300 mb-2 border-2 cursor-pointer hover:border-indigo-300 ${
+                          tier.id === plan && " !border-indigo-500 shadow-lg"
                         }`}
                       >
                         {i == 0 && (
