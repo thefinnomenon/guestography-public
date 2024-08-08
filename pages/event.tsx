@@ -434,7 +434,7 @@ export default function Form() {
                 </div>
               )}
               <GuestsTable guests={guestList} setGuests={setGuestList} />
-              <div className="flex gap-4 mb-3">
+              <div className="flex flex-col sm:flex-row gap-4 mb-3">
                 <div>
                   <label
                     htmlFor="guestFirstName"
