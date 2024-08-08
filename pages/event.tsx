@@ -385,13 +385,12 @@ export default function Form() {
                 This will help us figure out which plan works best for your
                 event.
               </p>
-              <p className="text-md float-right font-medium">
+              <p className="text-md float-right font-medium mb-1">
                 {guestimate === 10 && "< "}
                 {guestimate === 300 && "> "}
                 {guestimate} Guests
               </p>
               <input
-                id="guestimator"
                 type="range"
                 value={guestimate}
                 step={10}
