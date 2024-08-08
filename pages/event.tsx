@@ -14,6 +14,44 @@ const GoogleLocationSearch = dynamic(
   { ssr: false }
 );
 
+const tiers = [
+  {
+    id: "shindig",
+    name: "SHINDIG",
+    price: "FREE",
+    storage: "10GB",
+    guests: 10,
+  },
+  {
+    id: "gathering",
+    name: "GATHERING",
+    price: "$50/year",
+    storage: "50GB",
+    guests: 50,
+  },
+  {
+    id: "celebration",
+    name: "CELEBRATION",
+    price: "$100/year",
+    storage: "200GB",
+    guests: 200,
+  },
+  {
+    id: "festivity",
+    name: "FESTIVITY",
+    price: "$300/year",
+    storage: "1TB",
+    guests: 500,
+  },
+  {
+    id: "enterprise",
+    name: "ENTERPRISE",
+    price: "CUSTOM",
+    storage: "1TB",
+    guests: 500,
+  },
+];
+
 export default function Form() {
   const [hasFormBeenEdited, setHasFormBeenEdited] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -363,19 +401,31 @@ export default function Form() {
                 className="w-full h-3"
               ></input>
               <div className="mt-10">
-                <div className="overflow-hidden rounded-lg bg-white border border-indigo-300">
-                  <div className="px-4 py-5 sm:p-6">
-                    <p className="text-2xl font-bold mb-2">FREE</p>
-                    <div className="flex gap-2 items-center mb-1">
-                      <FaRegFileImage className="h-5 w-5" />
-                      10GB of gallery storage
+                {tiers.map((tier) => {
+                  return (
+                    <div
+                      key={tier.id}
+                      className="overflow-hidden rounded-lg bg-white border border-gray-300 mb-2"
+                    >
+                      <div className="px-4 py-5 sm:p-6">
+                        <p className="text-2xl font-bold mb-2">
+                          {tier.name}
+                          <span className="text-xl float-right font-medium">
+                            {tier.price}
+                          </span>
+                        </p>
+                        <div className="flex gap-2 items-center mb-1">
+                          <FaRegFileImage className="h-5 w-5" />
+                          {tier.storage} of gallery storage
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          <IoPeople className="h-5 w-5" />
+                          Up to {tier.guests} guests
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2 items-center">
-                      <IoPeople className="h-5 w-5" />
-                      Up to 10 guests
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
 
