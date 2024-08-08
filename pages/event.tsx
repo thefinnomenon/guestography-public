@@ -7,13 +7,8 @@ import { type SingleValue } from "react-select";
 import dynamic from "next/dynamic";
 import Script from "next/script";
 import { geocodeByPlaceId } from "react-google-places-autocomplete";
-import GuestsTable from "../components/GuestsTable";
-import { Guest } from "../types";
-import { formatPhoneNumber, parseGuestListCSV } from "../utils/format";
-import {
-  ImportGuestsFromContacts,
-  determineValidGuests,
-} from "../utils/contacts";
+import { FaRegFileImage } from "react-icons/fa";
+import { IoPeople } from "react-icons/io5";
 const GoogleLocationSearch = dynamic(
   () => import("../components/GoogleLocationSearch"),
   { ssr: false }
@@ -29,11 +24,8 @@ export default function Form() {
   const [eventTitle, setEventTitle] = useState("");
   const [eventStart, setEventStart] = useState("");
   const [location, setLocation] = useState<SingleValue<any>>();
-  const [guestList, setGuestList] = useState<Omit<Guest, "id">[]>([]);
-  const [addGuestFirstName, setAddGuestFirstName] = useState("");
-  const [addGuestLastName, setAddGuestLastName] = useState("");
-  const [addGuestPhone, setAddGuestPhone] = useState("");
-  const [guestImportError, setGuestImportError] = useState("");
+  const [guestimate, setGuestimate] = useState(10);
+
   const [error, setError] = useState("");
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -72,15 +64,6 @@ export default function Form() {
       return;
     }
 
-    // Check that there is at least one guest
-    if (guestList.length === 0) {
-      setError(
-        "Event must have at least one guest. Please add guest(s) and click SCHEDULE again."
-      );
-      setIsSubmitting(false);
-      return;
-    }
-
     // Format event data
     const eventData = {
       firstName,
@@ -90,7 +73,6 @@ export default function Form() {
       title: eventTitle,
       startAt: new Date(eventStart).toISOString(),
       location: enhancedLocation,
-      guests: guestList,
     };
 
     // Create event
@@ -356,175 +338,44 @@ export default function Form() {
                 />
               </div>
             </div>
-            {/* GUEST LIST */}
-            <div className="sm:col-span-2">
-              <label
-                htmlFor="guest-list"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Guest List
+            {/* GUESTIMATE & PRICING */}
+            <div className="sm:col-span-2 mt-3">
+              <label className="block mb-2 text-lg font-medium text-gray-900 dark:text-white">
+                What is your Guestimate?
               </label>
               <p className="block text-sm text-gray-500 mt-1 mb-3">
-                Import a CSV of your guest list, add them directly from your
-                phone contacts, or manually add each guest.
+                This will help us figure out which plan works best for your
+                event.
               </p>
-              <div className="flex gap-4 items-center">
-                <div>
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    onClick={() => {
-                      setGuestImportError("");
-                      document?.getElementById("guest-list")?.click();
-                    }}
-                  >
-                    Import CSV
-                  </button>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    name="guest-list"
-                    id="guest-list"
-                    onChange={async (e) => {
-                      if (e.target.files) {
-                        const uniqueGuests = determineValidGuests(
-                          guestList,
-                          await parseGuestListCSV(e.target.files)
-                        );
-                        if (uniqueGuests.length !== 0)
-                          setGuestList([...uniqueGuests, ...guestList]);
-                      }
-                    }}
-                    style={{ display: "none" }}
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  onClick={async () => {
-                    setGuestImportError("");
-                    try {
-                      const uniqueGuests = determineValidGuests(
-                        guestList,
-                        await ImportGuestsFromContacts()
-                      );
-                      if (uniqueGuests.length !== 0)
-                        setGuestList([...uniqueGuests, ...guestList]);
-                    } catch (err: any) {
-                      setGuestImportError(err.message);
-                    }
-                  }}
-                >
-                  Import From Phone
-                </button>
-              </div>
-              {guestImportError !== "" && (
-                <div
-                  className="flex justify-start p-4 mt-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200"
-                  role="alert"
-                >
-                  <div>
-                    <IoWarningOutline className="mr-2" size={24} />
-                    <span className="sr-only">Info</span>
-                  </div>
-                  <div
-                    className="text-left"
-                    dangerouslySetInnerHTML={{ __html: guestImportError }}
-                  />
-                </div>
-              )}
-              <GuestsTable guests={guestList} setGuests={setGuestList} />
-              <div className="flex flex-col sm:flex-row gap-4 mb-3">
-                <div>
-                  <label
-                    htmlFor="guestFirstName"
-                    className="text-sm font-medium leading-6 text-gray-900"
-                  >
-                    First Name
-                  </label>
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      name="guestFirstName"
-                      id="guestFirstName"
-                      placeholder="Michael"
-                      value={addGuestFirstName}
-                      onChange={(e) => setAddGuestFirstName(e.target.value)}
-                      className="w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                    />
+              <p className="text-md float-right font-medium">
+                {guestimate === 10 && "< "}
+                {guestimate === 300 && "> "}
+                {guestimate} Guests
+              </p>
+              <input
+                id="guestimator"
+                type="range"
+                value={guestimate}
+                step={10}
+                min={10}
+                max={300}
+                onChange={(e) => setGuestimate(Number(e.target.value))}
+                className="w-full h-3"
+              ></input>
+              <div className="mt-10">
+                <div className="overflow-hidden rounded-lg bg-white border border-indigo-300">
+                  <div className="px-4 py-5 sm:p-6">
+                    <p className="text-2xl font-bold mb-2">FREE</p>
+                    <div className="flex gap-2 items-center mb-1">
+                      <FaRegFileImage className="h-5 w-5" />
+                      10GB of gallery storage
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <IoPeople className="h-5 w-5" />
+                      Up to 10 guests
+                    </div>
                   </div>
                 </div>
-
-                <div>
-                  <label
-                    htmlFor="guestLastName"
-                    className="text-sm font-medium leading-6 text-gray-900"
-                  >
-                    Last Name
-                  </label>
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      name="guetsLastName"
-                      id="guestLastName"
-                      placeholder="Scott"
-                      value={addGuestLastName}
-                      onChange={(e) => setAddGuestLastName(e.target.value)}
-                      className="w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="guestPhone"
-                    className="text-sm font-medium leading-6 text-gray-900"
-                  >
-                    Phone
-                  </label>
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      name="guestPhone"
-                      id="guestPhone"
-                      placeholder="570-555-4118"
-                      value={addGuestPhone}
-                      onChange={(e) => setAddGuestPhone(e.target.value)}
-                      className="w-full rounded-md border-0 py-1 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                    />
-                  </div>
-                </div>
-              </div>
-              <button
-                disabled={
-                  !addGuestPhone || (!addGuestFirstName && !addGuestLastName)
-                }
-                type="button"
-                className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm ${
-                  !addGuestPhone || (!addGuestFirstName && !addGuestLastName)
-                    ? "bg-indigo-300"
-                    : "hover:bg-indigo-700"
-                } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
-                onClick={() => {
-                  setGuestImportError("");
-                  const uniqueGuests = determineValidGuests(guestList, [
-                    {
-                      firstName: addGuestFirstName,
-                      lastName: addGuestLastName,
-                      phone: formatPhoneNumber(addGuestPhone),
-                    },
-                  ]);
-                  if (uniqueGuests.length !== 0)
-                    setGuestList([...uniqueGuests, ...guestList]);
-                  setAddGuestFirstName("");
-                  setAddGuestLastName("");
-                  setAddGuestPhone("");
-                }}
-              >
-                ADD GUEST
-              </button>
-              <div className="float-right text-lg mt-2">
-                Guest Count: {guestList.length}
               </div>
             </div>
 
