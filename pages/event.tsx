@@ -112,6 +112,7 @@ export default function Form() {
       title: eventTitle,
       startAt: new Date(eventStart).toISOString(),
       location: enhancedLocation,
+      plan,
     };
 
     // Create event

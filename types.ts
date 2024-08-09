@@ -24,7 +24,7 @@ export interface Event {
   startAt: string;
   endAt: string;
   location: Location;
-  guests: Guest[];
+  plan: "shindig" | "gathering" | "celebration" | "festivity" | "enterprise";
   managementKey: string;
   hasSentGalleryMessage?: boolean;
 }
