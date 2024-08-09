@@ -119,6 +119,9 @@ export default async function handler(
         },
       ],
       discounts,
+      subscription_data: {
+        trial_end: Math.floor(new Date(event.startAt).getTime() / 1000),
+      },
       allow_promotion_codes: discounts ? undefined : true,
       metadata: { eventId },
       success_url: `${req.headers.origin}/success?eventId=${eventId}&type=schedule`,
