@@ -120,7 +120,11 @@ export default function Home(props: Props) {
             />
           </div>
         )}
-        <GuestsTable guests={guestList} setGuests={setGuestList} />
+        <GuestsTable
+          eventId={props.eventId}
+          guests={guestList}
+          setGuests={setGuestList}
+        />
         <div className="flex flex-col sm:flex-row gap-4 mb-3">
           <div>
             <label
@@ -302,6 +306,40 @@ const updateGuestList = async (
       },
       method: "POST",
       body: JSON.stringify({ eventId, guestList, newGuests }),
+    });
+    const resData = await res.json();
+
+    if (res.status === 200) {
+      console.log("updated guest list");
+      updateLocal(resData);
+    } else throw Error(resData);
+  } catch (error) {
+    console.error("Failed to update guest list", error);
+  }
+};
+
+export const removeGuest = async (
+  eventId: string,
+  guestList: Partial<GuestEventRecord>[],
+  guestPhoneNumberToRemove: string,
+  updateLocal: (guests: Partial<GuestEventRecord>[]) => void
+) => {
+  console.log("Removing guest", {
+    eventId,
+    guestList,
+    guestPhoneNumberToRemove,
+  });
+  try {
+    const res = await fetch("/api/updateGuests", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "PUT",
+      body: JSON.stringify({
+        eventId,
+        guestList,
+        guestPhoneNumberToRemove,
+      }),
     });
     const resData = await res.json();
 

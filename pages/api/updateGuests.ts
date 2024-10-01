@@ -22,11 +22,45 @@ export default async function handler(
     eventId,
     guestList,
     newGuests,
+    guestPhoneNumberToRemove,
   }: {
     eventId: string;
     guestList: Partial<GuestEventRecord>[];
     newGuests: Partial<GuestEventRecord>[];
+    guestPhoneNumberToRemove: string;
   } = req.body;
+
+  if (req.method === "PUT") {
+    console.log("Deleting guest", {
+      eventId,
+      guestList,
+      guestPhoneNumberToRemove,
+    });
+    if (!guestPhoneNumberToRemove || !eventId || !guestList) {
+      console.error("Invalid guest removal: ", eventId);
+      res.status(400).send(eventId);
+      return;
+    }
+
+    try {
+      const db = admin.firestore();
+      const guestToRemove = (
+        await db
+          .collection("guests")
+          .where("eventId", "==", eventId)
+          .where("phone", "==", guestPhoneNumberToRemove)
+          .get()
+      ).docs[0];
+      await guestToRemove.ref.delete();
+      track("remove guest", { eventId });
+      return res
+        .status(200)
+        .json(guestList.filter((g) => g.phone !== guestPhoneNumberToRemove));
+    } catch (e) {
+      console.error("Failed to delete guest", e);
+      return res.status(400).send(e);
+    }
+  }
 
   // Validate event info
   if (!eventId || !guestList || !newGuests) {
@@ -37,11 +71,10 @@ export default async function handler(
 
   console.log("Updating guest list!", { eventId, guestList, newGuests });
 
-  track("add guests", { eventId, count: newGuests.length });
-
   // Update guests in db
   try {
     const newGuestList = await updateGuestList(eventId, guestList, newGuests);
+    track("add guests", { eventId, count: newGuests.length });
     return res.status(200).json(newGuestList);
   } catch (e) {
     console.error("Failed to create event", e);

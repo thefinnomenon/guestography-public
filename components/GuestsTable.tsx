@@ -7,8 +7,9 @@ import {
   flexRender,
   RowData,
 } from "@tanstack/react-table";
-import { Guest } from "../types";
+import { Guest, GuestEventRecord } from "../types";
 import { MdOutlineClose } from "react-icons/md";
+import { removeGuest } from "../pages/[eventId]/manage";
 
 declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
@@ -16,7 +17,7 @@ declare module "@tanstack/react-table" {
   }
 }
 
-const defaultColumn: Partial<ColumnDef<Omit<Guest, "id">>> = {
+const defaultColumn: Partial<ColumnDef<Partial<GuestEventRecord>>> = {
   cell: ({ getValue, row: { index }, column: { id }, table }) => {
     const initialValue = getValue();
 
@@ -60,12 +61,13 @@ const defaultColumn: Partial<ColumnDef<Omit<Guest, "id">>> = {
 };
 
 type Props = {
-  guests: Omit<Guest, "id">[];
-  setGuests(guests: Omit<Guest, "id">[]): void;
+  eventId: string;
+  guests: Partial<GuestEventRecord>[];
+  setGuests(guests: Partial<GuestEventRecord>[]): void;
 };
 
-export default function GuestsTable({ guests, setGuests }: Props) {
-  const columns = React.useMemo<ColumnDef<Omit<Guest, "id">>[]>(
+export default function GuestsTable({ eventId, guests, setGuests }: Props) {
+  const columns = React.useMemo<ColumnDef<Partial<GuestEventRecord>>[]>(
     () => [
       {
         header: "First Name",
@@ -90,22 +92,25 @@ export default function GuestsTable({ guests, setGuests }: Props) {
             className="cursor-pointer text-red-500 mx-auto"
             size={24}
             onClick={() => {
-              const updatedGuests = [...guests];
-              updatedGuests.splice(row.row.index, 1);
-              setGuests(updatedGuests);
+              const phone = guests[row.row.index].phone;
+              if (!phone) return;
+              removeGuest(eventId, guests, phone, setGuests);
             }}
           />
         ),
         size: 50,
       },
     ],
-    [guests, setGuests]
+    [eventId, guests, setGuests]
   );
 
   const table = useReactTable({
     data: guests,
     columns,
     defaultColumn,
+    state: {
+      columnVisibility: { id: true },
+    },
     getCoreRowModel: getCoreRowModel(),
     // Provide our updateData function to our table meta
     meta: {
