@@ -1,4 +1,4 @@
-import { Guest } from "../types";
+import { Guest, GuestEventRecord } from "../types";
 import { formatPhoneNumber } from "./format";
 import { checkAndroid, checkIos } from "./platformDetection";
 
@@ -54,8 +54,8 @@ const readContacts = async () => {
 };
 
 export const determineValidGuests = (
-  guestList: Omit<Guest, "id">[],
-  guestsToPossiblyAdd: Omit<Guest, "id">[]
+  guestList: Partial<GuestEventRecord>[],
+  guestsToPossiblyAdd: Partial<GuestEventRecord>[]
 ) => {
   return (
     guestsToPossiblyAdd

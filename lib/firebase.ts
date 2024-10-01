@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 // import serviceAccount from "../lib/serviceAccountKey.json";
-import { Event, Interview, Media } from "../types";
+import { Event, GuestEventRecord, Interview, Media } from "../types";
+import { determineValidGuests } from "../utils/contacts";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -109,4 +110,46 @@ export const getMedia = async (eventId: string) => {
     console.log(e);
     throw e;
   }
+};
+
+export const getGuests = async (eventId: string) => {
+  try {
+    const db = admin.firestore();
+    const snapshot = await db
+      .collection("guests")
+      .where("eventId", "==", eventId)
+      .get();
+    return snapshot.docs.map((doc) => {
+      return doc.data() as GuestEventRecord;
+    });
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
+export const updateGuestList = async (
+  eventId: string,
+  guestList: Partial<GuestEventRecord>[],
+  newGuests: Partial<GuestEventRecord>[]
+) => {
+  console.log("Determining unique guests", { eventId, guestList, newGuests });
+  const uniqueGuests = determineValidGuests(guestList, newGuests);
+  const db = admin.firestore();
+  const batch = db.batch();
+  console.log("Adding unique guests", uniqueGuests);
+  uniqueGuests.map((guest) =>
+    batch.create(db.collection("guests").doc(), {
+      eventId: eventId,
+      eventState: "inactive",
+      iMessage: false,
+      optedIn: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      firstName: guest.firstName,
+      lastName: guest.lastName,
+      phone: guest.phone,
+    })
+  );
+  await batch.commit();
+  return [...uniqueGuests, ...guestList];
 };
