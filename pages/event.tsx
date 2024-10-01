@@ -385,7 +385,8 @@ export default function Form() {
               </label>
               <p className="block text-sm text-gray-500 mt-1 mb-3">
                 This will help us figure out which plan works best for your
-                event.
+                event. You can always upgrade later if you need more guests or
+                storage.
               </p>
               <p className="text-md float-right font-medium">
                 {guestimate === 10 && "< "}
