@@ -19,7 +19,6 @@ interface Props {
 }
 
 export default function Home(props: Props) {
-  const [isSaving, setIsSaving] = useState(false);
   const [guestList, setGuestList] = useState<Partial<GuestEventRecord>[]>(
     props.guestList
   );
@@ -28,20 +27,6 @@ export default function Home(props: Props) {
   const [addGuestLastName, setAddGuestLastName] = useState("");
   const [addGuestPhone, setAddGuestPhone] = useState("");
   const [addGuestPhoneIsValid, setAddGuestPhoneIsValid] = useState(false);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-
-    const res = await fetch("/api/event", {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      method: "PUT",
-      body: JSON.stringify({ eventId: props.eventId, guests: guestList }),
-    });
-
-    setIsSaving(false);
-  };
 
   return (
     <div className="mx-auto max-w-xl py-10 px-2 mb-6">
@@ -204,14 +189,12 @@ export default function Home(props: Props) {
         </div>
         <button
           disabled={
-            isSaving ||
             !addGuestPhoneIsValid ||
             !addGuestPhone ||
             (!addGuestFirstName && !addGuestLastName)
           }
           type="button"
           className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm ${
-            isSaving ||
             !addGuestPhoneIsValid ||
             !addGuestPhone ||
             (!addGuestFirstName && !addGuestLastName)

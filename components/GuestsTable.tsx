@@ -48,15 +48,7 @@ const defaultColumn: Partial<ColumnDef<Partial<GuestEventRecord>>> = {
         break;
     }
 
-    return (
-      <input
-        className="placeholder-gray-400 py-3 pl-2 text-base focus:border-indigo-500 focus:ring-indigo-500 min-w-[100px] w-full"
-        value={value as string}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={onBlur}
-        placeholder={placeholder}
-      />
-    );
+    return <p className="p-2">{`${value}`}</p>;
   },
 };
 
@@ -108,9 +100,6 @@ export default function GuestsTable({ eventId, guests, setGuests }: Props) {
     data: guests,
     columns,
     defaultColumn,
-    state: {
-      columnVisibility: { id: true },
-    },
     getCoreRowModel: getCoreRowModel(),
     // Provide our updateData function to our table meta
     meta: {
