@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ImportGuestsFromContacts } from "../../utils/contacts";
 import { formatPhoneNumber, parseGuestListCSV } from "../../utils/format";
 import { GuestEnrollSource, GuestEventRecord } from "../../types";
@@ -8,6 +8,7 @@ import { getEvent, getEvents, getGuests } from "../../lib/firebase";
 import { GetStaticPropsContext } from "next";
 import "intl-tel-input/styles";
 import dynamic from "next/dynamic";
+// @ts-ignore
 const IntlTelInput = dynamic(() => import("intl-tel-input/reactWithUtils"), {
   ssr: false,
 });
@@ -178,6 +179,7 @@ export default function Home(props: Props) {
             </label>
             <div className="mt-2">
               <IntlTelInput
+                // @ts-ignore
                 onChangeNumber={setAddGuestPhone}
                 onChangeValidity={setAddGuestPhoneIsValid}
                 initOptions={{
@@ -219,11 +221,15 @@ export default function Home(props: Props) {
             setAddGuestFirstName("");
             setAddGuestLastName("");
             setAddGuestPhone("");
+
+            const telInput =
+              document.getElementsByClassName("iti__tel-input")[0];
+            // @ts-ignore
+            telInput.value = "";
           }}
         >
           ADD GUEST
         </button>
-        {/* TODO: Add invite link with copy button */}
         <div className="float-right text-lg mt-2">
           Guest Count: {guestList.length}
         </div>

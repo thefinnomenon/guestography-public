@@ -7,6 +7,7 @@ import { ClipLoader } from "react-spinners";
 import { useRouter } from "next/router";
 import "intl-tel-input/styles";
 import dynamic from "next/dynamic";
+// @ts-ignore
 const IntlTelInput = dynamic(() => import("intl-tel-input/reactWithUtils"), {
   ssr: false,
 });
@@ -82,6 +83,7 @@ export default function Home(props: Props) {
               </label>
               <div className="mt-2">
                 <IntlTelInput
+                  // @ts-ignore
                   onChangeNumber={setAddGuestPhone}
                   onChangeValidity={setIsPhoneValid}
                   initOptions={{
@@ -117,6 +119,12 @@ export default function Home(props: Props) {
                 setAddGuestLastName("");
                 setAddGuestPhone("");
                 setIsSaving(false);
+
+                const telInput =
+                  document.getElementsByClassName("iti__tel-input")[0];
+                // @ts-ignore
+                telInput.value = "";
+
                 router.push(`/${props.eventId}/joinSuccess`);
               }}
             >
