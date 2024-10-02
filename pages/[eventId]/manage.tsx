@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImportGuestsFromContacts } from "../../utils/contacts";
 import { formatPhoneNumber, parseGuestListCSV } from "../../utils/format";
 import { GuestEnrollSource, GuestEventRecord } from "../../types";
@@ -8,6 +8,7 @@ import { getEvent, getEvents, getGuests } from "../../lib/firebase";
 import { GetStaticPropsContext } from "next";
 import "intl-tel-input/styles";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/router";
 // @ts-ignore
 const IntlTelInput = dynamic(() => import("intl-tel-input/reactWithUtils"), {
   ssr: false,
@@ -20,6 +21,17 @@ interface Props {
 }
 
 export default function Home(props: Props) {
+  const router = useRouter();
+  const [renderCount, setRenderCount] = useState(0);
+  const { key } = router.query as { guestId: string; key?: string };
+
+  // If no management key, redirect to event page
+  useEffect(() => {
+    // Not sure why but key doesn't get defined until the second render
+    if (!key && renderCount === 1) router.replace(`/${props.eventId}`);
+    setRenderCount(renderCount + 1);
+  }, [key, router, props.eventId]);
+
   const [guestList, setGuestList] = useState<Partial<GuestEventRecord>[]>(
     props.guestList
   );
@@ -29,9 +41,37 @@ export default function Home(props: Props) {
   const [addGuestPhone, setAddGuestPhone] = useState("");
   const [addGuestPhoneIsValid, setAddGuestPhoneIsValid] = useState(false);
 
+  // If no management key, don't render management page
+  if (!key) return null;
+
   return (
     <div className="mx-auto max-w-xl py-10 px-2 mb-6">
       <h1 className="text-4xl mb-4">Manage Event</h1>
+      <div className="sm:col-span-2 my-2">
+        <label
+          htmlFor="subscription"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Subscription
+        </label>
+        <p className="block text-sm text-gray-500 mt-1 mb-3">
+          Modify or cancel your subscription.
+        </p>
+        <button
+          type="button"
+          className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 mb-4 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+          onClick={() => {
+            const newWindow = window.open(
+              "https://billing.stripe.com/p/login/aEU4jx9Nb5J9f0k4gg",
+              "_blank",
+              "noopener,noreferrer"
+            );
+            if (newWindow) newWindow.opener = null;
+          }}
+        >
+          Manage Subscription
+        </button>
+      </div>
       <div className="sm:col-span-2 my-2">
         <label
           htmlFor="guest-list"
