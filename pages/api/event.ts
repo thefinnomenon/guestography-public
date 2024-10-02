@@ -124,7 +124,7 @@ export default async function handler(
       },
       allow_promotion_codes: discounts ? undefined : true,
       metadata: { eventId },
-      success_url: `${req.headers.origin}/success?eventId=${eventId}&type=schedule`,
+      success_url: `${req.headers.origin}/${eventId}/manage?key=${event.managementKey}`,
       cancel_url: `${req.headers.origin}/event?eventId=${eventId}`,
     };
 
