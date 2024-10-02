@@ -125,3 +125,9 @@ export type GuestEventRecord = {
   optedIn: boolean;
   updatedAt: string;
 };
+
+export type GuestEnrollSource =
+  | "self-enroll"
+  | "csv-import"
+  | "contacts-import"
+  | "manual-import";

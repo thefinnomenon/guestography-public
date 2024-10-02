@@ -4,7 +4,7 @@ import {
   determineValidGuests,
 } from "../../utils/contacts";
 import { formatPhoneNumber, parseGuestListCSV } from "../../utils/format";
-import { GuestEventRecord } from "../../types";
+import { GuestEnrollSource, GuestEventRecord } from "../../types";
 import { IoWarningOutline } from "react-icons/io5";
 import GuestsTable from "../../components/GuestsTable";
 import { getEvent, getEvents, getGuests } from "../../lib/firebase";
@@ -41,7 +41,7 @@ export default function Home(props: Props) {
   };
 
   return (
-    <div className="mx-auto max-w-xl py-10">
+    <div className="mx-auto max-w-xl py-10 px-2 mb-6">
       <h1 className="text-4xl mb-4">Manage Event</h1>
       <div className="sm:col-span-2 my-2">
         <label
@@ -50,12 +50,25 @@ export default function Home(props: Props) {
         >
           Guest List
         </label>
-        <p className="block text-sm text-gray-500 mt-1 mb-2">
-          Import guests via a CSV guest list, directly from your phone contacts,
-          manually, or using the invite link.
+        <p className="block text-sm text-gray-500 mt-1 mb-3">
+          Add guests by sharing the guest invite link, importing guests via a
+          CSV guest list, adding them directly from your phone contacts, or
+          adding them manually.
         </p>
         <div className="flex gap-4 items-center">
           <div>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 mr-4"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `https://guestography.com/${props.eventId}/join`
+                );
+                alert("Copied invite link!");
+              }}
+            >
+              Copy Guest Invite Link
+            </button>
             <button
               type="button"
               className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -78,6 +91,7 @@ export default function Home(props: Props) {
                     props.eventId,
                     guestList,
                     newGuests,
+                    "csv-import",
                     setGuestList
                   );
                 }
@@ -95,6 +109,7 @@ export default function Home(props: Props) {
                   props.eventId,
                   guestList,
                   await ImportGuestsFromContacts(),
+                  "contacts-import",
                   setGuestList
                 );
               } catch (err: any) {
@@ -206,6 +221,7 @@ export default function Home(props: Props) {
                   phone: formatPhoneNumber(addGuestPhone),
                 },
               ],
+              "manual-import",
               setGuestList
             );
             setAddGuestFirstName("");
@@ -296,16 +312,17 @@ const updateGuestList = async (
   eventId: string,
   guestList: Partial<GuestEventRecord>[],
   newGuests: Partial<GuestEventRecord>[],
+  source: GuestEnrollSource,
   updateLocal: (guests: Partial<GuestEventRecord>[]) => void
 ) => {
-  console.log("Updating guest list", { eventId, guestList, newGuests });
+  console.log("Updating guest list", { eventId, guestList, newGuests, source });
   try {
     const res = await fetch("/api/updateGuests", {
       headers: {
         "Content-Type": "application/json",
       },
       method: "POST",
-      body: JSON.stringify({ eventId, guestList, newGuests }),
+      body: JSON.stringify({ eventId, guestList, newGuests, source }),
     });
     const resData = await res.json();
 

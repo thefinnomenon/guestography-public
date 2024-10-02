@@ -153,3 +153,35 @@ export const updateGuestList = async (
   await batch.commit();
   return [...uniqueGuests, ...guestList];
 };
+
+export const addGuest = async (
+  eventId: string,
+  guest: Partial<GuestEventRecord>
+) => {
+  console.log("Checking if guest is already enrolled", { eventId, guest });
+  const db = admin.firestore();
+  const alreadyEnrolled =
+    (
+      await db
+        .collection("guests")
+        .where("eventId", "==", eventId)
+        .where("phone", "==", guest.phone)
+        .get()
+    ).size !== 0;
+  if (alreadyEnrolled) {
+    console.log("Guest already enrolled", { eventId, guest });
+    return;
+  }
+
+  console.log("Adding guest", { eventId, guest });
+  db.collection("guests").doc().create({
+    eventId: eventId,
+    eventState: "inactive",
+    iMessage: false,
+    optedIn: false,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    firstName: guest.firstName,
+    lastName: guest.lastName,
+    phone: guest.phone,
+  });
+};
