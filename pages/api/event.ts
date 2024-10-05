@@ -120,7 +120,10 @@ export default async function handler(
       ],
       discounts,
       subscription_data: {
-        trial_end: Math.floor(new Date(event.startAt).getTime() / 1000),
+        /* @ts-ignore */
+        billing_cycle_anchor: Math.floor(
+          new Date(event.startAt).getTime() / 1000
+        ),
       },
       allow_promotion_codes: discounts ? undefined : true,
       metadata: { eventId },
