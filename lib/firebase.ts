@@ -173,10 +173,14 @@ export const addGuest = async (
     return;
   }
 
+  const event = (
+    await db.collection("events").doc(eventId).get()
+  ).data() as Event;
+
   console.log("Adding guest", { eventId, guest });
   db.collection("guests").doc().create({
     eventId: eventId,
-    eventState: "inactive",
+    eventState: event.status,
     iMessage: false,
     optedIn: false,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),

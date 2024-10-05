@@ -128,6 +128,58 @@ export const handleEventStatusChange = functions
     }
   });
 
+// Handle guest creation
+export const handleGuestCreation = functions
+  .runWith({ secrets: [webhookSecret] })
+  .firestore.document("guests/{guestId}")
+  .onCreate(async (change, context) => {
+    const { guestId } = context.params;
+    const guest = change.data() as GuestEventRecord;
+
+    console.log(`handleGuestCreation for ${guestId}`, { guest });
+
+    if (guest.eventStatus === "SCHEDULED" || guest.eventStatus === "ACTIVE") {
+      console.log("Guest added for event that is ", guest.eventStatus);
+
+      const db = admin.firestore();
+      const event = (
+        await db.collection("events").doc(guest.eventId).get()
+      ).data() as Event;
+
+      // Schedule initial message (Hi, this event is using Guestography...) send at event startAt if event
+      // is scheduled or now if already active
+      const mediaInitialMessageTask = {
+        httpRequest: {
+          headers: {
+            "Content-Type": "text/json",
+          },
+          httpMethod: "POST",
+          url: "https://guestography.com/api/send",
+          body: formatBody({
+            secret: webhookSecret,
+            eventId: guest.eventId,
+            guestId,
+            type: "mediaInitialMessage",
+          }),
+        },
+        scheduleTime:
+          guest.eventStatus === "SCHEDULED"
+            ? {
+                seconds: formatTime(event.startAt),
+              }
+            : undefined,
+      };
+      await scheduleTask(parent, mediaInitialMessageTask);
+      console.log(
+        `Scheduled mediaInitialMessageTask for ${
+          event.status === "ACTIVE" ? "now" : "event start"
+        }`,
+        guest.eventId,
+        guest.id
+      );
+    }
+  });
+
 // Every hour schedule events within two hours
 exports.scheduledWaitingEvents = functions
   .runWith({ secrets: [webhookSecret] })
