@@ -179,7 +179,7 @@ const formatMessage = (
   const eventTitle = event.title;
   const mediaLink = `https://guestography.com/${eventId}/upload/media?guestId=${guest.id}`;
   const galleryLink = `https://guestography.com/${eventId}?guestId=${guest.id}`;
-  const managementLink = `https://guestography.com/${eventId}/manage&key=${event.managementKey}`;
+  const managementLink = `https://guestography.com/${eventId}/manage?key=${event.managementKey}`;
 
   if (false) {
     // iMessage
