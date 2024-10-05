@@ -153,8 +153,15 @@ export async function getStaticProps(
     // Get event from db
     const event = await getEvent(eventId);
 
-    // If event doesn't exist
-    if (!event)
+    // If event doesn't exist or it not in a joinable state, return 404
+    if (
+      !event ||
+      !(
+        event.status === "PAID" ||
+        event.status === "ACTIVE" ||
+        event.status === "SCHEDULED"
+      )
+    )
       return {
         notFound: true,
       };
