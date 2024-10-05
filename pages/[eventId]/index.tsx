@@ -35,6 +35,7 @@ import { MdOutlineFileDownload } from "react-icons/md";
 import { track, identify } from "../../lib/mixpanel";
 import { useRouter } from "next/router";
 import { EventAndGuestContext } from "../../context/EventAndGuestContext";
+import Link from "next/link";
 
 interface Props {
   title: string;
@@ -48,16 +49,6 @@ interface Props {
 
 export default function Home(props: Props) {
   const router = useRouter();
-  const [isSendingGalleryReadyMessage, setIsSendingGalleryReadyMessage] =
-    useState(false);
-  const [hasSentGalleryMessage, setHasSentGalleryMessage] = useState(
-    props.hasSentGalleryMessage
-  );
-
-  const [isClosingEvent, setIsClosingEvent] = useState(false);
-  const [isEventClosed, setIsEventClosed] = useState(
-    props.eventStatus === "COMPLETED"
-  );
   const { guestId, key } = router.query as { guestId: string; key?: string };
   if (guestId) identify(guestId);
   const { title, interview, media, unsorted, eventId } = props;
@@ -90,68 +81,11 @@ export default function Home(props: Props) {
       <main>
         {key && (
           <div className="bg-indigo-200 h-12 flex justify-end gap-12 p-8 items-center">
-            <button
-              disabled={hasSentGalleryMessage || isSendingGalleryReadyMessage}
-              className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                (hasSentGalleryMessage || isSendingGalleryReadyMessage) &&
-                "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
-              }`}
-              onClick={async () => {
-                setIsSendingGalleryReadyMessage(true);
-                try {
-                  const res = await fetch("/api/sendGalleryMessage", {
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    method: "POST",
-                    body: JSON.stringify({ eventId, key }),
-                  });
-                  const resData = await res.json();
-                  setHasSentGalleryMessage(true);
-                } catch (error) {
-                  console.error("Failed to send gallery ready messages", error);
-                }
-                setIsSendingGalleryReadyMessage(false);
-              }}
-            >
-              <>
-                <span>Send Gallery Ready Message</span>
-                {isSendingGalleryReadyMessage && (
-                  <ClipLoader className="ml-4" size={16} color="white" />
-                )}
-              </>
-            </button>
-            <button
-              disabled={isEventClosed || isClosingEvent}
-              className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                (isEventClosed || isClosingEvent) &&
-                "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
-              }`}
-              onClick={async () => {
-                setIsClosingEvent(true);
-                try {
-                  const res = await fetch("/api/closeEvent", {
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    method: "POST",
-                    body: JSON.stringify({ eventId, key }),
-                  });
-                  const resData = await res.json();
-                  setIsEventClosed(true);
-                } catch (error) {
-                  console.error("Failed to close event", error);
-                }
-                setIsClosingEvent(false);
-              }}
-            >
-              <>
-                <span>Close Event</span>
-                {isClosingEvent && (
-                  <ClipLoader className="ml-4" size={16} color="white" />
-                )}
-              </>
-            </button>
+            <Link href={`/${eventId}/manage`}>
+              <button className="items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                <span>Manage Event</span>
+              </button>
+            </Link>
           </div>
         )}
         <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">

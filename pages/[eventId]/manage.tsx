@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ImportGuestsFromContacts } from "../../utils/contacts";
 import { formatPhoneNumber, parseGuestListCSV } from "../../utils/format";
-import { GuestEnrollSource, GuestEventRecord } from "../../types";
+import { EventStatus, GuestEnrollSource, GuestEventRecord } from "../../types";
 import { IoWarningOutline } from "react-icons/io5";
 import GuestsTable from "../../components/GuestsTable";
 import { getEvent, getEvents, getGuests } from "../../lib/firebase";
@@ -9,6 +9,7 @@ import { GetStaticPropsContext } from "next";
 import "intl-tel-input/styles";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
+import { ClipLoader } from "react-spinners";
 // @ts-ignore
 const IntlTelInput = dynamic(() => import("intl-tel-input/reactWithUtils"), {
   ssr: false,
@@ -18,12 +19,24 @@ interface Props {
   guestList: GuestEventRecord[];
   title: string;
   eventId: string;
+  eventStatus: EventStatus;
+  hasSentGalleryMessage: boolean;
 }
 
 export default function Home(props: Props) {
   const router = useRouter();
   const [renderCount, setRenderCount] = useState(0);
   const { key } = router.query as { guestId: string; key?: string };
+  const [isSendingGalleryReadyMessage, setIsSendingGalleryReadyMessage] =
+    useState(false);
+  const [hasSentGalleryMessage, setHasSentGalleryMessage] = useState(
+    props.hasSentGalleryMessage
+  );
+
+  const [isClosingEvent, setIsClosingEvent] = useState(false);
+  const [isEventClosed, setIsEventClosed] = useState(
+    props.eventStatus === "COMPLETED"
+  );
 
   // If no management key, redirect to event page
   useEffect(() => {
@@ -47,6 +60,90 @@ export default function Home(props: Props) {
   return (
     <div className="mx-auto max-w-xl py-10 px-2 mb-6">
       <h1 className="text-4xl mb-4">Manage Event</h1>
+      <div>
+        {((key && props.eventStatus === "ACTIVE") ||
+          props.eventStatus === "COMPLETED") && (
+          <div className="sm:col-span-2 my-2 mb-6">
+            <label
+              htmlFor="subscription"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Event Actions
+            </label>
+            <p className="block text-sm text-gray-500 mt-1 mb-3">
+              Send out the gallery link to your guests or close the event so no
+              more guests can join or upload media.
+            </p>
+            <div className="h-12 flex justify-start gap-6 items-center">
+              <button
+                disabled={hasSentGalleryMessage || isSendingGalleryReadyMessage}
+                className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  (hasSentGalleryMessage || isSendingGalleryReadyMessage) &&
+                  "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
+                }`}
+                onClick={async () => {
+                  setIsSendingGalleryReadyMessage(true);
+                  try {
+                    const res = await fetch("/api/sendGalleryMessage", {
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      method: "POST",
+                      body: JSON.stringify({ eventId: props.eventId, key }),
+                    });
+                    const resData = await res.json();
+                    setHasSentGalleryMessage(true);
+                  } catch (error) {
+                    console.error(
+                      "Failed to send gallery ready messages",
+                      error
+                    );
+                  }
+                  setIsSendingGalleryReadyMessage(false);
+                }}
+              >
+                <>
+                  <span>Send Gallery Link</span>
+                  {isSendingGalleryReadyMessage && (
+                    <ClipLoader className="ml-4" size={16} color="white" />
+                  )}
+                </>
+              </button>
+              <button
+                disabled={isEventClosed || isClosingEvent}
+                className={`items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  (isEventClosed || isClosingEvent) &&
+                  "bg-indigo-400 text-indigo-200 hover:bg-indigo-400"
+                }`}
+                onClick={async () => {
+                  setIsClosingEvent(true);
+                  try {
+                    const res = await fetch("/api/closeEvent", {
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      method: "POST",
+                      body: JSON.stringify({ eventId: props.eventId, key }),
+                    });
+                    const resData = await res.json();
+                    setIsEventClosed(true);
+                  } catch (error) {
+                    console.error("Failed to close event", error);
+                  }
+                  setIsClosingEvent(false);
+                }}
+              >
+                <>
+                  <span>Close Event</span>
+                  {isClosingEvent && (
+                    <ClipLoader className="ml-4" size={16} color="white" />
+                  )}
+                </>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="sm:col-span-2 my-2">
         <label
           htmlFor="subscription"
@@ -306,6 +403,8 @@ export async function getStaticProps(
     return {
       props: {
         eventId,
+        hasSentGalleryMessage: event.hasSentGalleryMessage || false,
+        eventStatus: event.status,
         guestList: JSON.parse(JSON.stringify(guestList || [])),
       },
       revalidate: false,
