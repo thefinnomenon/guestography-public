@@ -65,7 +65,7 @@ export default async function handler(
   let guest: Guest | undefined;
   if (
     guestId === "organizer" &&
-    (type === "galleryReadyMessage" || type === "organizerEventStart")
+    (type === "galleryReadyMessage" || type === "organizerScheduledEvent")
   )
     guest = {
       id: "organizer",
