@@ -80,8 +80,8 @@ export default function Home(props: Props) {
 
       <main>
         {key && (
-          <div className="bg-indigo-200 h-12 flex justify-end gap-12 p-8 items-center">
-            <Link href={`/${eventId}/manage`}>
+          <div className="h-12 flex justify-end gap-12 pt-4 pr-2 sm:pt-10 sm:pr-8 items-center">
+            <Link href={`/${eventId}/manage?key=${key}`}>
               <button className="items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                 <span>Manage Event</span>
               </button>

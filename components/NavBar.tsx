@@ -1,19 +1,23 @@
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { IoChevronBackOutline } from "react-icons/io5";
 
 export default function NavBar() {
   const router = useRouter();
   const path = router.pathname;
-  const [query, setQuery] = useState<{ eventId?: string; guestId?: string }>(
-    {}
-  );
+  const [query, setQuery] = useState<{
+    eventId?: string;
+    guestId?: string;
+    key?: string;
+  }>({});
 
   useEffect(() => {
     if (router.isReady) setQuery(router.query);
   }, [router]);
 
-  let buttonData;
+  let buttonData, showBackNavToGallery;
   switch (path) {
     case "/":
       buttonData = {
@@ -27,6 +31,9 @@ export default function NavBar() {
           title: "UPLOAD",
           href: `${query.eventId}/upload/media?guestId=${query.guestId}`,
         };
+      break;
+    case "/[eventId]/manage":
+      showBackNavToGallery = true;
   }
 
   return (
@@ -34,6 +41,14 @@ export default function NavBar() {
       <>
         <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
           <div className="relative flex h-16 items-center justify-between">
+            {showBackNavToGallery && (
+              <Link
+                href={`/${query.eventId}?key=${query.key}`}
+                className="p-4 mr-4"
+              >
+                <IoChevronBackOutline className="h-8 w-8 text-white hover:text-violet-200" />
+              </Link>
+            )}
             <div className="flex flex-row flex-1 flex-shrink-0 items-center sm:items-stretch sm:justify-start">
               <a href="https://guestography.com">
                 <div className="flex items-center text-white">
