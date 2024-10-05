@@ -180,7 +180,7 @@ export default function Example() {
             />
           </div>
           <div className="overflow-hidden">
-            <div className="mx-auto max-w-7xl px-6 pb-12 pt-16 lg:px-8 lg:pt-24">
+            <div className="mx-auto max-w-7xl px-6 pb-12 pt-6 lg:px-8 lg:pt-24">
               <div className="mx-auto max-w-2xl gap-x-14 lg:mx-0 lg:flex lg:max-w-none lg:items-center">
                 <div className="w-full max-w-xl lg:shrink-0 xl:max-w-2xl">
                   <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
@@ -290,7 +290,7 @@ export default function Example() {
           </div>
         </div>
         {/* Collect Media Block */}
-        <div className="flex flex-wrap lg:flex-nowrap flex-col-reverse lg:flex-row mx-auto max-w-7xl px-6 py-12 sm:py-12 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:py-12">
+        <div className="flex flex-wrap lg:flex-nowrap flex-col-reverse lg:flex-row mx-auto max-w-7xl px-6 py-8 lg:flex lg:items-center lg:gap-x-10 lg:px-8">
           <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
             <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
               <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
@@ -317,7 +317,7 @@ export default function Example() {
           </div>
         </div>
         {/* Collect Video Messages Block */}
-        <div className="flex flex-wrap flex-col-reverse lg:flex-nowrap lg:flex-row-reverse mx-auto max-w-7xl px-6 py-12 sm:py-12 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:py-12">
+        {/* <div className="flex flex-wrap flex-col-reverse lg:flex-nowrap lg:flex-row-reverse mx-auto max-w-7xl px-6 py-12 sm:py-12 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:py-12">
           <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
             <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
               <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
@@ -336,7 +336,7 @@ export default function Example() {
               and stiches them together to make a special video for your event.
             </p>
           </div>
-        </div>
+        </div> */}
       </main>
       <footer className="bg-indigo-500">
         <div className="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
