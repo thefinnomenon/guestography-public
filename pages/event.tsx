@@ -13,6 +13,11 @@ const GoogleLocationSearch = dynamic(
   () => import("../components/GoogleLocationSearch"),
   { ssr: false }
 );
+import "intl-tel-input/styles";
+// @ts-ignore
+const IntlTelInput = dynamic(() => import("intl-tel-input/reactWithUtils"), {
+  ssr: false,
+});
 
 const tiers = [
   {
@@ -59,6 +64,7 @@ export default function Form() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [isPhoneValid, setIsPhoneValid] = useState(false);
   const [eventTitle, setEventTitle] = useState("");
   const [eventStart, setEventStart] = useState("");
   const [location, setLocation] = useState<SingleValue<any>>();
@@ -99,6 +105,13 @@ export default function Form() {
       setError(
         "Event must be scheduled for at least an hour in the future. Please modify the event start and click SCHEDULE again."
       );
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Check that phone number is valid
+    if (!isPhoneValid) {
+      setError("Please enter a valid phone number");
       setIsSubmitting(false);
       return;
     }
@@ -304,23 +317,18 @@ export default function Form() {
             <div className="sm:col-span-2">
               <label
                 htmlFor="phone"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Phone
               </label>
-              <div className="relative mt-1 rounded-md shadow-sm">
-                <input
-                  type="text"
-                  name="phone"
-                  id="phone"
-                  autoComplete="tel"
-                  className="block w-full rounded-md border-gray-300 py-3 px-4 focus:border-indigo-500 focus:ring-indigo-500" // pl-20
-                  placeholder="+1-555-987-6543"
-                  onChange={(e) => setPhone(e.target.value)}
-                  value={phone}
-                  required
-                />
-              </div>
+              <IntlTelInput
+                // @ts-ignore
+                onChangeNumber={setPhone}
+                onChangeValidity={setIsPhoneValid}
+                initOptions={{
+                  initialCountry: "us",
+                }}
+              />
             </div>
             <h1 className="mt-8 text-2xl sm:col-span-2">Event Information</h1>
             {/* EVENT TITLE */}

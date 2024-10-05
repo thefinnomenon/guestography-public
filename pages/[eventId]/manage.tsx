@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ImportGuestsFromContacts } from "../../utils/contacts";
 import { formatPhoneNumber, parseGuestListCSV } from "../../utils/format";
 import { EventStatus, GuestEnrollSource, GuestEventRecord } from "../../types";
