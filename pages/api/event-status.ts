@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import { Event } from "../../types";
+import { Event, GuestEventRecord } from "../../types";
 import { iMessageLookup } from "../../lib/loop";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
@@ -45,7 +45,10 @@ export default async function handler(
       const event = (
         await db.collection("events").doc(eventId).get()
       ).data() as Event;
-      const { guests } = event;
+      const guests = (
+        await db.collection("guests").where("eventId", "==", eventId).get()
+      ).docs.map((snap) => snap.data()) as Partial<GuestEventRecord>[];
+
       // Add organizer
       guests.push({
         id: "organizer",
@@ -53,7 +56,7 @@ export default async function handler(
         lastName: event.lastName,
         phone: event.phone,
       });
-      await iMessageLookup(eventId, guests);
+      //await iMessageLookup(eventId, guests);
     }
   } catch (e) {
     console.error("Failed to initiate iMessage lookups", e);

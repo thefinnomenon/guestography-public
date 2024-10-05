@@ -70,7 +70,10 @@ export default async function handler(
       lastName: event.lastName,
       phone: event.phone,
     };
-  else guest = event.guests.find((guest) => guest.id === guestId);
+  else
+    guest = (
+      await db.collection("guests").doc(guestId).get()
+    ).data() as GuestEventRecord;
 
   if (!guest) {
     console.error(`Failed to find guest ${guestId} for event ${eventId}`);
@@ -80,38 +83,38 @@ export default async function handler(
     return;
   }
 
-  let guestRecord;
-  try {
-    // Find guest by phone number with most recent active event
-    const guestQuery = (
-      await db
-        .collection("guests")
-        .where("phone", "==", guest.phone)
-        .where("eventStatus", "==", "ACTIVE")
-        .orderBy("updatedAt", "desc")
-        .get()
-    ).docs;
+  // let guestRecord;
+  // try {
+  //   // Find guest by phone number with most recent active event
+  //   const guestQuery = (
+  //     await db
+  //       .collection("guests")
+  //       .where("phone", "==", guest.phone)
+  //       .where("eventStatus", "==", "ACTIVE")
+  //       .orderBy("updatedAt", "desc")
+  //       .get()
+  //   ).docs;
 
-    if (guestQuery.length === 0) throw Error("Failed to find guest record");
+  //   if (guestQuery.length === 0) throw Error("Failed to find guest record");
 
-    guestRecord = guestQuery[0].data() as GuestEventRecord;
-  } catch (e) {
-    console.error(e);
-    res.status(404).send(e);
-  }
+  //   guestRecord = guestQuery[0].data() as GuestEventRecord;
+  // } catch (e) {
+  //   console.error(e);
+  //   res.status(404).send(e);
+  // }
 
-  if (!guestRecord) {
-    console.error(`Failed to find guest record`, guest.phone);
-    res.status(404).send(`Failed to find guest record`);
-    return;
-  }
+  // if (!guestRecord) {
+  //   console.error(`Failed to find guest record`, guest.phone);
+  //   res.status(404).send(`Failed to find guest record`);
+  //   return;
+  // }
 
   console.log("Found guest", guest.id);
 
   // Format message
   let msg;
   try {
-    msg = formatMessage(type, eventId, event, guest, guestRecord);
+    msg = formatMessage(type, eventId, event, guest);
   } catch (e) {
     console.error("Failed to format message", e);
     res.status(400).send(e);
@@ -119,28 +122,28 @@ export default async function handler(
   }
 
   // If iMessage -> Send iMessage
-  if (guestRecord.iMessage) {
-    console.log("Sending iMessage to ", guest.phone);
-    try {
-      // If not initial message and guest hasn't opted-in -> don't send message
-      if (!guestRecord.optedIn && type !== "mediaInitialMessage") {
-        res.status(200).send("okay");
-        return;
-      }
+  // if (guestRecord.iMessage) {
+  //   console.log("Sending iMessage to ", guest.phone);
+  //   try {
+  //     // If not initial message and guest hasn't opted-in -> don't send message
+  //     if (!guestRecord.optedIn && type !== "mediaInitialMessage") {
+  //       res.status(200).send("okay");
+  //       return;
+  //     }
 
-      await iMessageSend(guest.phone, event.title, msg);
-      console.log("iMessage sent");
-      track("iMessage sent", { eventId, guestId, type });
+  //     await iMessageSend(guest.phone, event.title, msg);
+  //     console.log("iMessage sent");
+  //     track("iMessage sent", { eventId, guestId, type });
 
-      res.status(200).send("okay");
-      return;
-    } catch (e) {
-      console.error("Failed to send iMessage", e);
-      track("iMessage send failure", { eventId, guestId, type });
-      res.status(500).send(e);
-      return;
-    }
-  }
+  //     res.status(200).send("okay");
+  //     return;
+  //   } catch (e) {
+  //     console.error("Failed to send iMessage", e);
+  //     track("iMessage send failure", { eventId, guestId, type });
+  //     res.status(500).send(e);
+  //     return;
+  //   }
+  // }
 
   // Send SMS
   try {
@@ -166,8 +169,8 @@ const formatMessage = (
   type: string,
   eventId: string,
   event: Event,
-  guest: Guest,
-  guestRecord: GuestEventRecord
+  guest: Guest
+  //guestRecord: GuestEventRecord
 ) => {
   const firstName = guest.firstName;
   const eventTitle = event.title;
@@ -175,7 +178,7 @@ const formatMessage = (
   const galleryLink = `https://guestography.com/${eventId}?guestId=${guest.id}`;
   const managementLink = `https://guestography.com/${eventId}?guestId=${guest.id}&key=${event.managementKey}`;
 
-  if (guestRecord.iMessage) {
+  if (false) {
     // iMessage
     switch (type) {
       case "organizerEventStart":
@@ -196,10 +199,12 @@ const formatMessage = (
   } else {
     // SMS
     switch (type) {
+      case "organizerScheduledEvent":
+        return `Hi ${firstName}! Thanks for choosing Guestography. Use this link to manage the event,\n\n${managementLink}.`;
       case "organizerEventStart":
-        return `Hi ${firstName}! Thanks for choosing Guestography. I hope you are excited for your event ${eventTitle}! Use this link to manage the event,\n\n${managementLink}.`;
+        return `Hi ${firstName}! I hope you are excited for your event ${eventTitle}! Use this link to manage the event,\n\n${managementLink}.`;
       case "mediaInitialMessage":
-        return `Hi ${firstName}! Hope you're excited for ${eventTitle}! This event is using Guestography to collect photos, videos, and text and audio messages from everyone. Use this link to share to the event gallery,\n\n${mediaLink}`;
+        return `Hi ${firstName}! Hope you're excited for ${eventTitle}! This event is using Guestography to collect photos and videos from everyone. Use this link to share to the event gallery,\n\n${mediaLink}`;
       // This really shouldn't happen but I suppose there is a chance an iMessage user gets downgraded to SMS after the initial message so we should handle it
       case "optedIn":
         let msg = `Okay, you're in! Share any photos, videos, texts, & audios to the event gallery using this link,\n\n${mediaLink}.`;

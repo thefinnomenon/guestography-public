@@ -25,7 +25,7 @@ import MediaInfo from "mediainfo.js";
 import { createHash } from "crypto";
 const url = require("url");
 const https = require("https");
-import { Event, Guest } from "../../types.js";
+import { Event, Guest, GuestEventRecord } from "../../types.js";
 
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
@@ -62,8 +62,8 @@ export const handleEventStatusChange = functions
   .firestore.document("events/{eventId}")
   .onUpdate(async (change, context) => {
     const { eventId } = context.params;
-    const oldEvent = change.before.data() as any;
-    const event = change.after.data() as any;
+    const oldEvent = change.before.data() as Event;
+    const event = change.after.data() as Event;
 
     console.log(`handleEventStatusChange for ${eventId}`, { oldEvent, event });
 
@@ -72,11 +72,7 @@ export const handleEventStatusChange = functions
       oldEvent.hasSentGalleryMessage !== event.hasSentGalleryMessage &&
       event.hasSentGalleryMessage
     ) {
-      await scheduleGalleryMessageSendTasks(
-        eventId,
-        event.guests,
-        webhookSecret.value()
-      );
+      await scheduleGalleryMessageSendTasks(eventId, webhookSecret.value());
       return;
     }
 
@@ -87,83 +83,29 @@ export const handleEventStatusChange = functions
       `Event ${eventId} status change ${oldEvent.status} to ${event.status}`
     );
 
-    const db = admin.firestore();
-
     switch (event.status) {
       case "PAID":
-        console.log(`Event ${eventId} has been paid. Scheduling...`);
+        console.log("Event paid!", eventId);
 
-        // If event is >30 days away (Google tasks limit),
-        // set event status to WAITING to be scheduled later
-        const nowSeconds = new Date().getTime() / 1000;
-        const secondsTillEvent =
-          new Date(event.date).getTime() / 1000 - nowSeconds;
-        if (secondsTillEvent >= 60 * 60 * 24 * 30) {
-          console.log(
-            `Event ${eventId} is ${Math.floor(
-              secondsTillEvent / (60 * 60 * 24)
-            )} days away so setting to WAITING.`
-          );
-
-          try {
-            // Update event status to WAITING
-            await db
-              .collection("events")
-              .doc(eventId)
-              .update({ status: "WAITING" });
-            console.log(`Updated event ${eventId} with status WAITING`);
-            const eventForAnalytics = {
-              ...event,
-              guests: null,
-              numberOfGuests: event.guests.length,
-            };
-            mixpanel.track("Event waiting", {
-              event: eventForAnalytics,
-              secondsTillEvent,
-            });
-          } catch (error) {
-            console.error("Failed to set event to WAITING", error);
-            const eventForAnalytics = {
-              ...event,
-              guests: null,
-              numberOfGuests: event.guests.length,
-            };
-            mixpanel.track("Event failed", { event: eventForAnalytics });
-            Sentry.captureException(error);
-            await Sentry.flush(2000);
-            throw error;
-          }
-          return;
-        }
-
-        // For events within 30 days, we can just schedule them now
-        try {
-          // Schedule event
-          await scheduleEvents(webhookSecret.value(), [
-            {
-              eventId,
-              event,
+        // Organizer Manage Event Text
+        // Send intial message to event organizer after scheduling (immediate)
+        const setOrganizerScheduledEvent = {
+          httpRequest: {
+            headers: {
+              "Content-Type": "text/json",
             },
-          ]);
-          console.log(`Scheduled event ${eventId}`);
-          const eventForAnalytics = {
-            ...event,
-            guests: null,
-            numberOfGuests: event.guests.length,
-          };
-          mixpanel.track("Event scheduled", { event: eventForAnalytics });
-        } catch (error) {
-          console.error("Failed to schedule event", error);
-          const eventForAnalytics = {
-            ...event,
-            guests: null,
-            numberOfGuests: event.guests.length,
-          };
-          mixpanel.track("Event failed", { event: eventForAnalytics });
-          Sentry.captureException(error);
-          await Sentry.flush(2000);
-          throw error;
-        }
+            httpMethod: "POST",
+            url: "https://guestography.com/api/send",
+            body: formatBody({
+              secret: webhookSecret.value(),
+              eventId,
+              guestId: "organizer",
+              type: "organizerScheduledEvent",
+            }),
+          },
+        };
+        await scheduleTask(parent, setOrganizerScheduledEvent);
+        console.log("Scheduled organizerScheduledEvent for now", eventId);
         break;
       case "SCHEDULED":
         console.log("Event scheduled!", eventId);
@@ -186,27 +128,25 @@ export const handleEventStatusChange = functions
     }
   });
 
-// Every day at midnight find and schedule events with
-// status WAITING and that start within 20 days
-// (Google Cloud Tasks has 30 day limit but 20 gives us a buffer)
+// Every hour schedule events within two hours
 exports.scheduledWaitingEvents = functions
   .runWith({ secrets: [webhookSecret] })
-  .pubsub.schedule("0 0 * * *")
+  .pubsub.schedule("0 * * * *")
   .timeZone("America/New_York")
   .onRun(async () => {
-    console.log("Scheduling waiting events...");
+    console.log("Scheduling events starting within two hours...");
 
     try {
       const db = admin.firestore();
 
-      const twentyDaysFromNow = new Date();
-      twentyDaysFromNow.setDate(twentyDaysFromNow.getDate() + 20);
+      const twoHoursFromNow = new Date();
+      twoHoursFromNow.setDate(twoHoursFromNow.getTime() + 2 * 60 * 60 * 1000);
 
-      // Query for WAITING events that start within 20 days
+      // Query for PAID events that start within 2 hours
       const eventsToBeScheduledRes = await db
         .collection("events")
-        .where("status", "==", "WAITING")
-        .where("date", "<", twentyDaysFromNow.toISOString())
+        .where("status", "==", "PAID")
+        .where("date", "<", twoHoursFromNow.toISOString())
         .get();
 
       console.log(
@@ -220,7 +160,7 @@ exports.scheduledWaitingEvents = functions
 
       // Schedule events
       await scheduleEvents(webhookSecret.value(), events);
-      console.log("Scheduled waiting events");
+      console.log("Scheduled events");
     } catch (error) {
       console.error("Failed to schedule waiting events", error);
       Sentry.captureException(error);
@@ -245,7 +185,7 @@ const scheduleEvents = async (
     return async () => {
       try {
         // Create tasks
-        const tasks = createTasks(
+        const tasks = await createTasks(
           webhookSecret,
           eventObj.eventId,
           eventObj.event
@@ -274,8 +214,6 @@ const scheduleEvents = async (
           ...eventObj.event,
           phone: null,
           email: null,
-          guests: null,
-          numberOfGuests: eventObj.event.guests.length,
         };
         mixpanel.track("Event scheduled", { event: eventForAnalytics });
 
@@ -312,12 +250,13 @@ const scheduleTask = async (parent: any, task: any) => {
   }
 };
 
-const createTasks = (secret: string, eventId: string, event: Event) => {
+const createTasks = async (secret: string, eventId: string, event: Event) => {
+  const db = admin.firestore();
   // Iterate through guests & create tasks
   const tasks: any[] = [];
 
   // Event Status Update Tasks
-  // Set active 30 minutes before event
+  // Set active 2 hours before event
   // - Updates event record to active
   // - Updates all guest records for event to active
   // - Triggers iMessage lookups for all event guests
@@ -333,9 +272,6 @@ const createTasks = (secret: string, eventId: string, event: Event) => {
         eventId,
         status: "ACTIVE",
       }),
-    },
-    scheduleTime: {
-      seconds: formatTime(get30MinutesBefore(event.startAt)),
     },
   };
   tasks.push(setEventActiveTask);
@@ -362,8 +298,12 @@ const createTasks = (secret: string, eventId: string, event: Event) => {
   };
   tasks.push(setOrganizerEventStart);
 
+  const guests = (
+    await db.collection("guests").where("eventId", "==", eventId).get()
+  ).docs.map((doc) => doc.data()) as GuestEventRecord[];
+
   // Add guest tasks
-  event.guests.map((guest: any) => {
+  guests.map((guest: any) => {
     const guestId = guest.id;
 
     // Initial Message Task
@@ -394,9 +334,13 @@ const createTasks = (secret: string, eventId: string, event: Event) => {
 
 const scheduleGalleryMessageSendTasks = async (
   eventId: string,
-  guests: Guest[],
   secret: string
 ) => {
+  const db = admin.firestore();
+  const guests = (
+    await db.collection("guests").where("eventId", "==", eventId).get()
+  ).docs.map((doc) => doc.data()) as GuestEventRecord[];
+
   const scheduleTasksPromises = guests.map((guest) => {
     const task = {
       httpRequest: {
@@ -442,12 +386,6 @@ const formatTime = (date: string) => {
 
 const formatBody = (payload: { [key: string]: any }) => {
   return Buffer.from(JSON.stringify(payload)).toString("base64");
-};
-
-const get30MinutesBefore = (start: string) => {
-  if (!start) return "";
-  const d = new Date(start).getTime();
-  return new Date(d - 30 * 60 * 1000).toISOString().slice(0, -1);
 };
 
 // On media upload, extract metadata and create placeholders
