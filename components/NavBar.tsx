@@ -54,8 +54,8 @@ export default function NavBar() {
                 <div className="flex items-center text-white">
                   <Image
                     className="mr-4"
-                    src="/logo.png"
-                    alt="Guestography"
+                    src="/icon_white.png"
+                    alt="Guestography logo"
                     height={40}
                     width={40}
                   />
