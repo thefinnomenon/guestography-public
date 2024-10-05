@@ -192,7 +192,7 @@ exports.scheduledWaitingEvents = functions
       const db = admin.firestore();
 
       const twoHoursFromNow = new Date();
-      twoHoursFromNow.setDate(twoHoursFromNow.getTime() + 2 * 60 * 60 * 1000);
+      twoHoursFromNow.setTime(twoHoursFromNow.getTime() + 2 * 60 * 60 * 1000);
 
       // Query for PAID events that start within 2 hours
       const eventsToBeScheduledRes = await db
