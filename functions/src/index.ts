@@ -247,7 +247,11 @@ const scheduleEvents = async (
 
         const scheduleTaskRes = await scheduleTask(parent, setEventActiveTask);
 
-        console.log("Scheduled task", scheduleTaskRes);
+        console.log(
+          "Scheduled tasked for ",
+          formatTime(eventObj.event.startAt),
+          scheduleTaskRes
+        );
 
         // Update event status to scheduled
         await db
