@@ -59,7 +59,11 @@ export default function NavBar() {
                     height={40}
                     width={40}
                   />
-                  <span className="text-xl font-medium hidden sm:block">
+                  <span
+                    className={`text-xl font-medium ${
+                      buttonData && "hidden"
+                    } sm:block`}
+                  >
                     Guestography
                   </span>
                 </div>
