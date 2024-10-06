@@ -83,31 +83,7 @@ export default async function handler(
     return;
   }
 
-  // let guestRecord;
-  // try {
-  //   // Find guest by phone number with most recent active event
-  //   const guestQuery = (
-  //     await db
-  //       .collection("guests")
-  //       .where("phone", "==", guest.phone)
-  //       .where("eventStatus", "==", "ACTIVE")
-  //       .orderBy("updatedAt", "desc")
-  //       .get()
-  //   ).docs;
-
-  //   if (guestQuery.length === 0) throw Error("Failed to find guest record");
-
-  //   guestRecord = guestQuery[0].data() as GuestEventRecord;
-  // } catch (e) {
-  //   console.error(e);
-  //   res.status(404).send(e);
-  // }
-
-  // if (!guestRecord) {
-  //   console.error(`Failed to find guest record`, guest.phone);
-  //   res.status(404).send(`Failed to find guest record`);
-  //   return;
-  // }
+  guest = { ...guest, id: guestId };
 
   console.log("Found guest", guest.id);
 
