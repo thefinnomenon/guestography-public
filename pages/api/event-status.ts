@@ -39,9 +39,9 @@ export default async function handler(
   const updatePromises = [];
 
   try {
-    // If event just became active, let's trigger iMessage lookups
+    // If event just became scheduled, let's trigger iMessage lookups
     console.log("Initiating iMessage Lookups...");
-    if (status === "ACTIVE") {
+    if (status === "SCHEDULED") {
       const event = (
         await db.collection("events").doc(eventId).get()
       ).data() as Event;

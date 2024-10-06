@@ -133,16 +133,19 @@ export const updateGuestList = async (
   guestList: Partial<GuestEventRecord>[],
   newGuests: Partial<GuestEventRecord>[]
 ) => {
-  // TODO: use real event state
+  const db = admin.firestore();
+  const event = (
+    await db.collection("events").doc(eventId).get()
+  ).data() as Event;
+
   console.log("Determining unique guests", { eventId, guestList, newGuests });
   const uniqueGuests = determineValidGuests(guestList, newGuests);
-  const db = admin.firestore();
   const batch = db.batch();
   console.log("Adding unique guests", uniqueGuests);
   uniqueGuests.map((guest) =>
     batch.create(db.collection("guests").doc(), {
       eventId: eventId,
-      eventState: "inactive",
+      eventState: event.status,
       iMessage: false,
       optedIn: false,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),

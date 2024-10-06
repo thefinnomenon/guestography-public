@@ -112,6 +112,7 @@ export const handleEventStatusChange = functions
         break;
       case "ACTIVE":
         console.log("Event active!", eventId);
+        await scheduleEventTasksForNow(webhookSecret.value(), eventId, event);
         break;
       case "COMPLETED":
         console.log("Event completed!", eventId);
@@ -138,16 +139,12 @@ export const handleGuestCreation = functions
 
     console.log(`handleGuestCreation for ${guestId}`, { guest });
 
-    if (guest.eventStatus === "SCHEDULED" || guest.eventStatus === "ACTIVE") {
-      console.log("Guest added for event that is ", guest.eventStatus);
+    // If guest was created for an active event, schedule initial message for now
+    if (guest.eventStatus === "ACTIVE") {
+      console.log(
+        "Guest added for event that is already active so sending initial message now"
+      );
 
-      const db = admin.firestore();
-      const event = (
-        await db.collection("events").doc(guest.eventId).get()
-      ).data() as Event;
-
-      // Schedule initial message (Hi, this event is using Guestography...) send at event startAt if event
-      // is scheduled or now if already active
       const mediaInitialMessageTask = {
         httpRequest: {
           headers: {
@@ -162,25 +159,17 @@ export const handleGuestCreation = functions
             type: "mediaInitialMessage",
           }),
         },
-        scheduleTime:
-          guest.eventStatus === "SCHEDULED"
-            ? {
-                seconds: formatTime(event.startAt),
-              }
-            : undefined,
       };
       await scheduleTask(parent, mediaInitialMessageTask);
       console.log(
-        `Scheduled mediaInitialMessageTask for ${
-          event.status === "ACTIVE" ? "now" : "event start"
-        }`,
+        "Scheduled mediaInitialMessageTask for now",
         guest.eventId,
         guest.id
       );
     }
   });
 
-// Every hour schedule events within two hours
+// Every hour schedule events within two hours to turn ACTIVE at startAt
 exports.scheduledWaitingEvents = functions
   .runWith({ secrets: [webhookSecret] })
   .pubsub.schedule("0 * * * *")
@@ -221,6 +210,7 @@ exports.scheduledWaitingEvents = functions
     }
   });
 
+// Schedule events to turn ACTIVE at startAt
 const scheduleEvents = async (
   webhookSecret: string,
   events: { eventId: string; event: Event }[]
@@ -236,24 +226,25 @@ const scheduleEvents = async (
   const eventsFuncArr = await events.map((eventObj) => {
     return async () => {
       try {
-        // Create tasks
-        const tasks = await createTasks(
-          webhookSecret,
-          eventObj.eventId,
-          eventObj.event
-        );
-        console.log(`Created ${tasks.length} tasks`);
+        // Create set ACTIVE task
+        const setEventActiveTask = {
+          httpRequest: {
+            headers: {
+              "Content-Type": "text/json",
+            },
+            httpMethod: "POST",
+            url: "https://guestography.com/api/event-status",
+            body: formatBody({
+              secret: webhookSecret,
+              eventId: eventObj.eventId,
+              status: "ACTIVE",
+            }),
+          },
+        };
 
-        // Schedule tasks in parallel
-        const tasksFuncArr = await tasks.map((task) => {
-          return async () => await scheduleTask(parent, task);
-        });
-        const scheduleTasksRes = await limit(tasksFuncArr, 10);
-        console.log(
-          `Scheduled ${scheduleTasksRes.filter((res: any) => res)}/${
-            tasks.length
-          } tasks`
-        );
+        const scheduleTaskRes = await scheduleTask(parent, setEventActiveTask);
+
+        console.log("Scheduled task", scheduleTaskRes);
 
         // Update event status to scheduled
         await db
@@ -289,6 +280,48 @@ const scheduleEvents = async (
   );
 };
 
+// Event is ACTIVE, schedule tasks for event for now
+const scheduleEventTasksForNow = async (
+  webhookSecret: string,
+  eventId: string,
+  event: Event
+) => {
+  console.log("Scheduling event tasks for now: ", eventId);
+
+  try {
+    // Create tasks
+    const tasks = await createTasks(webhookSecret, eventId, event);
+    console.log(`Created ${tasks.length} tasks`);
+
+    // Schedule tasks in parallel
+    const tasksFuncArr = await tasks.map((task) => {
+      return async () => await scheduleTask(parent, task);
+    });
+    const scheduleTasksRes = await limit(tasksFuncArr, 10);
+    console.log(
+      `Scheduled ${scheduleTasksRes.filter((res: any) => res)}/${
+        tasks.length
+      } tasks`
+    );
+
+    const eventForAnalytics = {
+      ...event,
+      phone: null,
+      email: null,
+    };
+    mixpanel.track("Event scheduled", { event: eventForAnalytics });
+
+    console.log("Scheduled tasks for event", eventId);
+
+    return true;
+  } catch (error) {
+    console.error("Failed to schedule event", error);
+    Sentry.captureException(error);
+    await Sentry.flush(2000);
+    return false;
+  }
+};
+
 const scheduleTask = async (parent: any, task: any) => {
   try {
     const [response] = await client.createTask({ parent, task });
@@ -306,27 +339,6 @@ const createTasks = async (secret: string, eventId: string, event: Event) => {
   const db = admin.firestore();
   // Iterate through guests & create tasks
   const tasks: any[] = [];
-
-  // Event Status Update Tasks
-  // Set active 2 hours before event
-  // - Updates event record to active
-  // - Updates all guest records for event to active
-  // - Triggers iMessage lookups for all event guests
-  const setEventActiveTask = {
-    httpRequest: {
-      headers: {
-        "Content-Type": "text/json",
-      },
-      httpMethod: "POST",
-      url: "https://guestography.com/api/event-status",
-      body: formatBody({
-        secret,
-        eventId,
-        status: "ACTIVE",
-      }),
-    },
-  };
-  tasks.push(setEventActiveTask);
 
   // Organizer Event Start
   // Send intial message to event organizer at event startAt
