@@ -364,7 +364,9 @@ const createTasks = async (secret: string, eventId: string, event: Event) => {
 
   const guests = (
     await db.collection("guests").where("eventId", "==", eventId).get()
-  ).docs.map((doc) => doc.data()) as GuestEventRecord[];
+  ).docs.map((doc) => {
+    return { ...doc.data(), id: doc.id };
+  }) as GuestEventRecord[];
 
   // Add guest tasks
   guests.map((guest: any) => {
