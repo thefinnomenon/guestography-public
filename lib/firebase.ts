@@ -145,7 +145,7 @@ export const updateGuestList = async (
   uniqueGuests.map((guest) =>
     batch.create(db.collection("guests").doc(), {
       eventId: eventId,
-      eventState: event.status,
+      eventStatus: event.status,
       iMessage: false,
       optedIn: false,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -184,7 +184,7 @@ export const addGuest = async (
   console.log("Adding guest", { eventId, guest });
   db.collection("guests").doc().create({
     eventId: eventId,
-    eventState: event.status,
+    eventStatus: event.status,
     iMessage: false,
     optedIn: false,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
