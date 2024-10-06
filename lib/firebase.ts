@@ -133,6 +133,7 @@ export const updateGuestList = async (
   guestList: Partial<GuestEventRecord>[],
   newGuests: Partial<GuestEventRecord>[]
 ) => {
+  // TODO: use real event state
   console.log("Determining unique guests", { eventId, guestList, newGuests });
   const uniqueGuests = determineValidGuests(guestList, newGuests);
   const db = admin.firestore();

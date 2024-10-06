@@ -198,7 +198,7 @@ exports.scheduledWaitingEvents = functions
       const eventsToBeScheduledRes = await db
         .collection("events")
         .where("status", "==", "PAID")
-        .where("date", "<", twoHoursFromNow.toISOString())
+        .where("startAt", "<", twoHoursFromNow.toISOString())
         .get();
 
       console.log(
