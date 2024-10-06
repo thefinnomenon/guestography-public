@@ -239,9 +239,9 @@ const scheduleEvents = async (
               eventId: eventObj.eventId,
               status: "ACTIVE",
             }),
-            scheduleTime: {
-              seconds: formatTime(eventObj.event.startAt),
-            },
+          },
+          scheduleTime: {
+            seconds: formatTime(eventObj.event.startAt),
           },
         };
 
