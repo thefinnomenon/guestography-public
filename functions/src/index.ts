@@ -239,6 +239,9 @@ const scheduleEvents = async (
               eventId: eventObj.eventId,
               status: "ACTIVE",
             }),
+            scheduleTime: {
+              seconds: formatTime(eventObj.event.startAt),
+            },
           },
         };
 
@@ -356,9 +359,6 @@ const createTasks = async (secret: string, eventId: string, event: Event) => {
         type: "organizerEventStart",
       }),
     },
-    scheduleTime: {
-      seconds: formatTime(event.startAt),
-    },
   };
   tasks.push(setOrganizerEventStart);
 
@@ -387,9 +387,6 @@ const createTasks = async (secret: string, eventId: string, event: Event) => {
           guestId,
           type: "mediaInitialMessage",
         }),
-      },
-      scheduleTime: {
-        seconds: formatTime(event.startAt),
       },
     };
     tasks.push(mediaInitialMessageTask);
