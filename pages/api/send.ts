@@ -63,10 +63,7 @@ export default async function handler(
   console.log("Found event", event.title);
 
   let guest: Guest | undefined;
-  if (
-    guestId === "organizer" &&
-    (type === "galleryReadyMessage" || type === "organizerScheduledEvent")
-  )
+  if (guestId === "organizer")
     guest = {
       id: "organizer",
       firstName: event.firstName,
