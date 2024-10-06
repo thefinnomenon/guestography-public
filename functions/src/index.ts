@@ -153,7 +153,7 @@ export const handleGuestCreation = functions
           httpMethod: "POST",
           url: "https://guestography.com/api/send",
           body: formatBody({
-            secret: webhookSecret,
+            secret: webhookSecret.value(),
             eventId: guest.eventId,
             guestId,
             type: "mediaInitialMessage",
@@ -164,7 +164,7 @@ export const handleGuestCreation = functions
       console.log(
         "Scheduled mediaInitialMessageTask for now",
         guest.eventId,
-        guest.id
+        guestId
       );
     }
   });
