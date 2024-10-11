@@ -99,11 +99,11 @@ export default async function handler(
   }
 
   // If shindig, add free year discount
-  let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined =
-    undefined;
-  if (event.plan === "shindig") {
-    discounts = [{ coupon: process.env.STRIPE_SHINDIG_YEAR_FREE_DISCOUNT }];
-  }
+  // let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined =
+  //   undefined;
+  // if (event.plan === "shindig") {
+  //   discounts = [{ coupon: process.env.STRIPE_SHINDIG_YEAR_FREE_DISCOUNT }];
+  // }
 
   // Generate Stripe Checkout Session
   let checkoutSession: Stripe.Checkout.Session;
@@ -118,18 +118,27 @@ export default async function handler(
           quantity: 1,
         },
       ],
-      discounts,
       subscription_data: {
         /* @ts-ignore */
-        billing_cycle_anchor: Math.floor(
-          new Date(event.startAt).getTime() / 1000
-        ),
+        proration_behavior: event.plan === "shindig" ? undefined : "none",
+        /* @ts-ignore */
+        billing_cycle_anchor:
+          event.plan === "shindig"
+            ? undefined
+            : Math.floor(new Date(event.startAt).getTime() / 1000),
+        trial_end:
+          event.plan === "shindig"
+            ? Math.floor(new Date(event.startAt).getTime() / 1000) +
+              365 * 24 * 60 * 60
+            : undefined,
       },
-      allow_promotion_codes: discounts ? undefined : true,
+      allow_promotion_codes: true,
       metadata: { eventId },
       success_url: `${req.headers.origin}/${eventId}/manage?key=${event.managementKey}`,
       cancel_url: `${req.headers.origin}/event?eventId=${eventId}`,
     };
+
+    console.log("Creating Stripe checkout session with params", params);
 
     checkoutSession = await stripe.checkout.sessions.create(params);
   } catch (e) {

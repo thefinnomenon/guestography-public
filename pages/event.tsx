@@ -23,7 +23,7 @@ const tiers = [
   {
     id: "shindig",
     name: "SHINDIG",
-    price: "FREE",
+    price: "$10/year",
     storage: "10GB",
     guests: 10,
   },
@@ -431,10 +431,23 @@ export default function Form() {
                             Recommended
                           </span>
                         )}
+                        {tier.name === "SHINDIG" && (
+                          <div>
+                            <span className="absolute shadow-md top-[-1rem] right-[-1rem] p-2 rounded-md text-sm bg-indigo-500 text-white font-medium">
+                              First year free!
+                            </span>
+                          </div>
+                        )}
                         <div className="px-4 py-5 sm:p-6">
                           <div className="flex justify-between items-center">
                             <p className="text-2xl font-bold">{tier.name}</p>
-                            <p className="text-xl font-medium">{tier.price}</p>
+                            <p
+                              className={`text-xl font-medium ${
+                                tier.name === "SHINDIG" && "line-through"
+                              }`}
+                            >
+                              {tier.price}
+                            </p>
                           </div>
                           {tier.id !== "enterprise" && (
                             <>
