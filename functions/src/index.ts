@@ -509,9 +509,31 @@ export const handleMediaUpload = functions
             metadata,
             blurDataUrl: base64,
           });
+
+          // Update event storage amount
+          if (metadata.filesize)
+            await db.doc(`events/${eventId}`).update({
+              storageInBytes: admin.firestore.FieldValue.increment(
+                metadata.filesize
+              ),
+            });
+          else
+            mixpanel.track("Failed to get media filesize", {
+              eventId,
+              guestId: media.guestId,
+              mediaId,
+              publicUrl: media.publicUrl,
+              privateUrl: media.privateUrl,
+              type: "image",
+              ...flattenObject(metadata),
+            });
+
           mixpanel.track("Media uploaded", {
             eventId,
             guestId: media.guestId,
+            mediaId,
+            publicUrl: media.publicUrl,
+            privateUrl: media.privateUrl,
             type: "image",
             ...flattenObject(metadata),
           });
@@ -579,6 +601,24 @@ export const handleMediaUpload = functions
           await db
             .doc(`events/${eventId}/media/${mediaId}`)
             .update({ metadata, blurDataURL: base64, posterUrl });
+
+          // Update event storage amount
+          if (metadata.filesize)
+            await db.doc(`events/${eventId}`).update({
+              storageInBytes: admin.firestore.FieldValue.increment(
+                metadata.filesize
+              ),
+            });
+          else
+            mixpanel.track("Failed to get media filesize", {
+              eventId,
+              guestId: media.guestId,
+              mediaId,
+              publicUrl: media.publicUrl,
+              privateUrl: media.privateUrl,
+              type: "video",
+              ...flattenObject(metadata),
+            });
 
           console.log("Updated db entry", {
             metadata,
@@ -771,6 +811,34 @@ const getImageMetadata = async (file: string) => {
   const orientation: "portrait" | "landscape" | null =
     height && width ? (height > width ? "portrait" : "landscape") : null;
 
+  let fileSizeInBytes;
+  try {
+    const response = await fetch(file, { method: "HEAD" });
+
+    // Check if the Content-Length header exists
+    const contentLength = response.headers.get("Content-Length");
+
+    if (contentLength) fileSizeInBytes = parseInt(contentLength, 10);
+  } catch (error) {
+    console.error("Error fetching the file size:", error);
+  }
+
+  // Track if we failed to get the dimensions
+  if (!height || !width)
+    mixpanel.track("Failed to get media dimensions", {
+      type: "image",
+      url: file,
+      ...flattenObject(metadata),
+    });
+
+  // Track if we failed to get createdAt
+  if (!createdAt)
+    mixpanel.track("Failed to get media createdAt", {
+      type: "image",
+      url,
+      ...flattenObject(metadata),
+    });
+
   const md: any = {};
   if (location.lat && location.long) md.location = location;
   if (device.make) md.device = device;
@@ -781,7 +849,7 @@ const getImageMetadata = async (file: string) => {
   if (height) md.height = height;
   if (width) md.width = width;
   if (orientation) md.orientation = orientation;
-
+  if (fileSizeInBytes) md.filesize = fileSizeInBytes;
   return md;
 };
 
@@ -886,6 +954,22 @@ const getVideoMetadata = async (
   fileReadHandle && (await fileReadHandle.close());
   mediainfo && mediainfo.close();
 
+  // Track if we failed to get the dimensions
+  if (!height || !width)
+    mixpanel.track("Failed to get media dimensions", {
+      type: "video",
+      url,
+      ...flattenObject(metadata),
+    });
+
+  // Track if we failed to get createdAt
+  if (!createdAt)
+    mixpanel.track("Failed to get media createdAt", {
+      type: "video",
+      url,
+      ...flattenObject(metadata),
+    });
+
   const md: any = {};
   if (location && location.lat && location.long) md.location = location;
   if (device && device.make) md.device = device;
@@ -896,6 +980,7 @@ const getVideoMetadata = async (
   if (height) md.height = height;
   if (width) md.width = width;
   if (orientation) md.orientation = orientation;
+  if (fileSize) md.filesize = fileSize;
 
   return md;
 };
