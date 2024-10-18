@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 // import serviceAccount from "../lib/serviceAccountKey.json";
 import { Event, GuestEventRecord, Interview, Media } from "../types";
 import { determineValidGuests } from "../utils/contacts";
+import ShortUniqueId from "short-unique-id";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -142,8 +143,10 @@ export const updateGuestList = async (
   const uniqueGuests = determineValidGuests(guestList, newGuests);
   const batch = db.batch();
   console.log("Adding unique guests", uniqueGuests);
-  uniqueGuests.map((guest) =>
-    batch.create(db.collection("guests").doc(), {
+  const uid = new ShortUniqueId();
+  uniqueGuests.map((guest) => {
+    const guestId = `${guest.firstName}-${guest.lastName}-${uid()}`;
+    batch.create(db.collection("guests").doc(guestId), {
       eventId: eventId,
       eventStatus: event.status,
       iMessage: false,
@@ -152,8 +155,8 @@ export const updateGuestList = async (
       firstName: guest.firstName,
       lastName: guest.lastName,
       phone: guest.phone,
-    })
-  );
+    });
+  });
   await batch.commit();
   return [...uniqueGuests, ...guestList];
 };
@@ -181,8 +184,9 @@ export const addGuest = async (
     await db.collection("events").doc(eventId).get()
   ).data() as Event;
 
-  console.log("Adding guest", { eventId, guest });
-  db.collection("guests").doc().create({
+  const guestId = `${guest.firstName}-${guest.lastName}-${new ShortUniqueId()}`;
+  console.log("Adding guest", { guestId, eventId, guest });
+  db.collection("guests").doc(guestId).create({
     eventId: eventId,
     eventStatus: event.status,
     iMessage: false,

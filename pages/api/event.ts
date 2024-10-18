@@ -44,16 +44,6 @@ export default async function handler(
     return;
   }
 
-  // Map over guest list & add unique guest ids
-  // const uid = new ShortUniqueId();
-  // event.guests = event.guests.map((guest: any) => {
-  //   return {
-  //     ...guest,
-  //     phone: formatPhoneNumber(guest.phone),
-  //     id: `${guest.firstName}-${guest.lastName}-${uid()}`,
-  //   };
-  // });
-
   // Set initial event status
   event.status = "PENDING";
 
