@@ -6,6 +6,8 @@ module.exports = {
   images: {
     formats: ["image/avif", "image/webp"],
     domains: ["pub-bedeb084f89f4d399783f981c721c4c5.r2.dev"],
+    // Cache images for a year
+    minimumCacheTTL: 31536000,
   },
   i18n: {
     locales: ["en"],

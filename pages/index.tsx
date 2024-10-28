@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MdOutlineMailOutline } from "react-icons/md";
-import { iMessageLookup } from "../lib/loop";
 
 const navigation = [
   {
@@ -198,8 +197,9 @@ export default function Example() {
                   <p className="relative mt-6 text-lg leading-8 text-gray-600 sm:max-w-md lg:max-w-none">
                     With Guestography, your guests will receive texts with
                     instructions on how to record and upload media for your
-                    event. Simple to use, no app to download, and works for both
-                    iPhone & Android (no green message bubble hate!).
+                    event. Simple to use, no app to download, no login needed,
+                    and works for both iPhone & Android (no green message bubble
+                    hate!).
                   </p>
                   <div className="mt-10 flex items-center gap-x-6">
                     {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
@@ -289,7 +289,63 @@ export default function Example() {
             </div>
           </div>
         </div>
+        {/* Create Event Block */}
+        <div className="flex flex-wrap lg:flex-nowrap flex-col-reverse lg:flex-row mx-auto max-w-7xl px-6 py-8 lg:flex lg:items-center lg:gap-x-10 lg:px-8">
+          <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
+            <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
+              <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+              <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+              <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800">
+                <img
+                  className="object-cover object-center  w-[272px] h-[572px]"
+                  src={"/landing-page/create_event_screenshot.png"}
+                  alt="iPhone mockup with example event images"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mb-12 mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
+            <h1 className="mt-10 max-w-lg text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+              Create an event
+            </h1>
+            <p className="mt-6 text-lg leading-8 text-gray-600">
+              Create a Guestography event in just a few minutes and easily
+              manage your guest list by uploading a CSV file, adding guests
+              individually, importing them from your phone's contact list, or by
+              sending the guests a self-enroll link.
+            </p>
+          </div>
+        </div>
         {/* Collect Media Block */}
+        <div className="flex flex-wrap flex-col-reverse lg:flex-nowrap lg:flex-row-reverse mx-auto max-w-7xl px-6 py-12 sm:py-12 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:py-12">
+          <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
+            <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
+              <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+              <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+              <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800">
+                <img
+                  className="object-cover object-center  w-[272px] h-[572px]"
+                  src="/landing-page/guest_text.png"
+                  alt="iPhone mockup with example event images"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mb-12 mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
+            <h1 className="mt-10 max-w-lg text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+              Guests upload media
+            </h1>
+            <p className="mt-6 text-lg leading-8 text-gray-600">
+              When the event starts, your guests will receive a link with
+              instructions on contributing to your event gallery.
+            </p>
+          </div>
+        </div>
+        {/* Media Gallery Block */}
         <div className="flex flex-wrap lg:flex-nowrap flex-col-reverse lg:flex-row mx-auto max-w-7xl px-6 py-8 lg:flex lg:items-center lg:gap-x-10 lg:px-8">
           <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
             <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
@@ -308,35 +364,15 @@ export default function Example() {
           </div>
           <div className="mb-12 mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
             <h1 className="mt-10 max-w-lg text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Collect media from your guests
+              Enjoy the Event Gallery!
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
-              The media service collects photos and videos that your guests took
-              during your event and creates a gallery for everyone to view.
+              After the event is over, everyone recieves a link to the event
+              gallery where they can view, download, and share the best moments
+              captured from the eyes of the guests.
             </p>
           </div>
         </div>
-        {/* Collect Video Messages Block */}
-        {/* <div className="flex flex-wrap flex-col-reverse lg:flex-nowrap lg:flex-row-reverse mx-auto max-w-7xl px-6 py-12 sm:py-12 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:py-12">
-          <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
-            <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
-              <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
-              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
-              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
-              <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
-              <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800"></div>
-            </div>
-          </div>
-          <div className="mb-12 mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
-            <h1 className="mt-10 max-w-lg text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Create a video from guest messages
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              The video message service collects video messages from your guests
-              and stiches them together to make a special video for your event.
-            </p>
-          </div>
-        </div> */}
       </main>
       <footer className="bg-indigo-500">
         <div className="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
