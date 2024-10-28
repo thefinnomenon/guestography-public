@@ -301,7 +301,7 @@ export default function Example() {
                 <img
                   className="object-cover object-center  w-[272px] h-[572px]"
                   src={"/landing-page/create_event_screenshot.png"}
-                  alt="iPhone mockup with example event images"
+                  alt="iPhone mockup with example event creation form"
                 />
               </div>
             </div>
@@ -313,8 +313,8 @@ export default function Example() {
             <p className="mt-6 text-lg leading-8 text-gray-600">
               Create a Guestography event in just a few minutes and easily
               manage your guest list by uploading a CSV file, adding guests
-              individually, importing them from your phone's contact list, or by
-              sending the guests a self-enroll link.
+              individually, importing them from your phone&apos;s contact list,
+              or by sending the guests a self-enroll link.
             </p>
           </div>
         </div>
@@ -328,9 +328,9 @@ export default function Example() {
               <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
               <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800">
                 <img
-                  className="object-cover object-center  w-[272px] h-[572px]"
+                  className="object-cover object-center w-[272px] h-[572px]"
                   src="/landing-page/guest_text.png"
-                  alt="iPhone mockup with example event images"
+                  alt="iPhone mockup with example guest text"
                 />
               </div>
             </div>
