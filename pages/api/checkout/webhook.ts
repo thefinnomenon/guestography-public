@@ -74,7 +74,7 @@ export default async function handler(
         );
         console.log(`Updated event ${eventId} status to ${status}`);
 
-        mixpanel.track(`Event ${status === "PAID"} ? 'paid' : 'unpaid'`, {
+        mixpanel.track(`Event ${status === "PAID" ? "paid" : "unpaid"}`, {
           eventId,
           total: session.amount_total,
           subtotal: session.amount_subtotal,
