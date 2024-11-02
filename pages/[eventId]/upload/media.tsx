@@ -385,10 +385,7 @@ export default function Home(props: Props) {
                     <span className="sr-only">Error</span>
                   </div>
                   <div className="text-left">
-                    iOS Users: When you click <b>Choose Files</b> and open the{" "}
-                    <b>Photo Library</b>, select <b>Option</b> in the bottom
-                    left corner and set <b>Format</b> to <b>Most Compatible</b>.
-                    Also, be patient after clicking <b>Add</b>, especially with
+                    iOS Users: Please be patient after clicking <b>Add</b>, especially with
                     videos as iOS will do some processing on each one.
                   </div>
                 </div>
