@@ -181,53 +181,51 @@ export default function Home(props: Props) {
           CSV guest list, adding them directly from your phone contacts, or
           adding them manually.
         </p>
-        <div className="flex gap-4 items-center">
-          <div>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 mr-4"
-              onClick={() => {
-                navigator.clipboard.writeText(
-                  `https://guestography.com/${props.eventId}/join`
-                );
-                alert("Copied invite link!");
-              }}
-            >
-              Copy Guest Invite Link
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              onClick={() => {
-                setGuestImportError("");
-                document?.getElementById("guest-list")?.click();
-              }}
-            >
-              Import CSV
-            </button>
-            <input
-              type="file"
-              accept=".csv"
-              name="guest-list"
-              id="guest-list"
-              onChange={async (e) => {
-                if (e.target.files) {
-                  const newGuests = await parseGuestListCSV(e.target.files);
-                  updateGuestList(
-                    props.eventId,
-                    guestList,
-                    newGuests,
-                    "csv-import",
-                    setGuestList
-                  );
-                }
-              }}
-              style={{ display: "none" }}
-            />
-          </div>
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="w-full sm:w-fit inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            onClick={() => {
+              navigator.clipboard.writeText(
+                `https://guestography.com/${props.eventId}/join`
+              );
+              alert("Copied invite link!");
+            }}
+          >
+            Copy Guest Invite Link
+          </button>
+          <button
+            type="button"
+            className="w-full sm:w-fit inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            onClick={() => {
+              setGuestImportError("");
+              document?.getElementById("guest-list")?.click();
+            }}
+          >
+            Import CSV
+          </button>
+          <input
+            type="file"
+            accept=".csv"
+            name="guest-list"
+            id="guest-list"
+            onChange={async (e) => {
+              if (e.target.files) {
+                const newGuests = await parseGuestListCSV(e.target.files);
+                updateGuestList(
+                  props.eventId,
+                  guestList,
+                  newGuests,
+                  "csv-import",
+                  setGuestList
+                );
+              }
+            }}
+            style={{ display: "none" }}
+          />
+          <button
+            type="button"
+            className="w-full sm:w-fit inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             onClick={async () => {
               setGuestImportError("");
               try {
