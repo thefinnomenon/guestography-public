@@ -46,32 +46,4 @@ export default async function handler(
     console.log(e);
     throw e;
   }
-
-  // Verify valid request
-  try {
-    const event =
-      ((await db.collection("events").doc(eventId).get()).data() as Event) ||
-      null;
-    if (!event) throw Error("No event found");
-    if (event.managementKey !== key) throw Error("Invalid key");
-    if (event.status === "COMPLETED") throw Error("Event already closed");
-  } catch (e) {
-    console.error(`Failed to update event ${eventId}, ${e}`);
-    res.status(400).send(`Failed to update event ${eventId}, ${e}`);
-    return;
-  }
-
-  // Update status to trigger Firebase function to handle close
-  try {
-    await db.collection("events").doc(eventId).update({
-      status: "COMPLETED",
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-  } catch (e) {
-    console.error(`Failed to update event ${eventId}`);
-    res.status(400).send(`Failed to update event ${eventId}`);
-    return;
-  }
-
-  res.send({});
 }
