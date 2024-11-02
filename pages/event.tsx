@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { ClipLoader } from "react-spinners";
 import { IoWarningOutline } from "react-icons/io5";
+import { RiRefund2Line } from "react-icons/ri";
 import { track } from "../lib/mixpanel";
 import { type SingleValue } from "react-select";
 
@@ -458,6 +459,10 @@ export default function Form() {
                               <div className="flex gap-2 items-center">
                                 <IoPeople className="h-5 w-5" />
                                 Up to {tier.guests} guests
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                <RiRefund2Line className="h-5 w-5" />
+                                7-Day Money Back Guarantee
                               </div>
                             </>
                           )}
