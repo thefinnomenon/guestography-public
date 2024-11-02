@@ -443,7 +443,7 @@ export default function Home(props: Props) {
                         media.map((item) => (
                           <li
                             key={item.file.name}
-                            className="flex w-full justify-between items-center py-4"
+                            className="flex w-full justify-between items-center py-4 !ml-0"
                           >
                             <span className="flex shrink gap-2 items-center whitespace-nowrap truncate overflow-hidden min-w-0">
                               {!item.src && (
