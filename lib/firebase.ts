@@ -187,6 +187,7 @@ export const addGuest = async (
   const guestId = `${guest.firstName}-${guest.lastName}-${new ShortUniqueId()}`;
   console.log("Adding guest", { guestId, eventId, guest });
   db.collection("guests").doc(guestId).create({
+    id: guestId,
     eventId: eventId,
     eventStatus: event.status,
     iMessage: false,
