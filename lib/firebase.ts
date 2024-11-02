@@ -147,6 +147,7 @@ export const updateGuestList = async (
   uniqueGuests.map((guest) => {
     const guestId = `${guest.firstName}-${guest.lastName}-${uid()}`;
     batch.create(db.collection("guests").doc(guestId), {
+      id: guestId,
       eventId: eventId,
       eventStatus: event.status,
       iMessage: false,
@@ -184,7 +185,8 @@ export const addGuest = async (
     await db.collection("events").doc(eventId).get()
   ).data() as Event;
 
-  const guestId = `${guest.firstName}-${guest.lastName}-${new ShortUniqueId()}`;
+  const uid = new ShortUniqueId();
+  const guestId = `${guest.firstName}-${guest.lastName}-${uid()}`;
   console.log("Adding guest", { guestId, eventId, guest });
   db.collection("guests").doc(guestId).create({
     id: guestId,
