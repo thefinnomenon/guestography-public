@@ -405,7 +405,7 @@ export async function getStaticProps(
         eventStatus: event.status,
         guestList: JSON.parse(JSON.stringify(guestList || [])),
       },
-      revalidate: false,
+      revalidate: 0,
     };
   } catch (e) {
     console.error(e);
