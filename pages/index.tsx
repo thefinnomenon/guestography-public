@@ -5,7 +5,7 @@ import { MdOutlineMailOutline } from "react-icons/md";
 const navigation = [
   {
     name: "Email",
-    href: "mailto:support@guestography.com",
+    href: "mailto:chris@guestography.com",
     icon: (props: any) => <MdOutlineMailOutline size={24} />,
   },
   // {
