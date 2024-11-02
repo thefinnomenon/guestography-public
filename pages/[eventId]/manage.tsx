@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { ImportGuestsFromContacts } from "../../utils/contacts";
 import { formatPhoneNumber, parseGuestListCSV } from "../../utils/format";
-import { EventStatus, GuestEnrollSource, GuestEventRecord } from "../../types";
+import { Event, GuestEnrollSource, GuestEventRecord } from "../../types";
 import { IoWarningOutline } from "react-icons/io5";
 import GuestsTable from "../../components/GuestsTable";
 import { getEvent, getEvents, getGuests } from "../../lib/firebase";
-import { GetStaticPropsContext } from "next";
 import "intl-tel-input/styles";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
@@ -15,39 +14,52 @@ const IntlTelInput = dynamic(() => import("intl-tel-input/reactWithUtils"), {
   ssr: false,
 });
 
-interface Props {
-  guestList: GuestEventRecord[];
-  title: string;
-  eventId: string;
-  eventStatus: EventStatus;
-  hasSentGalleryMessage: boolean;
-}
-
-export default function Home(props: Props) {
+export default function Home() {
   const router = useRouter();
   const [renderCount, setRenderCount] = useState(0);
-  const { key } = router.query as { guestId: string; key?: string };
-  const [isSendingGalleryReadyMessage, setIsSendingGalleryReadyMessage] =
+  const { eventId, key } = router.query as { eventId: string, key?: string };
+  const [event, setEvent] = useState<Event | undefined>();
+  const [guestList, setGuestList] = useState<Partial<GuestEventRecord>[]>();
+    const [isSendingGalleryReadyMessage, setIsSendingGalleryReadyMessage] =
     useState(false);
   const [hasSentGalleryMessage, setHasSentGalleryMessage] = useState(
-    props.hasSentGalleryMessage
+    true
   );
-
   const [isClosingEvent, setIsClosingEvent] = useState(false);
   const [isEventClosed, setIsEventClosed] = useState(
-    props.eventStatus === "COMPLETED"
+    true
   );
+  const [eventStatus, setEventStatus] = useState('PAID');
+
+  useEffect(() => {
+    const fetchEventData = async () => {
+      try {
+        const res = await fetch(`/api/getManageData?eventId=${eventId}&key=${key}`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          method: "GET",
+        });
+        const { event: e, guestList: guests } = await res.json();
+        setEvent(e);
+        setHasSentGalleryMessage(e?.hasSentGalleryMessage || false);
+        setIsEventClosed(e?.status === "COMPLETED" || false);
+        setEventStatus(e?.status || 'COMPLETED');
+        setGuestList(guests);
+      } catch (error) {
+        console.error("Failed to fetch event data", error);
+      }
+    }
+    if(eventId && key) fetchEventData();
+  }, [eventId, key])
 
   // If no management key, redirect to event page
   useEffect(() => {
     // Not sure why but key doesn't get defined until the second render
-    if (!key && renderCount === 1) router.replace(`/${props.eventId}`);
+    if (!key && renderCount === 1) router.replace(`/${eventId}`);
     setRenderCount(renderCount + 1);
-  }, [key, router, props.eventId]);
+  }, [key, router, eventId]);
 
-  const [guestList, setGuestList] = useState<Partial<GuestEventRecord>[]>(
-    props.guestList
-  );
   const [guestImportError, setGuestImportError] = useState("");
   const [addGuestFirstName, setAddGuestFirstName] = useState("");
   const [addGuestLastName, setAddGuestLastName] = useState("");
@@ -61,8 +73,8 @@ export default function Home(props: Props) {
     <div className="mx-auto max-w-xl py-10 px-2 mb-6">
       <h1 className="text-4xl mb-4">Manage Event</h1>
       <div>
-        {((key && props.eventStatus === "ACTIVE") ||
-          props.eventStatus === "COMPLETED") && (
+        {((key && eventStatus === "ACTIVE") ||
+          eventStatus === "COMPLETED") && (
           <div className="sm:col-span-2 my-2 mb-6">
             <label
               htmlFor="subscription"
@@ -89,7 +101,7 @@ export default function Home(props: Props) {
                         "Content-Type": "application/json",
                       },
                       method: "POST",
-                      body: JSON.stringify({ eventId: props.eventId, key }),
+                      body: JSON.stringify({ eventId: eventId, key }),
                     });
                     const resData = await res.json();
                     setHasSentGalleryMessage(true);
@@ -123,7 +135,7 @@ export default function Home(props: Props) {
                         "Content-Type": "application/json",
                       },
                       method: "POST",
-                      body: JSON.stringify({ eventId: props.eventId, key }),
+                      body: JSON.stringify({ eventId: eventId, key }),
                     });
                     const resData = await res.json();
                     setIsEventClosed(true);
@@ -181,13 +193,13 @@ export default function Home(props: Props) {
           CSV guest list, adding them directly from your phone contacts, or
           adding them manually.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
+        {guestList && (<div className="flex flex-col sm:flex-row gap-4 items-center">
           <button
             type="button"
             className="w-full sm:w-fit inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-2 py-2 text-md font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             onClick={() => {
               navigator.clipboard.writeText(
-                `https://guestography.com/${props.eventId}/join`
+                `https://guestography.com/${eventId}/join`
               );
               alert("Copied invite link!");
             }}
@@ -213,7 +225,7 @@ export default function Home(props: Props) {
               if (e.target.files) {
                 const newGuests = await parseGuestListCSV(e.target.files);
                 updateGuestList(
-                  props.eventId,
+                  eventId,
                   guestList,
                   newGuests,
                   "csv-import",
@@ -230,7 +242,7 @@ export default function Home(props: Props) {
               setGuestImportError("");
               try {
                 updateGuestList(
-                  props.eventId,
+                  eventId,
                   guestList,
                   await ImportGuestsFromContacts(),
                   "contacts-import",
@@ -243,7 +255,7 @@ export default function Home(props: Props) {
           >
             Import From Phone
           </button>
-        </div>
+        </div>)}
         {guestImportError !== "" && (
           <div
             className="flex justify-start p-4 mt-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200"
@@ -260,8 +272,8 @@ export default function Home(props: Props) {
           </div>
         )}
         <GuestsTable
-          eventId={props.eventId}
-          guests={guestList}
+          eventId={eventId}
+          guests={guestList || []}
           setGuests={setGuestList}
         />
         <div className="flex flex-col sm:flex-row gap-4 mb-3">
@@ -339,9 +351,10 @@ export default function Home(props: Props) {
               : "hover:bg-indigo-700"
           } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
           onClick={() => {
+            if (!guestList) return
             setGuestImportError("");
             updateGuestList(
-              props.eventId,
+              eventId,
               guestList,
               [
                 {
@@ -366,81 +379,11 @@ export default function Home(props: Props) {
           ADD GUEST
         </button>
         <div className="float-right text-lg mt-2">
-          Guest Count: {guestList.length}
+          Guest Count: {guestList?.length || 0}
         </div>
       </div>
     </div>
   );
-}
-
-export async function getStaticProps(
-  context: GetStaticPropsContext<{ eventId: string }>
-) {
-  // Get eventId from URL
-  const eventId = context?.params?.eventId;
-
-  // If no eventId, return 404
-  if (!eventId)
-    return {
-      notFound: true,
-    };
-
-  try {
-    // Get event from db
-    const event = await getEvent(eventId);
-
-    // If event doesn't exist
-    if (!event)
-      return {
-        notFound: true,
-      };
-
-    // Get guests
-    const guestList = await getGuests(eventId);
-
-    return {
-      props: {
-        eventId,
-        hasSentGalleryMessage: event.hasSentGalleryMessage || false,
-        eventStatus: event.status,
-        guestList: JSON.parse(JSON.stringify(guestList || [])),
-      },
-      revalidate: 1,
-    };
-  } catch (e) {
-    console.error(e);
-    return {
-      notFound: true,
-    };
-  }
-}
-
-export async function getStaticPaths() {
-  try {
-    // Fetch events from db
-    const events = await getEvents();
-
-    // If no events return 404
-    if (!events)
-      return {
-        notFound: true,
-      };
-
-    // Create paths from events
-    const paths = events.map((event) => {
-      return { params: { eventId: event.id } };
-    });
-
-    return {
-      paths,
-      fallback: "blocking",
-    };
-  } catch (e) {
-    console.error(e);
-    return {
-      notFound: true,
-    };
-  }
 }
 
 const updateGuestList = async (
