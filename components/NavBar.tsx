@@ -1,21 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
 import { IoChevronBackOutline } from "react-icons/io5";
 
 export default function NavBar() {
   const router = useRouter();
   const path = router.pathname;
-  const [query, setQuery] = useState<{
-    eventId?: string;
-    guestId?: string;
-    key?: string;
-  }>({});
-
-  useEffect(() => {
-    if (router.isReady) setQuery(router.query);
-  }, [router]);
+  const { eventId, guestId, key } = router.query;
 
   let buttonData, showBackNavToGallery;
   switch (path) {
@@ -26,11 +17,12 @@ export default function NavBar() {
       };
       break;
     case "/[eventId]":
-      buttonData = query.eventId &&
-        query.guestId && {
+      if (eventId) {
+        buttonData = {
           title: "UPLOAD",
-          href: `${query.eventId}/upload/media?guestId=${query.guestId}`,
+          href: `/${eventId}/upload/media`,
         };
+      }
       break;
     case "/[eventId]/manage":
       showBackNavToGallery = true;
@@ -43,7 +35,7 @@ export default function NavBar() {
           <div className="relative flex h-16 items-center justify-between">
             {showBackNavToGallery && (
               <Link
-                href={`/${query.eventId}?key=${query.key}`}
+                href={`/${eventId}?key=${key}`}
                 className="p-4 mr-4"
               >
                 <IoChevronBackOutline className="h-8 w-8 text-white hover:text-violet-200" />

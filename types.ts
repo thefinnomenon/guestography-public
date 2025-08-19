@@ -19,14 +19,12 @@ export interface Event {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
   title: string;
   startAt: string;
   endAt: string;
   location: Location;
-  plan: "shindig" | "gathering" | "celebration" | "festivity" | "enterprise";
   managementKey: string;
-  hasSentGalleryMessage?: boolean;
+  plan: "standard";
 }
 
 export interface Location {
@@ -34,36 +32,11 @@ export interface Location {
   label?: string;
   latLng: { lat: string; lng: string };
 }
-export interface Guest {
-  id: string;
-  phone: string;
-  email?: string;
-  firstName: string;
-  lastName: string;
-}
-
-export interface InterviewsService {
-  enabled: boolean;
-  orientation: "landscape" | "portrait";
-  initialMessage: Message;
-  reminderMessage: Message;
-}
 
 export interface MediaService {
   enabled: boolean;
-  initialMessage: Message;
-  collectionMessage: Message;
 }
 
-export interface Message {
-  message: string;
-  schedule: string;
-}
-
-export interface GuestTag {
-  id: string;
-  name: string;
-}
 
 export interface Metadata {
   fileExt: string;
@@ -80,20 +53,8 @@ export interface Metadata {
   duration?: number;
 }
 
-export interface Interview {
-  id: string;
-  guestId: string;
-  guest: GuestTag[];
-  publicUrl: string;
-  posterUrl: string;
-  blurDataURL: string;
-  url: string;
-  metadata: Metadata;
-}
-
 export interface Media {
   id: string;
-  guestId: string;
   blurDataURL?: string;
   posterUrl?: string;
   publicUrl: string;
@@ -107,26 +68,7 @@ export interface GalleryMedia {
   height: number;
   width: number;
   type: "image" | "video";
-  guest: string;
 }
 
-export type UploadType = "interview" | "media";
+export type UploadType = "media";
 
-export type GuestEventRecord = {
-  id: string;
-  phone: string;
-  email?: string;
-  firstName: string;
-  lastName: string;
-  eventId: string;
-  eventStatus: EventStatus;
-  iMessage: boolean;
-  optedIn: boolean;
-  updatedAt: string;
-};
-
-export type GuestEnrollSource =
-  | "self-enroll"
-  | "csv-import"
-  | "contacts-import"
-  | "manual-import";

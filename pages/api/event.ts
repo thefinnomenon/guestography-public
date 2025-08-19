@@ -66,25 +66,10 @@ export default async function handler(
 
   console.log("Generating Stripe Checkout Session for event ", eventId);
 
-  let price;
-  switch (event.plan) {
-    case "shindig":
-      price = process.env.STRIPE_SHINDIG_PRICE_ID;
-      break;
-    case "gathering":
-      price = process.env.STRIPE_GATHERING_PRICE_ID;
-      break;
-    case "celebration":
-      price = process.env.STRIPE_CELEBRATION_PRICE_ID;
-      break;
-    case "festivity":
-      price = process.env.STRIPE_FESTIVITY_PRICE_ID;
-      break;
-  }
-
+  const price = process.env.STRIPE_STANDARD_PRICE_ID;
   if (!price) {
-    console.error("Invalid event plan");
-    res.status(400).send("Invalid event plan");
+    console.error("Standard price ID not set");
+    res.status(400).send("Standard price ID not set");
     return;
   }
 
@@ -109,18 +94,7 @@ export default async function handler(
         },
       ],
       subscription_data: {
-        /* @ts-ignore */
-        proration_behavior: event.plan === "shindig" ? undefined : "none",
-        /* @ts-ignore */
-        billing_cycle_anchor:
-          event.plan === "shindig"
-            ? undefined
-            : Math.floor(new Date(event.startAt).getTime() / 1000),
-        trial_end:
-          event.plan === "shindig"
-            ? Math.floor(new Date(event.startAt).getTime() / 1000) +
-              365 * 24 * 60 * 60
-            : undefined,
+        billing_cycle_anchor: Math.floor(new Date(event.startAt).getTime() / 1000),
       },
       allow_promotion_codes: true,
       metadata: { eventId },

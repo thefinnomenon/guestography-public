@@ -2,13 +2,8 @@ import { GetStaticPropsContext } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { ClipLoader } from "react-spinners";
-import {
-  getEvent,
-  getEvents,
-  getInterview,
-  getMedia,
-} from "../../lib/firebase";
-import { Interview, Media, GalleryMedia, EventStatus } from "../../types";
+import { getEvent, getEvents, getMedia } from "../../lib/firebase";
+import { GalleryMedia, EventStatus } from "../../types";
 import PhotoAlbum, { RenderPhoto } from "react-photo-album";
 import Lightbox, {
   ContainerRect,
@@ -34,33 +29,32 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { MdOutlineFileDownload } from "react-icons/md";
 import { track, identify } from "../../lib/mixpanel";
 import { useRouter } from "next/router";
-import { EventAndGuestContext } from "../../context/EventAndGuestContext";
+import { EventContext } from "../../context/EventContext";
 import Link from "next/link";
+import Cookies from "js-cookie";
 
 interface Props {
   title: string;
   eventId: string;
-  interview?: Interview;
   media?: GalleryMedia[];
   unsorted?: GalleryMedia[];
   eventStatus: EventStatus;
-  hasSentGalleryMessage: boolean;
 }
 
 export default function Home(props: Props) {
   const router = useRouter();
-  const { guestId, key } = router.query as { guestId: string; key?: string };
+  const { guestId, key, showEmailModal } = router.query as {
+    guestId: string;
+    key?: string;
+    showEmailModal?: string;
+  };
   if (guestId) identify(guestId);
-  const { title, interview, media, unsorted, eventId } = props;
+  const { title, media, unsorted, eventId } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
-  const [showInterviewFacade, setShowInterviewFacade] = useState(true);
-  const [isDownloadingInterview, setIsDownloadingInterview] = useState(false);
-  const [
-    interviewVideoPercentageComplete,
-    setInterviewVideoPercentageComplete,
-  ] = useState(0);
-  const [downloadList, setDownloadList] = useState([]);
+  const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
 
   useEffect(() => {
     const slidesMedia = media ? media.map((m) => mapMediatoSlides(m)) : [];
@@ -69,6 +63,63 @@ export default function Home(props: Props) {
       : [];
     setSlides([...slidesMedia, ...slidesUnsorted]);
   }, [media, unsorted]);
+
+  useEffect(() => {
+    // Check if we should show the email modal
+    if (showEmailModal === "true") {
+      const hasEmailCookie = Cookies.get("guestEmail");
+      if (!hasEmailCookie) {
+        setShowEmailCapture(true);
+      }
+      // Clean up the URL
+      const newUrl = `/${eventId}`;
+      router.replace(newUrl, undefined, { shallow: true });
+    }
+  }, [showEmailModal, eventId, router]);
+
+  const handleEmailSubmit = async () => {
+    if (!emailInput.trim()) return;
+
+    setIsSubmittingEmail(true);
+    const trimmedEmail = emailInput.trim().toLowerCase();
+    
+    // Get name from guestName cookie
+    const savedGuestName = Cookies.get(`guestName_${eventId}`) || "Anonymous";
+
+    try {
+      // Save email in cookie (never expires)
+      Cookies.set("guestEmail", trimmedEmail, { expires: 365 * 10 });
+
+      // Save to database via API
+      const response = await fetch("/api/saveUser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          name: savedGuestName,
+          eventId: eventId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save user");
+      }
+
+      track("Email captured after upload", {
+        eventId,
+        guestName: savedGuestName,
+        email: trimmedEmail,
+      });
+
+      setShowEmailCapture(false);
+    } catch (error) {
+      console.error("Error saving email:", error);
+    } finally {
+      setIsSubmittingEmail(false);
+    }
+  };
 
   return (
     <div>
@@ -80,7 +131,7 @@ export default function Home(props: Props) {
 
       <main>
         {key && (
-          <div className="h-12 flex justify-end gap-12 pt-4 pr-2 sm:pt-10 sm:pr-8 items-center">
+          <div className="h-12 flex justify-end gap-4 pt-4 pr-2 sm:pt-10 sm:pr-8 items-center">
             <Link href={`/${eventId}/manage?key=${key}`}>
               <button className="items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                 <span>Manage Event</span>
@@ -94,117 +145,7 @@ export default function Home(props: Props) {
               {title} Gallery
             </h1>
             <div className="mt-12">
-              {/* {interview && (
-                <>
-                  <h2 className="text-2xl font-bold mb-4">Interview</h2>
-                  <div className="relative">
-                    {showInterviewFacade ? (
-                      <div
-                        onClick={(e) => {
-                          // Facade was clicked -> swap in video
-                          if (showInterviewFacade)
-                            setShowInterviewFacade(false);
-                        }}
-                      >
-                        <div className="w-full h-full absolute flex justify-center items-center">
-                          <svg
-                            className="play-btn w-20 h-20 fill-white cursor-pointer"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 311.69 311.69"
-                          >
-                            <path d="M155.84,0A155.85,155.85,0,1,0,311.69,155.84,155.84,155.84,0,0,0,155.84,0Zm0,296.42A140.58,140.58,0,1,1,296.42,155.84,140.58,140.58,0,0,1,155.84,296.42Z"></path>
-                            <polygon points="218.79 155.84 119.22 94.34 119.22 217.34 218.79 155.84"></polygon>
-                          </svg>
-                        </div>
-
-                        <Image
-                          alt={`Interview video for ${title}`}
-                          src={interview.posterUrl}
-                          priority
-                          // @ts-ignore
-                          placeholder={
-                            interview.blurDataURL ? "blur" : undefined
-                          }
-                          // @ts-ignore
-                          blurDataURL={interview.blurDataURL}
-                          // @ts-ignore
-                          width={interview.metadata.width}
-                          // @ts-ignore
-                          height={interview.metadata.height}
-                          style={{
-                            width: "100%",
-                            height: "auto",
-                            padding: 0,
-                          }}
-                          className="rounded-md"
-                          // Two columns, three columns, four columns (default)
-                          sizes="(max-width: 400px) 50vw, (max-width: 800px) 33vw, 25vw"
-                          // {...restImageProps}
-                        />
-                      </div>
-                    ) : (
-                      <video
-                        id="interview-video"
-                        className="rounded-md"
-                        width={interview.metadata.width}
-                        height={interview.metadata.height}
-                        autoPlay
-                        onPlay={() => {
-                          track("Interview video played", { eventId, guestId });
-                        }}
-                        onTimeUpdate={() => {
-                          const video = document.getElementById(
-                            "interview-video"
-                          ) as HTMLVideoElement;
-                          const percentageComplete = Math.floor(
-                            (video.currentTime / video.duration) * 100
-                          );
-                          if (
-                            percentageComplete >
-                            interviewVideoPercentageComplete + 9
-                          ) {
-                            setInterviewVideoPercentageComplete(
-                              percentageComplete
-                            );
-                            track(
-                              `${percentageComplete}% of interview video watched`,
-                              { eventId, guestId }
-                            );
-                          }
-                        }}
-                        onEnded={() => {
-                          track("Interview video ended", { eventId, guestId });
-                        }}
-                        src={`${interview.publicUrl}`}
-                        preload="none"
-                        poster={interview.posterUrl}
-                        controls
-                      />
-                    )}
-                    <button
-                      aria-label="Download"
-                      className="absolute top-2 right-2"
-                      onClick={async () => {
-                        setIsDownloadingInterview(true);
-                        await downloadMedia(interview.publicUrl);
-                        setIsDownloadingInterview(false);
-                        track("Interview downloaded", { eventId, guestId });
-                      }}
-                      disabled={isDownloadingInterview}
-                    >
-                      {isDownloadingInterview ? (
-                        <ClipLoader className="mr-1" size={16} color="white" />
-                      ) : (
-                        <MdOutlineFileDownload
-                          size="1.5rem"
-                          className="mt-1 text-white hover:text-indigo-200 cursor-pointer"
-                        />
-                      )}
-                    </button>
-                  </div>
-                </>
-              )} */}
-              <EventAndGuestContext.Provider value={{ eventId, guestId }}>
+              <EventContext.Provider value={{ eventId }}>
                 <h2 className="text-2xl font-bold mt-8 mb-4">Media</h2>
                 {media && (
                   <PhotoAlbum
@@ -278,20 +219,94 @@ export default function Home(props: Props) {
                     }}
                   />
                 )}
-              </EventAndGuestContext.Provider>
+              </EventContext.Provider>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Email Capture Modal */}
+      {showEmailCapture && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4 text-center">
+            <div
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+              onClick={() => setShowEmailCapture(false)}
+            />
+            <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md sm:p-6">
+              <div>
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                  <svg
+                    className="h-6 w-6 text-green-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4.5 12.75l6 6 9-13.5"
+                    />
+                  </svg>
+                </div>
+                <div className="mt-3 text-center sm:mt-5">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    Your photos look amazing!
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Get 50% off Guestography for your next event. We'll send
+                      you an exclusive discount code.
+                    </p>
+                  </div>
+                  <div className="mt-4">
+                    <input
+                      type="email"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleEmailSubmit();
+                        }
+                      }}
+                      placeholder="your@email.com"
+                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-6">
+                <button
+                  type="button"
+                  onClick={handleEmailSubmit}
+                  disabled={!emailInput.trim() || isSubmittingEmail}
+                  className={`inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:text-sm ${
+                    emailInput.trim() && !isSubmittingEmail
+                      ? "bg-indigo-600 hover:bg-indigo-700"
+                      : "bg-gray-300 cursor-not-allowed"
+                  }`}
+                >
+                  {isSubmittingEmail ? (
+                    <ClipLoader size={20} color="white" />
+                  ) : (
+                    "Get My Discount Code"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 const renderPhoto: RenderPhoto = ({
   photo,
-  layout,
   layoutOptions,
-  imageProps: { alt, src, style, sizes, onClick, ...restImageProps },
+  imageProps: { alt, src, style, sizes, onClick },
 }) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [loading, setLoading] = useState(false);
@@ -304,7 +319,8 @@ const renderPhoto: RenderPhoto = ({
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const videoRef = useRef<HTMLVideoElement>();
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { eventId, guestId } = useContext(EventAndGuestContext);
+  const { eventId } = useContext(EventContext);
+  const guestId = "";
 
   // @ts-ignore
   const guest = photo.guest;
@@ -403,7 +419,7 @@ const renderPhoto: RenderPhoto = ({
             />
           ) : (
             <div
-              onClick={(e) => {
+              onClick={() => {
                 track("Slider opened", {
                   eventId,
                   guestId,
@@ -654,14 +670,9 @@ export async function getStaticProps(
         notFound: true,
       };
 
-    // Get interview from db
-    let interview = await getInterview(eventId);
-
     // Get media from db
     let { media, unsortedMedia } = await getMedia(eventId);
 
-    // This is to make the Firestore timestamp object serializable
-    interview = interview ? JSON.parse(JSON.stringify(interview)) : null;
     media = media ? JSON.parse(JSON.stringify(media)) : null;
     unsortedMedia = unsortedMedia
       ? JSON.parse(JSON.stringify(unsortedMedia))
@@ -677,11 +688,11 @@ export async function getStaticProps(
         // Don't lazy load the first 12 images (above the fold)
         priority: index < 12,
         type: m.metadata?.mimeType?.includes("image") ? "image" : "video",
-        guest: m.guestId,
+        guest: m.id,
       };
     });
 
-    const galleryUnsortedMedia = unsortedMedia.map((m, index) => {
+    const galleryUnsortedMedia = unsortedMedia.map((m) => {
       return {
         src: m.publicUrl,
         height: m.metadata.height,
@@ -689,7 +700,7 @@ export async function getStaticProps(
         blurDataURL: m.blurDataURL || null,
         poster: m.posterUrl || null,
         type: m.metadata?.mimeType?.includes("image") ? "image" : "video",
-        guest: m.guestId,
+        guest: m.id,
       };
     });
 
@@ -697,10 +708,8 @@ export async function getStaticProps(
       props: {
         title: event.title,
         eventId,
-        interview,
         media: galleryMedia,
         unsorted: galleryUnsortedMedia,
-        hasSentGalleryMessage: event.hasSentGalleryMessage || false,
         eventStatus: event.status,
       },
       revalidate: 60,

@@ -14,6 +14,7 @@ import { MultipartFileUploader } from "../../../utils/uppy";
 import Uppy from "@uppy/core";
 import "react-circular-progressbar/dist/styles.css";
 import { checkIos } from "../../../utils/platformDetection";
+import Cookies from "js-cookie";
 
 interface Props {
   title: string;
@@ -35,11 +36,9 @@ interface MediaItem {
 export default function Home(props: Props) {
   const { title, eventId } = props;
 
-  let guestId = "";
-  if (typeof window !== "undefined" && router.query.guestId) {
-    guestId = router.query.guestId as string;
-    identify(guestId);
-  }
+  const [guestName, setGuestName] = useState<string>("");
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [nameInput, setNameInput] = useState("");
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [multipartFileUploader, setMultipartFileUploader] = useState<Uppy>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +47,16 @@ export default function Home(props: Props) {
 
   let isIos = false;
   if (typeof window !== "undefined") isIos = checkIos();
+
+  // Check for existing guest name in cookie on mount
+  useEffect(() => {
+    const savedName = Cookies.get(`guestName_${eventId}`);
+    if (savedName) {
+      setGuestName(savedName);
+    } else {
+      setShowNameModal(true);
+    }
+  }, [eventId]);
 
   // Handle updates
   useEffect(() => {
@@ -137,24 +146,29 @@ export default function Home(props: Props) {
       if (isComplete) {
         setIsSubmitting(false);
         router.push(
-          `/success?eventId=${eventId}&guestId=${guestId}&type=media_upload`
+          `/${eventId}?showEmailModal=true&guestName=${encodeURIComponent(guestName)}`
         );
       }
     };
 
-    setMultipartFileUploader(
-      MultipartFileUploader({
-        eventId,
-        guestId,
-        uploadType: "media",
-        onProgressUpdate,
-        onUploadSuccess,
-        onUploadFail,
-        onComplete,
-        onUploadStart,
-      })
-    );
-  }, [eventId, guestId]);
+    if (guestName) {
+      // Sanitize guestName for use in file IDs (replace spaces with hyphens)
+      const sanitizedGuestId = guestName.replace(/\s+/g, '-');
+      
+      setMultipartFileUploader(
+        MultipartFileUploader({
+          eventId,
+          guestId: sanitizedGuestId,
+          uploadType: "media",
+          onProgressUpdate,
+          onUploadSuccess,
+          onUploadFail,
+          onComplete,
+          onUploadStart,
+        })
+      );
+    }
+  }, [eventId, guestName]);
 
   // Load selected files and set media previews (disabled)
   // Note: Since these are all high res images, ~20 already crashed the Android
@@ -175,9 +189,24 @@ export default function Home(props: Props) {
   //   });
   // }, [media]);
 
+  const handleNameSubmit = () => {
+    if (nameInput.trim()) {
+      const trimmedName = nameInput.trim();
+      setGuestName(trimmedName);
+      Cookies.set(`guestName_${eventId}`, trimmedName, { expires: 365 * 10 }); // Cookie expires in 10 years
+      setShowNameModal(false);
+      identify(trimmedName);
+      track("Guest name submitted", { eventId, guestName: trimmedName });
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!media) return;
+    if (!guestName) {
+      setShowNameModal(true);
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -201,7 +230,7 @@ export default function Home(props: Props) {
     const fileArr = Array.from(files);
     console.log(fileArr);
     if (fileArr.filter((file) => file.type === "image/heic").length !== 0) {
-      track("Invalid media file selected", { eventId, guestId });
+      track("Invalid media file selected", { eventId, guestName });
       setError(
         "Unsupported file format (HEIC). If on iOS, in the Photo Library, click Options, set Format to Most Compatible, and try the upload again."
       );
@@ -230,7 +259,7 @@ export default function Home(props: Props) {
 
     track("Media selected", {
       eventId,
-      guestId,
+      guestName,
       numberOfMedia: mediaList.length,
       numberOfVideos: mediaList.filter((m) => m.type === "video"),
       numberOfImages: mediaList.filter((m) => m.type === "image"),
@@ -279,7 +308,7 @@ export default function Home(props: Props) {
               if (multipartFileUploader) {
                 track("Media upload retry", {
                   eventId,
-                  guestId,
+                  guestName,
                 });
                 multipartFileUploader.retryUpload(item.fileId);
               }
@@ -385,8 +414,9 @@ export default function Home(props: Props) {
                     <span className="sr-only">Error</span>
                   </div>
                   <div className="text-left">
-                    iOS Users: Please be patient after clicking <b>Add</b>, especially with
-                    videos as iOS will do some processing on each one.
+                    iOS Users: Please be patient after clicking <b>Add</b>,
+                    especially with videos as iOS will do some processing on
+                    each one.
                   </div>
                 </div>
               )}
@@ -409,9 +439,13 @@ export default function Home(props: Props) {
                     accept="image/*, video/*"
                     multiple
                     onClick={() => {
+                      if (!guestName) {
+                        setShowNameModal(true);
+                        return;
+                      }
                       track("Select media clicked", {
                         eventId,
-                        guestId,
+                        guestName,
                       });
                     }}
                     onChange={(e) => handleMediaSelection(e.target.files)}
@@ -489,6 +523,58 @@ export default function Home(props: Props) {
           </div>
         </div>
       </main>
+
+      {/* Name Input Modal */}
+      {showNameModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4 text-center">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+            <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6">
+              <div>
+                <div className="mt-3 text-center sm:mt-5">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    Welcome!
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Please enter your name to continue
+                    </p>
+                  </div>
+                  <div className="mt-4">
+                    <input
+                      type="text"
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleNameSubmit();
+                        }
+                      }}
+                      placeholder="Your name"
+                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-6">
+                <button
+                  type="button"
+                  onClick={handleNameSubmit}
+                  disabled={!nameInput.trim()}
+                  className={`inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:text-sm ${
+                    nameInput.trim()
+                      ? "bg-indigo-600 hover:bg-indigo-700"
+                      : "bg-gray-300 cursor-not-allowed"
+                  }`}
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

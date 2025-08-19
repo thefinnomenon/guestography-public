@@ -10,15 +10,10 @@ export default function SuccessPage() {
   switch (type) {
     case "schedule":
       message =
-        "Thanks for scheduling your event with Guestography! You are all set, we will take it from here. Feel free to reach out if you need anything else.";
-      break;
-    case "interview_upload":
-      message =
-        "Thanks for uploading your interview! You can close this page and get back to the event.";
+        "Thanks for creating your event with Guestography! You are all set, we will take it from here. Feel free to reach out if you need anything else.";
       break;
     case "media_upload":
-      message =
-        "Thanks for uploading your photos & videos! Keep an eye out for a message from us containing a link to the gallery page for the event.";
+      message = "Thanks for uploading your photos & videos!";
   }
 
   return (

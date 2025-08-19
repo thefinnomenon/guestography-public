@@ -1,1 +1,0 @@
-setInterval(() => scheduledWaitingEvents(), 60000)

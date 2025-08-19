@@ -392,7 +392,7 @@ export default function Example() {
           </div>
           <div className="mt-8 md:order-1 md:mt-0">
             <p className="text-center text-xs leading-5 text-white">
-              &copy; 2024 Guestography
+              &copy; 2025 Guestography
             </p>
           </div>
         </div>

@@ -10,19 +10,10 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method === "POST") {
-    const { guestCount, interviewService, mediaService } = req.body.amount;
-
-    const line_items = [];
-    if (interviewService)
-      line_items.push({
-        price: "price_1MtNwGJ7SSLr30C7xnaIg6Kc",
-        quantity: guestCount,
-      });
-    if (mediaService)
-      line_items.push({
-        price: "price_1MtNzNJ7SSLr30C7KH87YHgA",
-        quantity: guestCount,
-      });
+    const line_items = [{
+      price: "price_1MtNwGJ7SSLr30C7xnaIg6Kc",
+      quantity: 1,
+    }];
 
     try {
       const params: Stripe.Checkout.SessionCreateParams = {

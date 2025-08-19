@@ -1,8 +1,6 @@
 import * as admin from "firebase-admin";
 // import serviceAccount from "../lib/serviceAccountKey.json";
-import { Event, GuestEventRecord, Interview, Media } from "../types";
-import { determineValidGuests } from "../utils/contacts";
-import ShortUniqueId from "short-unique-id";
+import { Event, Media } from "../types";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -17,9 +15,7 @@ else admin.app();
 export const getEvents = async () => {
   try {
     const db = admin.firestore();
-    return await (
-      await db.collection("events").get()
-    ).docs;
+    return (await db.collection("events").get()).docs;
   } catch (e) {
     console.log(e);
     throw e;
@@ -29,42 +25,7 @@ export const getEvents = async () => {
 export const getEvent = async (eventId: string) => {
   try {
     const db = admin.firestore();
-    return (await (
-      await db.collection("events").doc(eventId).get()
-    ).data()) as Event;
-  } catch (e) {
-    console.log(e);
-    throw e;
-  }
-};
-
-export const getInterviews = async (eventId: string) => {
-  try {
-    const db = admin.firestore();
-    const snapshot = await db
-      .collection(`events/${eventId}/interviews`)
-      .orderBy("createdAt", "asc")
-      .get();
-    return snapshot.docs.map((doc) => {
-      return {
-        id: doc.id,
-        ...doc.data(),
-      };
-    });
-  } catch (e) {
-    console.log(e);
-    throw e;
-  }
-};
-
-export const getInterview = async (eventId: string) => {
-  try {
-    const db = admin.firestore();
-    const snapshot = await db
-      .collection(`events/${eventId}/interviews`)
-      .doc("interview")
-      .get();
-    return snapshot.data();
+    return (await db.collection("events").doc(eventId).get()).data() as Event;
   } catch (e) {
     console.log(e);
     throw e;
@@ -113,90 +74,3 @@ export const getMedia = async (eventId: string) => {
   }
 };
 
-export const getGuests = async (eventId: string) => {
-  try {
-    const db = admin.firestore();
-    const snapshot = await db
-      .collection("guests")
-      .where("eventId", "==", eventId)
-      .get();
-    return snapshot.docs.map((doc) => {
-      return doc.data() as GuestEventRecord;
-    });
-  } catch (e) {
-    console.log(e);
-    throw e;
-  }
-};
-
-export const updateGuestList = async (
-  eventId: string,
-  guestList: Partial<GuestEventRecord>[],
-  newGuests: Partial<GuestEventRecord>[]
-) => {
-  const db = admin.firestore();
-  const event = (
-    await db.collection("events").doc(eventId).get()
-  ).data() as Event;
-
-  console.log("Determining unique guests", { eventId, guestList, newGuests });
-  const uniqueGuests = determineValidGuests(guestList, newGuests);
-  const batch = db.batch();
-  console.log("Adding unique guests", uniqueGuests);
-  const uid = new ShortUniqueId();
-  uniqueGuests.map((guest) => {
-    const guestId = `${guest.firstName}-${guest.lastName}-${uid()}`;
-    batch.create(db.collection("guests").doc(guestId), {
-      id: guestId,
-      eventId: eventId,
-      eventStatus: event.status,
-      iMessage: false,
-      optedIn: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      firstName: guest.firstName,
-      lastName: guest.lastName,
-      phone: guest.phone,
-    });
-  });
-  await batch.commit();
-  return [...uniqueGuests, ...guestList];
-};
-
-export const addGuest = async (
-  eventId: string,
-  guest: Partial<GuestEventRecord>
-) => {
-  console.log("Checking if guest is already enrolled", { eventId, guest });
-  const db = admin.firestore();
-  const alreadyEnrolled =
-    (
-      await db
-        .collection("guests")
-        .where("eventId", "==", eventId)
-        .where("phone", "==", guest.phone)
-        .get()
-    ).size !== 0;
-  if (alreadyEnrolled) {
-    console.log("Guest already enrolled", { eventId, guest });
-    return;
-  }
-
-  const event = (
-    await db.collection("events").doc(eventId).get()
-  ).data() as Event;
-
-  const uid = new ShortUniqueId();
-  const guestId = `${guest.firstName}-${guest.lastName}-${uid()}`;
-  console.log("Adding guest", { guestId, eventId, guest });
-  db.collection("guests").doc(guestId).create({
-    id: guestId,
-    eventId: eventId,
-    eventStatus: event.status,
-    iMessage: false,
-    optedIn: false,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    firstName: guest.firstName,
-    lastName: guest.lastName,
-    phone: guest.phone,
-  });
-};
