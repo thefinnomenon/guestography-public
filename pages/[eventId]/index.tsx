@@ -256,7 +256,7 @@ export default function Home(props: Props) {
                   </h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">
-                      Get 50% off Guestography for your next event. We'll send
+                      Get 50% off Guestography for your next event. We&apos;ll send
                       you an exclusive discount code.
                     </p>
                   </div>
