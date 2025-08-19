@@ -1,7 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import { Event, GuestEventRecord } from "../../types";
-import { iMessageLookup } from "../../lib/loop";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -39,31 +37,6 @@ export default async function handler(
   const updatePromises = [];
 
   try {
-    // If event just became scheduled, let's trigger iMessage lookups
-    console.log("Initiating iMessage Lookups...");
-    if (status === "SCHEDULED") {
-      const event = (
-        await db.collection("events").doc(eventId).get()
-      ).data() as Event;
-      const guests = (
-        await db.collection("guests").where("eventId", "==", eventId).get()
-      ).docs.map((snap) => snap.data()) as Partial<GuestEventRecord>[];
-
-      // Add organizer
-      guests.push({
-        id: "organizer",
-        firstName: event.firstName,
-        lastName: event.lastName,
-        phone: event.phone,
-      });
-      //await iMessageLookup(eventId, guests);
-    }
-  } catch (e) {
-    console.error("Failed to initiate iMessage lookups", e);
-    res.status(500).send({});
-  }
-
-  try {
     // Update event record
     console.log(`Updating event status to ${status}...`);
     updatePromises.push(
@@ -72,21 +45,6 @@ export default async function handler(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       })
     );
-
-    // Update guest records for event
-    console.log(`Updating guest records event statuses to ${status}...`);
-    await (
-      await db.collection("guests").where("eventId", "==", eventId).get()
-    ).docs.map((snap) =>
-      updatePromises.push(
-        snap.ref.update({
-          eventStatus: status,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        })
-      )
-    );
-
-    await Promise.all(updatePromises);
   } catch (e) {
     console.error("Failed to update event status", e);
     res.status(500).send({});

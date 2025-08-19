@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
-import { formatPhoneNumber, slugify } from "../../utils/format";
+import { slugify } from "../../utils/format";
 import ShortUniqueId from "short-unique-id";
 import { Event } from "../../types";
 import { track } from "../../lib/mixpanel";
@@ -32,7 +32,6 @@ export default async function handler(
     !event ||
     !event.firstName ||
     !event.lastName ||
-    !event.phone ||
     !event.title ||
     !event.startAt ||
     new Date(event.startAt) <=
@@ -56,13 +55,6 @@ export default async function handler(
   const eventId = `${slugify(event.title)}-${new ShortUniqueId({
     length: 4,
   })()}`;
-
-  // TODO: Redirect to contact form if event is enterprise
-  if (event.plan === "enterprise") {
-    console.log("Handle custom");
-    res.status(200).send("Custom");
-    return;
-  }
 
   console.log("Generating Stripe Checkout Session for event ", eventId);
 
@@ -93,9 +85,6 @@ export default async function handler(
           quantity: 1,
         },
       ],
-      subscription_data: {
-        billing_cycle_anchor: Math.floor(new Date(event.startAt).getTime() / 1000),
-      },
       allow_promotion_codes: true,
       metadata: { eventId },
       success_url: `${req.headers.origin}/${eventId}/manage?key=${event.managementKey}`,

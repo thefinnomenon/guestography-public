@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
-import { Event, GuestEventRecord } from "../../types";
+import { Event } from "../../types";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -15,7 +15,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { eventId, key } = req.query as { eventId: string, key: string};
+  const { eventId, key } = req.query as { eventId: string; key: string };
 
   // Verify parameters
   if (!eventId || !key) {
@@ -33,15 +33,7 @@ export default async function handler(
     if (!event) throw Error("No event found");
     if (event.managementKey !== key) throw Error("Invalid key");
 
-    const snapshot = await db
-      .collection("guests")
-      .where("eventId", "==", eventId)
-      .get();
-    const guestList = snapshot.docs.map((doc) => {
-      return doc.data() as GuestEventRecord[];
-    });
-
-    return res.status(200).json({ event, guestList });
+    return res.status(200).json({ event });
   } catch (e) {
     console.log(e);
     throw e;
