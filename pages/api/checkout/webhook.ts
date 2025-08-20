@@ -74,10 +74,32 @@ export default async function handler(
         );
         console.log(`Updated event ${eventId} status to ${status}`);
 
+        // Track discount code usage if applied
+        if (session.discount) {
+          const discountCode = session.discount.promotion_code;
+          const amountSaved = session.discount.coupon?.amount_off || 
+                             (session.amount_total && session.discount.coupon?.percent_off ? 
+                              session.amount_total * (session.discount.coupon.percent_off / 100) : 0);
+          
+          console.log("Discount code used:", discountCode, "for event:", eventId);
+          
+          mixpanel.track("Discount Code Used", {
+            discountCode: discountCode,
+            eventId: eventId,
+            customerEmail: session.customer_email,
+            amountSaved: amountSaved,
+            percentOff: session.discount.coupon?.percent_off,
+            sessionId: session.id,
+            eventStatus: status,
+          });
+        }
+
         mixpanel.track(`Event ${status === "PAID" ? "paid" : "unpaid"}`, {
           eventId,
           total: session.amount_total,
           subtotal: session.amount_subtotal,
+          discountApplied: !!session.discount,
+          discountCode: session.discount?.promotion_code || null,
         });
       } catch (error) {
         console.error("Failed to update event status", error);
@@ -101,10 +123,33 @@ export default async function handler(
         );
         console.log(`Updated event ${eventId} status to PAID`);
 
+        // Track discount code usage if applied
+        if (session.discount) {
+          const discountCode = session.discount.promotion_code;
+          const amountSaved = session.discount.coupon?.amount_off || 
+                             (session.amount_total && session.discount.coupon?.percent_off ? 
+                              session.amount_total * (session.discount.coupon.percent_off / 100) : 0);
+          
+          console.log("Discount code used (async payment):", discountCode, "for event:", eventId);
+          
+          mixpanel.track("Discount Code Used", {
+            discountCode: discountCode,
+            eventId: eventId,
+            customerEmail: session.customer_email,
+            amountSaved: amountSaved,
+            percentOff: session.discount.coupon?.percent_off,
+            sessionId: session.id,
+            eventStatus: "PAID",
+            paymentType: "async",
+          });
+        }
+
         mixpanel.track("Event paid", {
           eventId,
           total: session.amount_total,
           subtotal: session.amount_subtotal,
+          discountApplied: !!session.discount,
+          discountCode: session.discount?.promotion_code || null,
         });
       } catch (error) {
         console.error("Failed to update event");

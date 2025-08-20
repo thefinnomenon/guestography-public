@@ -3,17 +3,27 @@ import { useRouter } from "next/router";
 
 export default function SuccessPage() {
   const router = useRouter();
-  const { type } = router.query;
+  const { type, eventId } = router.query;
 
-  const title = type === "schedule" ? "Event Scheduled" : "Upload Success";
-  let message;
+  let title, message;
   switch (type) {
+    case "event_created":
+      title = "Event Created!";
+      message =
+        "Thanks for creating your event with Guestography! You will receive an email shortly with your printable QR Code.";
+      break;
     case "schedule":
+      title = "Event Scheduled";
       message =
         "Thanks for creating your event with Guestography! You are all set, we will take it from here. Feel free to reach out if you need anything else.";
       break;
     case "media_upload":
+      title = "Upload Success";
       message = "Thanks for uploading your photos & videos!";
+      break;
+    default:
+      title = "Success";
+      message = "Operation completed successfully!";
   }
 
   return (
@@ -98,6 +108,14 @@ export default function SuccessPage() {
                 {title}
               </h1>
               <p className="text-xl text-center">{message}</p>
+              {type === "event_created" && eventId && (
+                <a
+                  href={`/${eventId}`}
+                  className="mt-8 inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Go to Gallery
+                </a>
+              )}
             </div>
           </div>
         </div>

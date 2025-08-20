@@ -25,6 +25,8 @@ export interface Event {
   location: Location;
   managementKey: string;
   plan: "standard";
+  discountCode?: string;
+  stripePromoCodeId?: string;
 }
 
 export interface Location {

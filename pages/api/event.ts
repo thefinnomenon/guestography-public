@@ -24,18 +24,15 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const db = admin.firestore();
-  const event: Event = req.body;
+  try {
+    const db = admin.firestore();
+    const event: Event = req.body;
+    const { discountCode: providedDiscountCode } = req.body;
 
   // Validate event info
   if (
     !event ||
-    !event.firstName ||
-    !event.lastName ||
     !event.title ||
-    !event.startAt ||
-    new Date(event.startAt) <=
-      new Date(new Date().getTime() + 60 * 60 * 1000) ||
     !event.plan
   ) {
     console.error("Invalid event: ", event);
@@ -56,27 +53,28 @@ export default async function handler(
     length: 4,
   })()}`;
 
+  // Generate discount code for this event (50% off)
+  const discountCode = `${eventId.toUpperCase()}-50OFF`;
+  
   console.log("Generating Stripe Checkout Session for event ", eventId);
+  console.log("Creating discount code:", discountCode);
 
-  const price = process.env.STRIPE_STANDARD_PRICE_ID;
+  // Use test price ID in development, production price ID in production
+  const price = process.env.NODE_ENV === 'development' 
+    ? process.env.STRIPE_TEST_GALLERY_PRICE_ID 
+    : process.env.STRIPE_GALLERY_PRICE_ID;
+    
   if (!price) {
-    console.error("Standard price ID not set");
-    res.status(400).send("Standard price ID not set");
+    console.error("Stripe price ID not set for environment:", process.env.NODE_ENV);
+    res.status(400).send(`Stripe price ID not set for ${process.env.NODE_ENV} environment`);
     return;
   }
-
-  // If shindig, add free year discount
-  // let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined =
-  //   undefined;
-  // if (event.plan === "shindig") {
-  //   discounts = [{ coupon: process.env.STRIPE_SHINDIG_YEAR_FREE_DISCOUNT }];
-  // }
 
   // Generate Stripe Checkout Session
   let checkoutSession: Stripe.Checkout.Session;
   try {
     const params: Stripe.Checkout.SessionCreateParams = {
-      mode: "subscription",
+      mode: "payment",
       payment_method_types: ["card"],
       customer_email: event.email,
       line_items: [
@@ -85,11 +83,41 @@ export default async function handler(
           quantity: 1,
         },
       ],
-      allow_promotion_codes: true,
       metadata: { eventId },
-      success_url: `${req.headers.origin}/${eventId}/manage?key=${event.managementKey}`,
+      success_url: `${req.headers.origin}/success?type=event_created&eventId=${eventId}`,
       cancel_url: `${req.headers.origin}/event?eventId=${eventId}`,
     };
+
+    // If a discount code is provided, try to apply it automatically
+    let discountApplied = false;
+    if (providedDiscountCode) {
+      try {
+        // Find the promotion code in Stripe
+        const promotionCodes = await stripe.promotionCodes.list({
+          code: providedDiscountCode,
+          active: true,
+          limit: 1,
+        });
+
+        if (promotionCodes.data.length > 0) {
+          params.discounts = [{
+            promotion_code: promotionCodes.data[0].id,
+          }];
+          discountApplied = true;
+          console.log("Applied discount code:", providedDiscountCode);
+        } else {
+          console.log("Discount code not found or inactive:", providedDiscountCode);
+        }
+      } catch (discountError) {
+        console.error("Error applying discount code:", discountError);
+        // Continue without discount if there's an error
+      }
+    }
+    
+    // Only allow promotion codes if no discount was automatically applied
+    if (!discountApplied) {
+      params.allow_promotion_codes = true;
+    }
 
     console.log("Creating Stripe checkout session with params", params);
 
@@ -98,6 +126,45 @@ export default async function handler(
     console.error("Failed to create Stripe checkout session", e);
     res.status(400).send("Failed to create Stripe checkout session");
     return;
+  }
+
+  // Create Stripe promotional code for 50% off
+  let promoCodeId: string | undefined;
+  try {
+    // First create a coupon for 50% off
+    const coupon = await stripe.coupons.create({
+      percent_off: 50,
+      duration: 'forever',
+      id: `coupon-${eventId}`,
+      name: `50% off for ${event.title} guests`,
+      metadata: {
+        eventId: eventId,
+        createdBy: event.email,
+      }
+    });
+
+    // Then create a promotional code using the coupon
+    const promoCode = await stripe.promotionCodes.create({
+      coupon: coupon.id,
+      code: discountCode,
+      active: true,
+      metadata: {
+        eventId: eventId,
+        createdBy: event.email,
+      }
+    });
+
+    promoCodeId = promoCode.id;
+    console.log("Created Stripe promotional code:", discountCode, "with ID:", promoCodeId);
+  } catch (e) {
+    console.error("Failed to create promotional code", e);
+    // Don't fail the entire event creation if promo code fails
+  }
+
+  // Add discount code info to event data
+  event.discountCode = discountCode;
+  if (promoCodeId) {
+    event.stripePromoCodeId = promoCodeId;
   }
 
   // Store event in db
@@ -116,5 +183,12 @@ export default async function handler(
   } else {
     console.error("Failed to generate checkout session");
     throw Error("Failed to generate checkout session");
+  }
+  } catch (error) {
+    console.error("Error in event creation handler:", error);
+    res.status(500).json({ 
+      error: "Failed to create event", 
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 }

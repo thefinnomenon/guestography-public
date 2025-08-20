@@ -15,6 +15,7 @@ import Uppy from "@uppy/core";
 import "react-circular-progressbar/dist/styles.css";
 import { checkIos } from "../../../utils/platformDetection";
 import Cookies from "js-cookie";
+import Link from "next/link";
 
 interface Props {
   title: string;
@@ -44,6 +45,10 @@ export default function Home(props: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [update, setUpdate] = useState<any>();
+  const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
+  const [uploadComplete, setUploadComplete] = useState(false);
 
   let isIos = false;
   if (typeof window !== "undefined") isIos = checkIos();
@@ -145,9 +150,13 @@ export default function Home(props: Props) {
     const onComplete = async (isComplete: boolean) => {
       if (isComplete) {
         setIsSubmitting(false);
-        router.push(
-          `/${eventId}?showEmailModal=true&guestName=${encodeURIComponent(guestName)}`
-        );
+        setUploadComplete(true);
+        
+        // Check if user has already provided email
+        const hasEmailCookie = Cookies.get("guestEmail");
+        if (!hasEmailCookie) {
+          setShowEmailCapture(true);
+        }
       }
     };
 
@@ -200,6 +209,58 @@ export default function Home(props: Props) {
     }
   };
 
+  const handleEmailSubmit = async () => {
+    if (!emailInput.trim()) return;
+
+    setIsSubmittingEmail(true);
+    const trimmedEmail = emailInput.trim().toLowerCase();
+    
+    // Get name from guestName cookie
+    const savedGuestName = Cookies.get(`guestName_${eventId}`) || "Anonymous";
+
+    try {
+      // Save email in cookie (never expires)
+      Cookies.set("guestEmail", trimmedEmail, { expires: 365 * 10 });
+
+      // Save to database via API
+      const response = await fetch("/api/saveUser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          name: savedGuestName,
+          eventId: eventId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save user");
+      }
+
+      const result = await response.json();
+
+      track("Email captured after upload", {
+        eventId,
+        guestName: savedGuestName,
+        email: trimmedEmail,
+        discountCodeSent: result.discountCodeSent,
+      });
+
+      setShowEmailCapture(false);
+      
+      // Show confirmation that discount code will be emailed
+      if (result.discountCodeSent) {
+        console.log("Discount code will be emailed to:", trimmedEmail);
+      }
+    } catch (error) {
+      console.error("Error saving email:", error);
+    } finally {
+      setIsSubmittingEmail(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!media) return;
@@ -221,6 +282,7 @@ export default function Home(props: Props) {
   const handleMediaSelection = async (files: FileList | null) => {
     setError("");
     setMedia([]);
+    setUploadComplete(false); // Reset upload complete state when selecting new files
     if (!files || !multipartFileUploader) return;
 
     // Clear all files on new selection
@@ -326,7 +388,17 @@ export default function Home(props: Props) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
+        <div className="overflow-hidden bg-white py-4 px-4 sm:px-6 lg:px-8">
+          <div className="relative mx-auto max-w-xl">
+            {/* Back to Gallery Button */}
+            <div className="mb-8">
+              <Link href={`/${eventId}`} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-white border-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm">
+                ← Back to Gallery
+              </Link>
+            </div>
+          </div>
+        </div>
+        <div className="overflow-hidden bg-white px-4 sm:px-6 lg:px-8 pb-16 lg:pb-24">
           <div className="relative mx-auto max-w-xl">
             <svg
               className="absolute left-full translate-x-1/2 transform"
@@ -504,15 +576,17 @@ export default function Home(props: Props) {
 
                 <div className="sm:col-span-2">
                   <button
-                    disabled={media.length === 0}
+                    disabled={media.length === 0 || uploadComplete}
                     type="submit"
                     className={`inline-flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                      media.length === 0 &&
+                      (media.length === 0 || uploadComplete) &&
                       "bg-indigo-200 text-indigo-400 hover:bg-indigo-200"
                     }`}
                   >
                     {isSubmitting ? (
                       <ClipLoader size={24} color="white" />
+                    ) : uploadComplete ? (
+                      "UPLOADED"
                     ) : (
                       "UPLOAD"
                     )}
@@ -523,6 +597,7 @@ export default function Home(props: Props) {
           </div>
         </div>
       </main>
+
 
       {/* Name Input Modal */}
       {showNameModal && (
@@ -570,6 +645,71 @@ export default function Home(props: Props) {
                 >
                   Continue
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Capture Modal - Show after successful upload */}
+      {showEmailCapture && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4 text-center">
+            <div 
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+              onClick={() => setShowEmailCapture(false)}
+            />
+            <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm sm:p-6">
+              <div>
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                  <MdOutlineCheckCircleOutline className="h-6 w-6 text-green-600" aria-hidden="true" />
+                </div>
+                <div className="mt-3 text-center sm:mt-5">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    Upload Successful!
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Get 50% off your next Guestography event! Perfect for capturing memories at weddings, parties, and special occasions.
+                    </p>
+                  </div>
+                  <div className="mt-4">
+                    <input
+                      type="email"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && emailInput.trim()) {
+                          handleEmailSubmit();
+                        }
+                      }}
+                      placeholder="Enter your email"
+                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-6">
+                <button
+                  type="button"
+                  onClick={handleEmailSubmit}
+                  disabled={!emailInput.trim() || isSubmittingEmail}
+                  className={`inline-flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:text-sm ${
+                    emailInput.trim() && !isSubmittingEmail
+                      ? "bg-indigo-600 hover:bg-indigo-700"
+                      : "bg-gray-300 cursor-not-allowed"
+                  }`}
+                >
+                  {isSubmittingEmail ? (
+                    <ClipLoader size={20} color="white" />
+                  ) : (
+                    "Get Your Discount Code"
+                  )}
+                </button>
+                <p className="mt-3 text-xs text-center text-gray-500">
+                  Click outside to skip
+                </p>
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import * as admin from "firebase-admin";
+import { sendDiscountCodeEmail } from "../../lib/email";
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
 
@@ -26,6 +27,17 @@ export default async function handler(
   try {
     const db = admin.firestore();
     
+    // Get the event document to retrieve the discount code and event details
+    const eventDoc = await db.collection("events").doc(eventId).get();
+    const eventData = eventDoc.data();
+    
+    console.log("Event document exists:", eventDoc.exists);
+    console.log("Event data:", eventData);
+    console.log("Discount code from event:", eventData?.discountCode);
+    
+    const discountCode = eventData?.discountCode;
+    const eventTitle = eventData?.title;
+    
     // Create a new document with auto-generated ID
     const userDocRef = db.collection("users").doc();
     
@@ -33,10 +45,34 @@ export default async function handler(
       email: email.toLowerCase(),
       name: name || "Anonymous",
       eventId,
+      discountCodeSent: discountCode || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    res.status(200).json({ success: true, userId: userDocRef.id });
+    // Send email with discount code if available
+    if (discountCode && email) {
+      try {
+        await sendDiscountCodeEmail({
+          to: email.toLowerCase(),
+          userName: name || "Guest",
+          eventTitle: eventTitle || "Event",
+          discountCode: discountCode,
+          eventId: eventId,
+        });
+        
+        console.log("Successfully sent discount code email to:", email);
+        
+      } catch (emailError) {
+        console.error("Failed to send discount code email:", emailError);
+        // Don't fail the entire operation if email fails
+      }
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      userId: userDocRef.id,
+      discountCodeSent: !!discountCode
+    });
   } catch (error) {
     console.error("Error saving user:", error);
     res.status(500).json({ error: "Failed to save user" });

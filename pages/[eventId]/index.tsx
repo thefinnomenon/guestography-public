@@ -39,6 +39,7 @@ interface Props {
   media?: GalleryMedia[];
   unsorted?: GalleryMedia[];
   eventStatus: EventStatus;
+  discountCode?: string;
 }
 
 export default function Home(props: Props) {
@@ -49,7 +50,7 @@ export default function Home(props: Props) {
     showEmailModal?: string;
   };
   if (guestId) identify(guestId);
-  const { title, media, unsorted, eventId } = props;
+  const { title, media, unsorted, eventId, discountCode } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
   const [showEmailCapture, setShowEmailCapture] = useState(false);
@@ -107,13 +108,22 @@ export default function Home(props: Props) {
         throw new Error("Failed to save user");
       }
 
+      const result = await response.json();
+
       track("Email captured after upload", {
         eventId,
         guestName: savedGuestName,
         email: trimmedEmail,
+        discountCodeSent: result.discountCodeSent,
       });
 
       setShowEmailCapture(false);
+      
+      // Show confirmation that discount code will be emailed
+      if (result.discountCodeSent) {
+        // You could show a toast notification or update the UI to confirm
+        console.log("Discount code will be emailed to:", trimmedEmail);
+      }
     } catch (error) {
       console.error("Error saving email:", error);
     } finally {
@@ -256,7 +266,7 @@ export default function Home(props: Props) {
                   </h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">
-                      Get 50% off Guestography for your next event. We&apos;ll send
+                      Get 50% off Guestography for your next event! We&apos;ll email
                       you an exclusive discount code.
                     </p>
                   </div>
@@ -291,7 +301,7 @@ export default function Home(props: Props) {
                   {isSubmittingEmail ? (
                     <ClipLoader size={20} color="white" />
                   ) : (
-                    "Get My Discount Code"
+                    "Email Me My 50% Off Code"
                   )}
                 </button>
               </div>
@@ -711,6 +721,7 @@ export async function getStaticProps(
         media: galleryMedia,
         unsorted: galleryUnsortedMedia,
         eventStatus: event.status,
+        discountCode: event.discountCode || null,
       },
       revalidate: 60,
     };
