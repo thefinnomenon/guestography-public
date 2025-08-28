@@ -49,16 +49,17 @@ export const DiscountCodeEmail = ({
           style={logo}
         />
         <Heading style={h1}>
-          Thanks for sharing your memories!{" "}
           <span
             style={{
               display: "inline-block",
               verticalAlign: "middle",
               paddingBottom: "6px",
+              marginRight: "8px",
             }}
           >
             📸
           </span>
+          Thanks for sharing your memories!
         </Heading>
         <Text style={text}>
           Thank you for contributing to the <strong>{eventTitle}</strong>{" "}

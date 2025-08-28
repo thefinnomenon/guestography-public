@@ -3,6 +3,7 @@ import * as admin from "firebase-admin";
 import { buffer } from "micro";
 import Stripe from "stripe";
 import Mixpanel from "mixpanel";
+import { sendEventCompletionEmail } from "../../../lib/send-completion-email";
 
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
@@ -27,6 +28,86 @@ export const config = {
     bodyParser: false,
   },
 };
+
+async function sendCompletionEmailForEvent(eventId: string, db: any) {
+  try {
+    // Get event details from Firestore
+    const eventDoc = await db.collection("events").doc(eventId).get();
+    
+    if (!eventDoc.exists) {
+      console.error(`Event ${eventId} not found in database`);
+      mixpanel.track("Completion Email Failed", {
+        eventId,
+        reason: "Event not found in database",
+        stage: "database_lookup"
+      });
+      return;
+    }
+
+    const eventData = eventDoc.data();
+    const { title, ownerEmail, ownerName } = eventData;
+
+    if (!ownerEmail) {
+      console.error(`No owner email found for event ${eventId}`);
+      mixpanel.track("Completion Email Failed", {
+        eventId,
+        eventTitle: title,
+        reason: "No owner email",
+        stage: "validation"
+      });
+      return;
+    }
+
+    console.log(`Sending completion email for event ${eventId} to ${ownerEmail}`);
+
+    // Determine base URL
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://guestography.com' 
+      : 'http://localhost:3000';
+
+    // Send the completion email with QR template attachments
+    const result = await sendEventCompletionEmail({
+      eventTitle: title || 'Your Event',
+      eventId,
+      eventOwnerName: ownerName || 'Event Host',
+      eventOwnerEmail: ownerEmail,
+      baseUrl
+    });
+
+    console.log(`Successfully sent completion email for event ${eventId}`);
+    
+    // Track successful email
+    mixpanel.track("Completion Email Sent", {
+      eventId,
+      eventTitle: title,
+      ownerEmail,
+      provider: result?.provider || 'unknown',
+      templatesIncluded: 5 // We send all 5 templates
+    });
+
+    // Update event with email sent flag
+    await db.collection("events").doc(eventId).set(
+      { 
+        completionEmailSent: true,
+        completionEmailSentAt: admin.firestore.FieldValue.serverTimestamp()
+      },
+      { merge: true }
+    );
+
+  } catch (error) {
+    console.error(`Failed to send completion email for event ${eventId}:`, error);
+    
+    // Track email failure
+    mixpanel.track("Completion Email Failed", {
+      eventId,
+      reason: error instanceof Error ? error.message : "Unknown error",
+      stage: "email_sending",
+      errorDetails: error
+    });
+    
+    // Don't throw - we don't want to fail the webhook for email issues
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -101,6 +182,11 @@ export default async function handler(
           discountApplied: !!session.discount,
           discountCode: session.discount?.promotion_code || null,
         });
+
+        // Send completion email if payment was successful
+        if (status === "PAID") {
+          await sendCompletionEmailForEvent(eventId, db);
+        }
       } catch (error) {
         console.error("Failed to update event status", error);
         throw error;
@@ -151,6 +237,9 @@ export default async function handler(
           discountApplied: !!session.discount,
           discountCode: session.discount?.promotion_code || null,
         });
+
+        // Send completion email for async payment success
+        await sendCompletionEmailForEvent(eventId, db);
       } catch (error) {
         console.error("Failed to update event");
         throw error;
