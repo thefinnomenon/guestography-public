@@ -313,9 +313,9 @@ export default function Example() {
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
               Create your event gallery in minutes. After completing payment,
-              you'll receive an email with 5 professionally designed QR code
-              templates to print and display at your event. Each template suits
-              different event styles - from elegant weddings to fun
+              you&apos;ll receive an email with 5 professionally designed QR
+              code templates to print and display at your event. Each template
+              suits different event styles - from elegant weddings to fun
               celebrations.
             </p>
           </div>
