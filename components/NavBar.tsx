@@ -2,11 +2,40 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { IoChevronBackOutline } from "react-icons/io5";
+import { useEffect, useState } from "react";
 
 export default function NavBar() {
   const router = useRouter();
   const path = router.pathname;
   const { eventId, guestId, key } = router.query;
+  const [eventStatus, setEventStatus] = useState<string | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+
+  // Fetch event status for gallery pages
+  useEffect(() => {
+    if (path === "/[eventId]" && eventId && typeof eventId === "string") {
+      setStatusLoading(true);
+      fetch(`/api/event-status/${eventId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status) {
+            setEventStatus(data.status);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching event status:", error);
+          // On error, allow upload button to show (fail open)
+          setEventStatus("ACTIVE");
+        })
+        .finally(() => {
+          setStatusLoading(false);
+        });
+    } else {
+      // Reset state when not on gallery page
+      setEventStatus(null);
+      setStatusLoading(false);
+    }
+  }, [path, eventId]);
 
   let buttonData, showBackNavToGallery;
   switch (path) {
@@ -17,7 +46,8 @@ export default function NavBar() {
       };
       break;
     case "/[eventId]":
-      if (eventId) {
+      // Only show upload button after status is loaded and event is not completed
+      if (eventId && !statusLoading && eventStatus && eventStatus !== "COMPLETED") {
         buttonData = {
           title: "UPLOAD",
           href: `/${eventId}/upload/media`,

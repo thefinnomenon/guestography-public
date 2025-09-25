@@ -195,11 +195,12 @@ export default function Example() {
                     through the eyes of your guests
                   </h1>
                   <p className="relative mt-6 text-lg leading-8 text-gray-600 sm:max-w-md lg:max-w-none">
-                    With Guestography, your guests will receive texts with
-                    instructions on how to record and upload media for your
-                    event. Simple to use, no app to download, no login needed,
-                    and works for both iPhone & Android (no green message bubble
-                    hate!).
+                    Create your event gallery and you&apos;ll receive some
+                    beautifully designed printable QR code cards to place at
+                    your event. Guests simply scan with their phone camera to
+                    instantly access your gallery and upload photos. Simple to
+                    use, no app to download, no login needed, and works for both
+                    iPhone & Android.
                   </p>
                   <div className="mt-10 flex items-center gap-x-6">
                     {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
@@ -311,10 +312,11 @@ export default function Example() {
               Create an event
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
-              Create a Guestography event in just a few minutes and easily
-              manage your guest list by uploading a CSV file, adding guests
-              individually, importing them from your phone&apos;s contact list,
-              or by sending the guests a self-enroll link.
+              Create your event gallery in minutes. After completing payment,
+              you'll receive an email with 5 professionally designed QR code
+              templates to print and display at your event. Each template suits
+              different event styles - from elegant weddings to fun
+              celebrations.
             </p>
           </div>
         </div>
@@ -328,8 +330,8 @@ export default function Example() {
               <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
               <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800">
                 <img
-                  className="object-cover object-center w-[272px] h-[572px]"
-                  src="/landing-page/guest_text.png"
+                  className="object-center w-[400px] h-[572px]"
+                  src="/landing-page/upload.png"
                   alt="iPhone mockup with example guest text"
                 />
               </div>
@@ -337,11 +339,13 @@ export default function Example() {
           </div>
           <div className="mb-12 mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
             <h1 className="mt-10 max-w-lg text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Guests upload media
+              Guests scan & upload
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
-              When the event starts, your guests will receive a link with
-              instructions on contributing to your event gallery.
+              Place your printed QR codes around the event venue - at the
+              entrance, bar, photo booth, or tables. Guests simply point their
+              phone camera at the QR code and instantly access your gallery to
+              upload their favorite moments from your event.
             </p>
           </div>
         </div>
@@ -367,9 +371,10 @@ export default function Example() {
               Enjoy the Event Gallery!
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
-              After the event is over, everyone recieves a link to the event
-              gallery where they can view, download, and share the best moments
-              captured from the eyes of the guests.
+              Your gallery collects all the photos and videos as guests upload
+              them throughout your event. After the celebration, everyone can
+              visit the gallery to view, download, and share all the amazing
+              moments captured from every perspective.
             </p>
           </div>
         </div>

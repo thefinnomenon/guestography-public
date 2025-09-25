@@ -397,8 +397,6 @@ const sharingOption = {
   fontSize: "15px",
   lineHeight: "24px",
   margin: "16px 0",
-  paddingBottom: "12px",
-  borderBottom: "1px solid #f3f4f6",
 };
 
 const directLink = {

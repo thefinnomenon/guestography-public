@@ -50,7 +50,7 @@ export default function Home(props: Props) {
     showEmailModal?: string;
   };
   if (guestId) identify(guestId);
-  const { title, media, unsorted, eventId, discountCode } = props;
+  const { title, media, unsorted, eventId, discountCode, eventStatus } = props;
   const [slides, setSlides] = useState<any>();
   const [index, setIndex] = useState(-1);
   const [showEmailCapture, setShowEmailCapture] = useState(false);

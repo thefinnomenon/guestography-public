@@ -769,6 +769,12 @@ export async function getStaticProps(
         notFound: true,
       };
 
+    // If event is completed -> 404 (no uploads allowed)
+    if (event.status === "COMPLETED")
+      return {
+        notFound: true,
+      };
+
     return {
       props: {
         title: event.title,
