@@ -75,6 +75,7 @@
     "@types/multer": "^1.4.7",
     "@types/node": "18.11.7",
     "@types/papaparse": "^5.3.7",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "18.0.24",
     "@types/react-dom": "18.0.8",
     "@types/react-tag-autocomplete": "^6.3.0",
