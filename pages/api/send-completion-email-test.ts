@@ -24,7 +24,7 @@ export default async function handler(
   try {
     console.log("Sending test completion email...");
 
-    const baseUrl = process.env.NODE_ENV === 'production' 
+    const baseUrl = (process.env.NODE_ENV as string) === 'production' 
       ? 'https://guestography.com' 
       : 'http://localhost:3000';
 
