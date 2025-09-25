@@ -194,24 +194,26 @@ export default function Form() {
                 />
               </div>
             </div>
-            <div className="sm:col-span-2 mt-3">
+            <div className="col-span-1 sm:col-span-2 mt-3">
               <div className="relative rounded-lg bg-white border-gray-300 mb-2 border-2">
-                <div className="px-4 py-5 sm:p-6">
-                  <div className="flex justify-between items-center">
-                    <p className="text-2xl font-bold">GALLERY</p>
-                    <p className="text-xl font-medium">$20</p>
+                <div className="px-4 py-4 sm:px-6 sm:py-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-xl sm:text-2xl font-bold">GALLERY</p>
+                    <p className="text-lg sm:text-xl font-medium">$20</p>
                   </div>
-                  <div className="flex gap-2 items-center mt-2 mb-1">
-                    <FaRegFileImage className="h-5 w-5" />
-                    100GB of gallery storage
-                  </div>
-                  <div className="flex gap-2 items-center mb-1">
-                    <MdAccessTime className="h-5 w-5" />
-                    Media stored for 3 months
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <RiRefund2Line className="h-5 w-5" />
-                    7-Day Money Back Guarantee
+                  <div className="space-y-2">
+                    <div className="flex gap-2 items-center text-sm sm:text-base">
+                      <FaRegFileImage className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <span>100GB of gallery storage</span>
+                    </div>
+                    <div className="flex gap-2 items-center text-sm sm:text-base">
+                      <MdAccessTime className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <span>Media stored for 3 months</span>
+                    </div>
+                    <div className="flex gap-2 items-center text-sm sm:text-base">
+                      <RiRefund2Line className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <span>7-Day Money Back Guarantee</span>
+                    </div>
                   </div>
                 </div>
               </div>
