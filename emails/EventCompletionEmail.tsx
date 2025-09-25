@@ -19,9 +19,10 @@ interface EventCompletionEmailProps {
   eventOwnerName?: string;
 }
 
-const baseUrl = process.env.NODE_ENV === 'production'
-  ? "https://guestography.com"
-  : "http://localhost:3000";
+const baseUrl =
+  process.env.NODE_ENV === "production"
+    ? "https://guestography.com"
+    : "http://localhost:3000";
 
 const logoUrl = "https://guestography.com";
 
@@ -57,10 +58,11 @@ export const EventCompletionEmail = ({
           </span>
           Your event gallery is ready!
         </Heading>
-        
+
         <Text style={text}>
-          Your <strong>{eventTitle}</strong> gallery is now live and ready for guests! 
-          Share the QR code below with your guests so they can view and upload photos from your event.
+          Your <strong>{eventTitle}</strong> gallery is now live and ready for
+          guests! Share the QR code below with your guests so they can view and
+          upload photos from your event.
         </Text>
 
         <Section style={attachmentNotice}>
@@ -68,17 +70,24 @@ export const EventCompletionEmail = ({
             📎 <strong>5 Printable QR Card Templates Attached!</strong>
           </Text>
           <Text style={attachmentText}>
-            We've included 5 beautifully designed QR code cards for your event:
+            We&apos;ve included 5 beautifully designed QR code cards for your
+            event:
           </Text>
           <Text style={attachmentList}>
-            • <strong>Classic Template</strong> - Clean, professional design for any event<br/>
-            • <strong>Celebration Template</strong> - Elegant purple theme for special occasions<br/>
-            • <strong>Modern Template</strong> - Sleek dark design with geometric accents<br/>
-            • <strong>Elegant Template</strong> - Sophisticated with ornate borders<br/>
-            • <strong>Minimal Template</strong> - Simple and clean for subtle presence
+            • <strong>Classic Template</strong> - Clean, professional design for
+            any event
+            <br />• <strong>Celebration Template</strong> - Elegant purple theme
+            for special occasions
+            <br />• <strong>Modern Template</strong> - Sleek dark design with
+            geometric accents
+            <br />• <strong>Elegant Template</strong> - Sophisticated with
+            ornate borders
+            <br />• <strong>Minimal Template</strong> - Simple and clean for
+            subtle presence
           </Text>
           <Text style={attachmentText}>
-            Choose your favorite or print multiple styles! Each is designed for 4x6" cardstock.
+            Choose your favorite or print multiple styles! Each is designed for
+            4x6&quot; cardstock.
           </Text>
         </Section>
 
@@ -88,19 +97,22 @@ export const EventCompletionEmail = ({
           <Heading style={sharingSectionTitle}>
             🎨 More Ways to Share Your Gallery
           </Heading>
-          
+
           <Text style={sharingOption}>
-            <strong>1. 📱 Share the Link Directly</strong><br/>
-            Copy and share this link: <a href={`${baseUrl}/${eventId}`} style={directLink}>
+            <strong>1. 📱 Share the Link Directly</strong>
+            <br />
+            Copy and share this link:{" "}
+            <a href={`${baseUrl}/${eventId}`} style={directLink}>
               {baseUrl}/{eventId}
             </a>
           </Text>
 
           <Text style={sharingOption}>
-            <strong>2. 🎨 Create Custom Designs with Canva</strong><br/>
+            <strong>2. 🎨 Create Custom Designs with Canva</strong>
+            <br />
             Download just the QR code and add it to your own Canva designs:
           </Text>
-          
+
           <Section style={buttonContainer}>
             <Button
               style={downloadQRButton}
@@ -111,38 +123,66 @@ export const EventCompletionEmail = ({
           </Section>
 
           <Text style={canvaLinks}>
-            <strong>Popular Canva Templates:</strong><br/>
-            • <a href="https://www.canva.com/templates/search/wedding%20signs/" style={canvaLink}>Wedding Signs</a><br/>
-            • <a href="https://www.canva.com/templates/search/party%20invitations/" style={canvaLink}>Party Invitations</a><br/>
-            • <a href="https://www.canva.com/templates/search/event%20flyers/" style={canvaLink}>Event Flyers</a><br/>
-            • <a href="https://www.canva.com/templates/search/table%20cards/" style={canvaLink}>Table Cards</a>
+            <strong>Popular Canva Templates:</strong>
+            <br />•{" "}
+            <a
+              href="https://www.canva.com/templates/search/wedding%20signs/"
+              style={canvaLink}
+            >
+              Wedding Signs
+            </a>
+            <br />•{" "}
+            <a
+              href="https://www.canva.com/templates/search/party%20invitations/"
+              style={canvaLink}
+            >
+              Party Invitations
+            </a>
+            <br />•{" "}
+            <a
+              href="https://www.canva.com/templates/search/event%20flyers/"
+              style={canvaLink}
+            >
+              Event Flyers
+            </a>
+            <br />•{" "}
+            <a
+              href="https://www.canva.com/templates/search/table%20cards/"
+              style={canvaLink}
+            >
+              Table Cards
+            </a>
           </Text>
 
           <Text style={sharingOption}>
-            <strong>3. 📋 Share on Social Media</strong><br/>
-            Post the gallery link in your event group, wedding hashtag, or social media stories
+            <strong>3. 📋 Share on Social Media</strong>
+            <br />
+            Post the gallery link in your event group, wedding hashtag, or
+            social media stories
           </Text>
 
           <Text style={sharingOption}>
-            <strong>4. 📧 Send to Guests</strong><br/>
-            Include the gallery link in thank you messages or follow-up emails to guests
+            <strong>4. 📧 Send to Guests</strong>
+            <br />
+            Include the gallery link in thank you messages or follow-up emails
+            to guests
           </Text>
 
           <Text style={printingTips}>
-            <strong>💡 Printing Tips:</strong><br/>
-            • Use 80-110lb cardstock for professional results<br/>
-            • Print at actual size (don&apos;t scale to fit)<br/>
-            • Place QR codes where guests gather: entrance, bar, photo booth
+            <strong>💡 Printing Tips:</strong>
+            <br />
+            • Use 80-110lb cardstock for professional results
+            <br />
+            • Print at actual size (don&apos;t scale to fit)
+            <br />• Place QR codes where guests gather: entrance, bar, photo
+            booth
           </Text>
         </Section>
 
         <Hr style={hr} />
 
         <Section style={buttonSection}>
-          <Button
-            style={button}
-            href={`${baseUrl}/${eventId}`}
-          >
+          <Button style={button} href={`${baseUrl}/${eventId}`}>
             View Your Gallery
           </Button>
         </Section>
@@ -150,7 +190,7 @@ export const EventCompletionEmail = ({
         <Hr style={hr} />
 
         <Text style={footer}>
-          Need help? Just reply to this email - we're here to help!
+          Need help? Just reply to this email - we&apos;re here to help!
           <br />
           <br />
           The Guestography Team
