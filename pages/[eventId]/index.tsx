@@ -149,14 +149,14 @@ export default function Home(props: Props) {
             </Link>
           </div>
         )}
-        <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
+        <div className="min-h-screen overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
           <div className="relative mx-auto max-w-5xl">
             <h1 className="text-center text-4xl font-bold tracking-tight text-gray-900 sm:text-4xl">
               {title} Gallery
             </h1>
             <div className="mt-12">
               <EventContext.Provider value={{ eventId }}>
-                <h2 className="text-2xl font-bold mt-8 mb-4">Media</h2>
+                <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-900">Media</h2>
                 {media && (
                   <PhotoAlbum
                     layout="masonry"
@@ -172,7 +172,7 @@ export default function Home(props: Props) {
                     defaultContainerWidth={399}
                   />
                 )}
-                <h2 className="text-2xl font-bold mt-8 mb-4">Unsorted Media</h2>
+                <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-900">Unsorted Media</h2>
                 {unsorted && (
                   <PhotoAlbum
                     layout="masonry"
@@ -281,7 +281,7 @@ export default function Home(props: Props) {
                         }
                       }}
                       placeholder="your@email.com"
-                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                       autoFocus
                     />
                   </div>

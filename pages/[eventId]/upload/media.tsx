@@ -626,7 +626,7 @@ export default function Home(props: Props) {
                         }
                       }}
                       placeholder="Your name"
-                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                       autoFocus
                     />
                   </div>
@@ -684,7 +684,7 @@ export default function Home(props: Props) {
                         }
                       }}
                       placeholder="Enter your email"
-                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      className="block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                       autoFocus
                     />
                   </div>
