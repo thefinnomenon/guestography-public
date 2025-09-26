@@ -1,5 +1,6 @@
 import { createCanvas, loadImage, registerFont } from 'canvas';
 import QRCode from 'qrcode';
+import path from 'path';
 
 export type TemplateStyle = 'classic' | 'celebration' | 'modern' | 'elegant' | 'minimal';
 
@@ -14,9 +15,6 @@ interface TemplateConfig {
 const CARD_WIDTH = 1200;  // 4 inches at 300 DPI
 const CARD_HEIGHT = 1800; // 6 inches at 300 DPI
 const QR_SIZE = 600;      // 2 inches at 300 DPI
-
-// Use fonts that are more universally available in serverless environments
-const FONT_STACK: string = 'monospace';
 
 // Sanitize text for canvas rendering
 function sanitizeText(text: string): string {
@@ -35,6 +33,31 @@ function sanitizeText(text: string): string {
     .trim() || 'Event Gallery';
 }
 
+// Register custom fonts for reliable cross-platform rendering
+function initializeFonts() {
+  try {
+    const fontDir = path.join(process.cwd(), 'public', 'fonts');
+    
+    registerFont(path.join(fontDir, 'Roboto-Regular.ttf'), {
+      family: 'Roboto',
+      weight: 'normal'
+    });
+    
+    registerFont(path.join(fontDir, 'Roboto-Bold.ttf'), {
+      family: 'Roboto',
+      weight: 'bold'
+    });
+    
+    console.log('Fonts registered successfully');
+    return 'Roboto, sans-serif';
+  } catch (error) {
+    console.warn('Font registration failed, using fallback:', error);
+    return 'sans-serif';
+  }
+}
+
+const SAFE_FONT = initializeFonts();
+
 export async function generateQRTemplate({
   eventTitle,
   eventId,
@@ -45,11 +68,6 @@ export async function generateQRTemplate({
   const canvas = createCanvas(CARD_WIDTH, CARD_HEIGHT);
   const ctx = canvas.getContext('2d');
   
-  // Debug: Log available fonts in production
-  if (process.env.NODE_ENV === 'production') {
-    console.log('Available fonts:', (ctx as any).getAvailableFonts?.() || 'getAvailableFonts not available');
-    console.log('Testing font rendering with different fonts');
-  }
 
   // Generate QR code
   const galleryUrl = `${baseUrl}/${eventId}`;
@@ -100,12 +118,12 @@ async function drawClassicTemplate(
 
   // Event title
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 72px ' + FONT_STACK;
+  ctx.font = 'bold 72px ' + SAFE_FONT;
   ctx.textAlign = 'center';
   ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 180);
 
   // Subtitle
-  ctx.font = '36px ' + FONT_STACK;
+  ctx.font = '36px ' + SAFE_FONT;
   ctx.fillText('Photo Gallery', CARD_WIDTH / 2, 250);
 
   // QR code container
@@ -123,11 +141,11 @@ async function drawClassicTemplate(
 
   // Instructions
   ctx.fillStyle = '#1F2937';
-  ctx.font = 'bold 48px ' + FONT_STACK;
+  ctx.font = 'bold 48px ' + SAFE_FONT;
   ctx.fillText('📱 Scan to View & Upload', CARD_WIDTH / 2, qrY + QR_SIZE + 120);
 
   // Steps
-  ctx.font = '36px ' + FONT_STACK;
+  ctx.font = '36px ' + SAFE_FONT;
   ctx.fillStyle = '#6B7280';
   ctx.textAlign = 'left';
   const stepsY = qrY + QR_SIZE + 200;
@@ -140,14 +158,14 @@ async function drawClassicTemplate(
 
   // Custom message or default
   ctx.fillStyle = '#059669';
-  ctx.font = 'bold 42px ' + FONT_STACK;
+  ctx.font = 'bold 42px ' + SAFE_FONT;
   ctx.textAlign = 'center';
   const message = customMessage || 'Share your memories with everyone!';
   ctx.fillText(message, CARD_WIDTH / 2, CARD_HEIGHT - 150);
 
   // Footer
   ctx.fillStyle = '#8B5CF6';
-  ctx.font = '32px ' + FONT_STACK;
+  ctx.font = '32px ' + SAFE_FONT;
   ctx.fillText('Powered by Guestography', CARD_WIDTH / 2, CARD_HEIGHT - 60);
 }
 
@@ -180,7 +198,7 @@ async function drawCelebrationTemplate(
   
   // Title - more refined
   ctx.fillStyle = '#581C87';
-  ctx.font = 'bold 72px ' + FONT_STACK;
+  ctx.font = 'bold 72px ' + SAFE_FONT;
   ctx.textAlign = 'center';
   ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 180);
 
@@ -194,7 +212,7 @@ async function drawCelebrationTemplate(
 
   // Subtitle
   ctx.fillStyle = '#7C3AED';
-  ctx.font = '36px ' + FONT_STACK;
+  ctx.font = '36px ' + SAFE_FONT;
   ctx.fillText('Share Your Joy!', CARD_WIDTH / 2, 280);
 
   // QR code with elegant frame
@@ -230,27 +248,27 @@ async function drawCelebrationTemplate(
 
   // Call to action - more elegant
   ctx.fillStyle = '#7C3AED';
-  ctx.font = 'bold 48px ' + FONT_STACK;
+  ctx.font = 'bold 48px ' + SAFE_FONT;
   ctx.fillText('Capture & Share Memories', CARD_WIDTH / 2, qrY + QR_SIZE + 100);
 
   // Instructions
-  ctx.font = '32px ' + FONT_STACK;
+  ctx.font = '32px ' + SAFE_FONT;
   ctx.fillStyle = '#6B21A8';
   ctx.fillText('Scan with your camera to upload photos', CARD_WIDTH / 2, qrY + QR_SIZE + 160);
 
   // Message
   ctx.fillStyle = '#A855F7';
-  ctx.font = '36px ' + FONT_STACK;
+  ctx.font = '36px ' + SAFE_FONT;
   const message = customMessage || 'Help us celebrate together!';
   ctx.fillText(message, CARD_WIDTH / 2, qrY + QR_SIZE + 220);
 
   // Bottom elegant decoration
   ctx.fillStyle = '#C084FC';
-  ctx.font = '32px ' + FONT_STACK;
+  ctx.font = '32px ' + SAFE_FONT;
   ctx.fillText('♦ ♦ ♦', CARD_WIDTH / 2, CARD_HEIGHT - 120);
   
   ctx.fillStyle = '#9333EA';
-  ctx.font = '28px ' + FONT_STACK;
+  ctx.font = '28px ' + SAFE_FONT;
   ctx.fillText('Powered by Guestography', CARD_WIDTH / 2, CARD_HEIGHT - 60);
 }
 
@@ -279,13 +297,13 @@ async function drawModernTemplate(
 
   // Title
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 78px ' + FONT_STACK;
+  ctx.font = 'bold 78px ' + SAFE_FONT;
   ctx.textAlign = 'center';
   ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 140);
 
   // Modern subtitle
   ctx.fillStyle = '#E9D5FF';
-  ctx.font = '36px ' + FONT_STACK;
+  ctx.font = '36px ' + SAFE_FONT;
   ctx.letterSpacing = '4px';
   ctx.fillText('DIGITAL GALLERY', CARD_WIDTH / 2, 220);
 
@@ -310,7 +328,7 @@ async function drawModernTemplate(
 
   // Message
   ctx.fillStyle = '#E9D5FF';
-  ctx.font = '36px ' + FONT_STACK;
+  ctx.font = '36px ' + SAFE_FONT;
   const message = customMessage || 'Upload. Share. Remember.';
   ctx.fillText(message, CARD_WIDTH / 2, qrY + QR_SIZE + 180);
 
@@ -319,7 +337,7 @@ async function drawModernTemplate(
   ctx.fillRect(200, CARD_HEIGHT - 100, CARD_WIDTH - 400, 4);
   
   ctx.fillStyle = '#9CA3AF';
-  ctx.font = '28px ' + FONT_STACK;
+  ctx.font = '28px ' + SAFE_FONT;
   ctx.fillText('guestography.com', CARD_WIDTH / 2, CARD_HEIGHT - 40);
 }
 
@@ -435,7 +453,7 @@ async function drawMinimalTemplate(
 
   // Simple title
   ctx.fillStyle = '#000000';
-  ctx.font = '64px ' + FONT_STACK;
+  ctx.font = '64px ' + SAFE_FONT;
   ctx.textAlign = 'center';
   ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 200);
 
@@ -456,18 +474,18 @@ async function drawMinimalTemplate(
 
   // Minimal instruction
   ctx.fillStyle = '#6B7280';
-  ctx.font = '32px ' + FONT_STACK;
+  ctx.font = '32px ' + SAFE_FONT;
   ctx.fillText('Scan. Upload. Share.', CARD_WIDTH / 2, qrY + QR_SIZE + 80);
 
   // Custom message if provided
   if (customMessage) {
     ctx.fillStyle = '#9CA3AF';
-    ctx.font = '28px ' + FONT_STACK;
+    ctx.font = '28px ' + SAFE_FONT;
     ctx.fillText(sanitizeText(customMessage), CARD_WIDTH / 2, qrY + QR_SIZE + 140);
   }
 
   // Subtle footer
   ctx.fillStyle = '#E5E7EB';
-  ctx.font = '24px ' + FONT_STACK;
+  ctx.font = '24px ' + SAFE_FONT;
   ctx.fillText('guestography', CARD_WIDTH / 2, CARD_HEIGHT - 60);
 }
