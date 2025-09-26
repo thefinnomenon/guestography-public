@@ -8,7 +8,7 @@ import { sendEventCompletionEmail } from "../../../lib/send-completion-email";
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15",
+  apiVersion: "2023-08-16",
 });
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_KEY as string);
