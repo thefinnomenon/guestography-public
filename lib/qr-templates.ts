@@ -15,6 +15,23 @@ const CARD_WIDTH = 1200;  // 4 inches at 300 DPI
 const CARD_HEIGHT = 1800; // 6 inches at 300 DPI
 const QR_SIZE = 600;      // 2 inches at 300 DPI
 
+// Sanitize text for canvas rendering
+function sanitizeText(text: string): string {
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    // Remove any remaining HTML entities
+    .replace(/&[a-zA-Z0-9#]+;/g, '')
+    // Remove control characters but keep printable characters
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
+    // Ensure we have valid text
+    .trim() || 'Event Gallery';
+}
+
 export async function generateQRTemplate({
   eventTitle,
   eventId,
@@ -76,7 +93,7 @@ async function drawClassicTemplate(
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 72px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(eventTitle, CARD_WIDTH / 2, 180);
+  ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 180);
 
   // Subtitle
   ctx.font = '36px sans-serif';
@@ -156,7 +173,7 @@ async function drawCelebrationTemplate(
   ctx.fillStyle = '#581C87';
   ctx.font = 'bold 72px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(eventTitle, CARD_WIDTH / 2, 180);
+  ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 180);
 
   // Decorative line
   ctx.strokeStyle = '#C084FC';
@@ -255,7 +272,7 @@ async function drawModernTemplate(
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 78px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(eventTitle, CARD_WIDTH / 2, 140);
+  ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 140);
 
   // Modern subtitle
   ctx.fillStyle = '#E9D5FF';
@@ -320,7 +337,7 @@ async function drawElegantTemplate(
   ctx.fillStyle = '#5C4033';
   ctx.font = 'italic 72px serif';
   ctx.textAlign = 'center';
-  ctx.fillText(eventTitle, CARD_WIDTH / 2, 200);
+  ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 200);
 
   // Decorative line
   ctx.strokeStyle = '#D4A574';
@@ -411,7 +428,7 @@ async function drawMinimalTemplate(
   ctx.fillStyle = '#000000';
   ctx.font = '64px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(eventTitle, CARD_WIDTH / 2, 200);
+  ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 200);
 
   // Thin line
   ctx.strokeStyle = '#E5E7EB';
@@ -437,7 +454,7 @@ async function drawMinimalTemplate(
   if (customMessage) {
     ctx.fillStyle = '#9CA3AF';
     ctx.font = '28px sans-serif';
-    ctx.fillText(customMessage, CARD_WIDTH / 2, qrY + QR_SIZE + 140);
+    ctx.fillText(sanitizeText(customMessage), CARD_WIDTH / 2, qrY + QR_SIZE + 140);
   }
 
   // Subtle footer
