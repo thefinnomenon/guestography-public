@@ -15,8 +15,8 @@ const CARD_WIDTH = 1200;  // 4 inches at 300 DPI
 const CARD_HEIGHT = 1800; // 6 inches at 300 DPI
 const QR_SIZE = 600;      // 2 inches at 300 DPI
 
-// Use a font stack that works in production environments
-const FONT_STACK: string = 'Arial, Helvetica, DejaVu Sans, Liberation Sans, sans-serif';
+// Use fonts that are more universally available in serverless environments
+const FONT_STACK: string = 'monospace';
 
 // Sanitize text for canvas rendering
 function sanitizeText(text: string): string {
@@ -44,6 +44,12 @@ export async function generateQRTemplate({
 }: TemplateConfig): Promise<Buffer> {
   const canvas = createCanvas(CARD_WIDTH, CARD_HEIGHT);
   const ctx = canvas.getContext('2d');
+  
+  // Debug: Log available fonts in production
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Available fonts:', (ctx as any).getAvailableFonts?.() || 'getAvailableFonts not available');
+    console.log('Testing font rendering with different fonts');
+  }
 
   // Generate QR code
   const galleryUrl = `${baseUrl}/${eventId}`;
