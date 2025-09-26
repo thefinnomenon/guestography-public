@@ -17,7 +17,7 @@ if (!admin.apps.length)
 else admin.app();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-08-16",
+  apiVersion: "2025-08-27.basil",
 });
 
 export default async function handler(
