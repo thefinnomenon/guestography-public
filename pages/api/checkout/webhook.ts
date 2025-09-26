@@ -48,6 +48,7 @@ async function sendCompletionEmailForEvent(eventId: string, db: any) {
     const { title, email: ownerEmail, firstName, lastName } = eventData;
     const ownerName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || 'Event Host';
 
+    // Validate email presence
     if (!ownerEmail) {
       console.error(`No owner email found for event ${eventId}`);
       mixpanel.track("Completion Email Failed", {
