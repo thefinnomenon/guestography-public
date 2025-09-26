@@ -15,6 +15,9 @@ const CARD_WIDTH = 1200;  // 4 inches at 300 DPI
 const CARD_HEIGHT = 1800; // 6 inches at 300 DPI
 const QR_SIZE = 600;      // 2 inches at 300 DPI
 
+// Use a font stack that works in production environments
+const FONT_STACK: string = 'Arial, Helvetica, DejaVu Sans, Liberation Sans, sans-serif';
+
 // Sanitize text for canvas rendering
 function sanitizeText(text: string): string {
   return text
@@ -91,12 +94,12 @@ async function drawClassicTemplate(
 
   // Event title
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 72px sans-serif';
+  ctx.font = 'bold 72px ' + FONT_STACK;
   ctx.textAlign = 'center';
   ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 180);
 
   // Subtitle
-  ctx.font = '36px sans-serif';
+  ctx.font = '36px ' + FONT_STACK;
   ctx.fillText('Photo Gallery', CARD_WIDTH / 2, 250);
 
   // QR code container
@@ -114,11 +117,11 @@ async function drawClassicTemplate(
 
   // Instructions
   ctx.fillStyle = '#1F2937';
-  ctx.font = 'bold 48px sans-serif';
+  ctx.font = 'bold 48px ' + FONT_STACK;
   ctx.fillText('📱 Scan to View & Upload', CARD_WIDTH / 2, qrY + QR_SIZE + 120);
 
   // Steps
-  ctx.font = '36px sans-serif';
+  ctx.font = '36px ' + FONT_STACK;
   ctx.fillStyle = '#6B7280';
   ctx.textAlign = 'left';
   const stepsY = qrY + QR_SIZE + 200;
@@ -131,14 +134,14 @@ async function drawClassicTemplate(
 
   // Custom message or default
   ctx.fillStyle = '#059669';
-  ctx.font = 'bold 42px sans-serif';
+  ctx.font = 'bold 42px ' + FONT_STACK;
   ctx.textAlign = 'center';
   const message = customMessage || 'Share your memories with everyone!';
   ctx.fillText(message, CARD_WIDTH / 2, CARD_HEIGHT - 150);
 
   // Footer
   ctx.fillStyle = '#8B5CF6';
-  ctx.font = '32px sans-serif';
+  ctx.font = '32px ' + FONT_STACK;
   ctx.fillText('Powered by Guestography', CARD_WIDTH / 2, CARD_HEIGHT - 60);
 }
 
@@ -171,7 +174,7 @@ async function drawCelebrationTemplate(
   
   // Title - more refined
   ctx.fillStyle = '#581C87';
-  ctx.font = 'bold 72px sans-serif';
+  ctx.font = 'bold 72px ' + FONT_STACK;
   ctx.textAlign = 'center';
   ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 180);
 
@@ -185,7 +188,7 @@ async function drawCelebrationTemplate(
 
   // Subtitle
   ctx.fillStyle = '#7C3AED';
-  ctx.font = '36px sans-serif';
+  ctx.font = '36px ' + FONT_STACK;
   ctx.fillText('Share Your Joy!', CARD_WIDTH / 2, 280);
 
   // QR code with elegant frame
@@ -221,27 +224,27 @@ async function drawCelebrationTemplate(
 
   // Call to action - more elegant
   ctx.fillStyle = '#7C3AED';
-  ctx.font = 'bold 48px sans-serif';
+  ctx.font = 'bold 48px ' + FONT_STACK;
   ctx.fillText('Capture & Share Memories', CARD_WIDTH / 2, qrY + QR_SIZE + 100);
 
   // Instructions
-  ctx.font = '32px sans-serif';
+  ctx.font = '32px ' + FONT_STACK;
   ctx.fillStyle = '#6B21A8';
   ctx.fillText('Scan with your camera to upload photos', CARD_WIDTH / 2, qrY + QR_SIZE + 160);
 
   // Message
   ctx.fillStyle = '#A855F7';
-  ctx.font = '36px sans-serif';
+  ctx.font = '36px ' + FONT_STACK;
   const message = customMessage || 'Help us celebrate together!';
   ctx.fillText(message, CARD_WIDTH / 2, qrY + QR_SIZE + 220);
 
   // Bottom elegant decoration
   ctx.fillStyle = '#C084FC';
-  ctx.font = '32px sans-serif';
+  ctx.font = '32px ' + FONT_STACK;
   ctx.fillText('♦ ♦ ♦', CARD_WIDTH / 2, CARD_HEIGHT - 120);
   
   ctx.fillStyle = '#9333EA';
-  ctx.font = '28px sans-serif';
+  ctx.font = '28px ' + FONT_STACK;
   ctx.fillText('Powered by Guestography', CARD_WIDTH / 2, CARD_HEIGHT - 60);
 }
 
@@ -270,13 +273,13 @@ async function drawModernTemplate(
 
   // Title
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 78px sans-serif';
+  ctx.font = 'bold 78px ' + FONT_STACK;
   ctx.textAlign = 'center';
   ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 140);
 
   // Modern subtitle
   ctx.fillStyle = '#E9D5FF';
-  ctx.font = '36px sans-serif';
+  ctx.font = '36px ' + FONT_STACK;
   ctx.letterSpacing = '4px';
   ctx.fillText('DIGITAL GALLERY', CARD_WIDTH / 2, 220);
 
@@ -301,7 +304,7 @@ async function drawModernTemplate(
 
   // Message
   ctx.fillStyle = '#E9D5FF';
-  ctx.font = '36px sans-serif';
+  ctx.font = '36px ' + FONT_STACK;
   const message = customMessage || 'Upload. Share. Remember.';
   ctx.fillText(message, CARD_WIDTH / 2, qrY + QR_SIZE + 180);
 
@@ -310,7 +313,7 @@ async function drawModernTemplate(
   ctx.fillRect(200, CARD_HEIGHT - 100, CARD_WIDTH - 400, 4);
   
   ctx.fillStyle = '#9CA3AF';
-  ctx.font = '28px sans-serif';
+  ctx.font = '28px ' + FONT_STACK;
   ctx.fillText('guestography.com', CARD_WIDTH / 2, CARD_HEIGHT - 40);
 }
 
@@ -426,7 +429,7 @@ async function drawMinimalTemplate(
 
   // Simple title
   ctx.fillStyle = '#000000';
-  ctx.font = '64px sans-serif';
+  ctx.font = '64px ' + FONT_STACK;
   ctx.textAlign = 'center';
   ctx.fillText(sanitizeText(eventTitle), CARD_WIDTH / 2, 200);
 
@@ -447,18 +450,18 @@ async function drawMinimalTemplate(
 
   // Minimal instruction
   ctx.fillStyle = '#6B7280';
-  ctx.font = '32px sans-serif';
+  ctx.font = '32px ' + FONT_STACK;
   ctx.fillText('Scan. Upload. Share.', CARD_WIDTH / 2, qrY + QR_SIZE + 80);
 
   // Custom message if provided
   if (customMessage) {
     ctx.fillStyle = '#9CA3AF';
-    ctx.font = '28px sans-serif';
+    ctx.font = '28px ' + FONT_STACK;
     ctx.fillText(sanitizeText(customMessage), CARD_WIDTH / 2, qrY + QR_SIZE + 140);
   }
 
   // Subtle footer
   ctx.fillStyle = '#E5E7EB';
-  ctx.font = '24px sans-serif';
+  ctx.font = '24px ' + FONT_STACK;
   ctx.fillText('guestography', CARD_WIDTH / 2, CARD_HEIGHT - 60);
 }
