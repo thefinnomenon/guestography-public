@@ -45,7 +45,8 @@ async function sendCompletionEmailForEvent(eventId: string, db: any) {
     }
 
     const eventData = eventDoc.data();
-    const { title, ownerEmail, ownerName } = eventData;
+    const { title, email: ownerEmail, firstName, lastName } = eventData;
+    const ownerName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || 'Event Host';
 
     if (!ownerEmail) {
       console.error(`No owner email found for event ${eventId}`);
