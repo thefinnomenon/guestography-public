@@ -28,6 +28,7 @@ import { Event } from "../../types.js";
 const webhookSecret = defineSecret("WEBHOOK_SECRET");
 const cloudflareAccessKeyId = defineSecret("CLOUDFLARE_ACCESS_KEY_ID");
 const cloudflareSecretAccessKey = defineSecret("CLOUDFLARE_SECRET_ACCESS_KEY");
+const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 admin.initializeApp();
 
@@ -212,6 +213,7 @@ export const handleMediaUpload = functions
             Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
             Key: r2Key,
             ContentType: "image/jpeg",
+            CacheControl: IMMUTABLE_CACHE_CONTROL,
             Body: poster,
           });
           console.log(`Uploaded poster to R2 with key: ${r2Key}`);

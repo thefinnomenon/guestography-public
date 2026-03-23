@@ -24,6 +24,7 @@ if (!admin.apps.length)
 else admin.app();
 
 const R2_BUCKET_NAME = process.env.CLOUDFLARE_BUCKET_NAME;
+const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 const R2 = new S3Client({
   region: "auto",
@@ -75,6 +76,7 @@ export async function createMultipartUpload(
       Bucket: R2_BUCKET_NAME,
       Key,
       ContentType: contentType,
+      CacheControl: IMMUTABLE_CACHE_CONTROL,
     };
 
     const command = new CreateMultipartUploadCommand({ ...params });
