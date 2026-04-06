@@ -69,7 +69,7 @@ jobs:
         id: branch
         shell: bash
         run: |
-          ISSUE_TITLE="$(node -e "const e=require(process.env.GITHUB_EVENT_PATH); console.log((e.issue.title||'task').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase().slice(0,48) || 'task')")"
+          ISSUE_TITLE="$(node -e "const e=require(process.env.GITHUB_EVENT_PATH); const issue=e.issue||e; const title=(issue&&issue.title)||'task'; console.log(title.replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').toLowerCase().slice(0,48) || 'task')")"
           echo "name=agent/issue-${ISSUE_NUMBER}-${ISSUE_TITLE}" >> "$GITHUB_OUTPUT"
 
       - name: Prepare agent prompt

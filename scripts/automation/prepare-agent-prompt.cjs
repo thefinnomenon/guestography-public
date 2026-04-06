@@ -11,7 +11,7 @@ if (!eventPath) {
 }
 
 const event = JSON.parse(fs.readFileSync(eventPath, "utf8"));
-const issue = event.issue;
+const issue = event.issue || event;
 
 if (!issue) {
   console.error("GitHub event payload does not contain an issue.");
