@@ -23,19 +23,6 @@ permissions:
 
 jobs:
   triage:
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' &&
-       !github.event.issue.pull_request &&
-       (contains(join(github.event.issue.labels.*.name, ','), 'agent') ||
-        (github.event.action == 'labeled' && github.event.label.name == 'agent'))) ||
-      (github.event_name == 'issue_comment' &&
-       !github.event.issue.pull_request &&
-       (contains(join(github.event.issue.labels.*.name, ','), 'agent') ||
-        contains(join(github.event.issue.labels.*.name, ','), 'needs-context')) &&
-       (github.event.comment.author_association == 'OWNER' ||
-        github.event.comment.author_association == 'MEMBER' ||
-        github.event.comment.author_association == 'COLLABORATOR'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -43,7 +30,48 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Decide whether triage should run
+        id: gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eventName = context.eventName;
+            const issue = context.payload.issue;
+            const comment = context.payload.comment;
+            const label = context.payload.label;
+
+            if (eventName === "workflow_dispatch") {
+              core.setOutput("should_run", "true");
+              return;
+            }
+
+            if (!issue || issue.pull_request) {
+              core.setOutput("should_run", "false");
+              return;
+            }
+
+            const labels = (issue.labels || []).map((entry) => {
+              return typeof entry === "string" ? entry : entry.name;
+            });
+
+            if (eventName === "issues") {
+              const isAgentIssue = labels.includes("agent");
+              const justAddedAgentLabel = context.payload.action === "labeled" && label?.name === "agent";
+              core.setOutput("should_run", isAgentIssue || justAddedAgentLabel ? "true" : "false");
+              return;
+            }
+
+            if (eventName === "issue_comment") {
+              const isMaintainer = ["OWNER", "MEMBER", "COLLABORATOR"].includes(comment?.author_association || "");
+              const isTrackedIssue = labels.includes("agent") || labels.includes("needs-context");
+              core.setOutput("should_run", isMaintainer && isTrackedIssue ? "true" : "false");
+              return;
+            }
+
+            core.setOutput("should_run", "false");
+
       - name: Fetch full issue context
+        if: steps.gate.outputs.should_run == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -65,9 +93,11 @@ jobs:
             core.exportVariable("TRIAGE_EVENT_PATH", payloadPath);
 
       - name: Analyze issue
+        if: steps.gate.outputs.should_run == 'true'
         run: node scripts/automation/analyze-issue-context.cjs "$TRIAGE_EVENT_PATH" > "$RUNNER_TEMP/triage-result.json"
 
       - name: Apply labels and triage comment
+        if: steps.gate.outputs.should_run == 'true'
         uses: actions/github-script@v7
         env:
           TRIAGE_RESULT_PATH: ${{ runner.temp }}/triage-result.json
