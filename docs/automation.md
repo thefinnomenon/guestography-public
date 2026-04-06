@@ -30,7 +30,7 @@ Triage applies one of these state labels:
 
 Implementation runs when:
 
-- triage applies `ready-for-agent`
+- triage dispatches the implementation workflow after classifying the issue as `ready-for-agent`
 - the workflow is manually dispatched for a specific issue
 
 The implementation workflow:
@@ -48,7 +48,8 @@ The triage workflow:
 2. analyzes whether the issue is executable now
 3. updates the triage state label
 4. posts or updates a single triage comment in the issue thread
-5. re-runs automatically when maintainers reply with more context
+5. dispatches the implementation workflow when an issue becomes `ready-for-agent`
+6. re-runs automatically when maintainers reply with more context
 
 ## Required GitHub Secrets And Variables
 
