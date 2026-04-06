@@ -106,6 +106,7 @@ jobs:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: ${{ runner.temp }}/agent-prompt.md
           sandbox: workspace-write
+          allow-bots: true
           model: ${{ env.AGENT_MODEL }}
           effort: ${{ env.AGENT_EFFORT }}
           allow-users: ${{ env.AGENT_ALLOW_USERS }}
