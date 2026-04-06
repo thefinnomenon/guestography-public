@@ -1,34 +1,71 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Guestography
 
-## Getting Started
+Guestography is a dormant Next.js and Firebase event-media application that has been refit with a lightweight agent harness so repository work can start from GitHub issues and end in pull requests.
 
-First, run the development server:
+## Stack
+
+- Next.js 13 with the `pages/` router
+- Firebase Functions for backend and scheduled or background logic
+- Firebase, Stripe, AWS media services, Mixpanel, Sentry, Resend, and Twilio integrations
+
+## Local Development
+
+Install dependencies:
 
 ```bash
-npm run dev
-# or
+yarn install --frozen-lockfile
+npm install --prefix functions
+```
+
+Run the app:
+
+```bash
 yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Run validations:
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+```bash
+yarn lint
+npm --prefix functions run lint
+npm --prefix functions run build
+yarn harness:check
+```
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+## Agent Harness
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+This repository now follows the harness-engineering pattern in a pragmatic form for an existing codebase:
 
-## Learn More
+- [`AGENTS.md`](./AGENTS.md) is the agent entrypoint
+- [`.github/workflows/sync-harness-labels.yml`](./.github/workflows/sync-harness-labels.yml) keeps the harness labels in sync
+- [`docs/`](./docs/README.md) is the versioned system of record
+- [`.github/workflows/agent-triage.yml`](./.github/workflows/agent-triage.yml) classifies issues as ready, needs context, or needs a plan
+- [`.github/workflows/agent-issue.yml`](./.github/workflows/agent-issue.yml) turns triage-approved issues into agent work
+- [`.github/workflows/doc-gardener.yml`](./.github/workflows/doc-gardener.yml) performs scheduled documentation maintenance
 
-To learn more about Next.js, take a look at the following resources:
+To trigger automated work:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create an issue, preferably using the `Agent task` template.
+2. Add the `agent` label.
+3. If triage asks follow-up questions, reply in the same issue thread.
+4. Review the PR that the workflow opens or updates after triage applies `ready-for-agent`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## GitHub Setup
 
-## Deploy on Vercel
+Required repository secret for the current OpenAI-backed implementation:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `OPENAI_API_KEY`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Optional repository variables:
+
+- `AGENT_MODEL`
+- `AGENT_EFFORT`
+- `AGENT_ALLOW_USERS`
+
+## Repository Docs
+
+- [`docs/architecture.md`](./docs/architecture.md)
+- [`docs/development.md`](./docs/development.md)
+- [`docs/product.md`](./docs/product.md)
+- [`docs/automation.md`](./docs/automation.md)
+- [`docs/exec-plans/README.md`](./docs/exec-plans/README.md)
