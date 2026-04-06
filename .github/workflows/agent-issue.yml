@@ -110,6 +110,22 @@ jobs:
           effort: ${{ env.AGENT_EFFORT }}
           allow-users: ${{ env.AGENT_ALLOW_USERS }}
 
+      - name: Normalize agent summary
+        id: summary
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+          RAW_SUMMARY: ${{ steps.run_agent.outputs.final-message }}
+        with:
+          script: |
+            const raw = (process.env.RAW_SUMMARY || "").trim();
+            const issueNumber = process.env.ISSUE_NUMBER;
+            let summary = raw || "The agent completed without emitting a final summary.";
+            summary = summary.replace(/#undefined/g, `#${issueNumber}`);
+            summary = summary.replace(/\bundefined issue\b/gi, `issue #${issueNumber}`);
+            summary = summary.replace(/\s+/g, " ").trim();
+            core.setOutput("text", summary);
+
       - name: Create or update pull request
         id: cpr
         uses: peter-evans/create-pull-request@v7
@@ -123,8 +139,11 @@ jobs:
 
             This pull request was prepared by the repository agent harness.
 
+            Issue context:
+            - Issue: #${{ env.ISSUE_NUMBER }}
+
             Agent summary:
-            ${{ steps.run_agent.outputs.final-message }}
+            ${{ steps.summary.outputs.text }}
           add-paths: |
             .
           delete-branch: true
@@ -147,7 +166,7 @@ jobs:
         if: steps.cpr.outputs.pull-request-url == ''
         uses: actions/github-script@v7
         env:
-          FINAL_MESSAGE: ${{ steps.run_agent.outputs.final-message }}
+          FINAL_MESSAGE: ${{ steps.summary.outputs.text }}
         with:
           script: |
             const summary = process.env.FINAL_MESSAGE || "The agent completed without producing a diff.";
