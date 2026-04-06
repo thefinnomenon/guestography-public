@@ -142,30 +142,36 @@ jobs:
 
             let body = "";
             if (result.status === "ready-for-agent") {
-              body = `${marker}
-Agent triage result: \`ready-for-agent\`
-
-${result.rationale}
-
-The implementation workflow can proceed on this issue.`;
+              body = [
+                marker,
+                "Agent triage result: `ready-for-agent`",
+                "",
+                result.rationale,
+                "",
+                "The implementation workflow can proceed on this issue.",
+              ].join("\n");
             } else if (result.status === "needs-plan") {
-              body = `${marker}
-Agent triage result: \`needs-plan\`
-
-${result.rationale}
-
-This issue should be split into smaller tasks or start with an execution plan in \`docs/exec-plans/\` before direct implementation.`;
+              body = [
+                marker,
+                "Agent triage result: `needs-plan`",
+                "",
+                result.rationale,
+                "",
+                "This issue should be split into smaller tasks or start with an execution plan in `docs/exec-plans/` before direct implementation.",
+              ].join("\n");
             } else {
               const questions = result.questions.map((question) => `- ${question}`).join("\n");
-              body = `${marker}
-Agent triage result: \`needs-context\`
-
-${result.rationale}
-
-Please reply in this issue with:
-${questions}
-
-When enough context is present, triage will relabel the issue automatically and the implementation workflow can continue.`;
+              body = [
+                marker,
+                "Agent triage result: `needs-context`",
+                "",
+                result.rationale,
+                "",
+                "Please reply in this issue with:",
+                questions,
+                "",
+                "When enough context is present, triage will relabel the issue automatically and the implementation workflow can continue.",
+              ].join("\n");
             }
 
             const comments = await github.paginate(github.rest.issues.listComments, {
