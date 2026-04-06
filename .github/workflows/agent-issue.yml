@@ -58,10 +58,18 @@ jobs:
             const event = require(process.env.GITHUB_EVENT_PATH);
             const issue = event.issue || event;
             const text = `${issue.title || ""}\n${issue.body || ""}`.toLowerCase();
+            const docsOnly =
+              (text.includes("readme.md") || text.includes("docs/") || text.includes("agents.md")) &&
+              !text.includes("pages/") &&
+              !text.includes("components/") &&
+              !text.includes("lib/") &&
+              !text.includes("utils/") &&
+              !text.includes("functions/");
             const needsFunctions =
               text.includes("functions/") ||
               text.includes("firebase function") ||
               text.includes("cloud function");
+            core.setOutput("docs_only", docsOnly ? "true" : "false");
             core.setOutput("needs_functions", needsFunctions ? "true" : "false");
 
       - uses: actions/checkout@v5
@@ -74,10 +82,11 @@ jobs:
           cache: yarn
 
       - name: Install app dependencies
+        if: steps.scope.outputs.docs_only != 'true'
         run: yarn install --frozen-lockfile
 
       - name: Install functions dependencies
-        if: steps.scope.outputs.needs_functions == 'true'
+        if: steps.scope.outputs.docs_only != 'true' && steps.scope.outputs.needs_functions == 'true'
         run: npm install --prefix functions --no-package-lock
 
       - name: Compute branch name
