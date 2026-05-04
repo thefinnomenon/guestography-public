@@ -124,7 +124,16 @@ jobs:
             let summary = raw || "The agent completed without emitting a final summary.";
             summary = summary.replace(/#undefined/g, `#${issueNumber}`);
             summary = summary.replace(/\bundefined issue\b/gi, `issue #${issueNumber}`);
-            summary = summary.replace(/\s+/g, " ").trim();
+            if (!summary.includes("\n")) {
+              summary = summary
+                .replace(/\s+\*\*(What changed|Validation run|Scope tradeoff|Notes)\*\*\s*-\s*/g, "\n\n**$1**\n- ")
+                .replace(/\s-\s(?=[`A-Za-z(])/g, "\n- ");
+            }
+            summary = summary
+              .replace(/\r\n/g, "\n")
+              .replace(/[ \t]+\n/g, "\n")
+              .replace(/\n{3,}/g, "\n\n")
+              .trim();
             core.setOutput("text", summary);
 
       - name: Create or update pull request
@@ -143,7 +152,7 @@ jobs:
             Issue context:
             - Issue: #${{ env.ISSUE_NUMBER }}
 
-            Agent summary:
+            **Agent Summary**
             ${{ steps.summary.outputs.text }}
           add-paths: |
             .
