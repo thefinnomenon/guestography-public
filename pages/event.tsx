@@ -1,4 +1,5 @@
 import { FormEvent, useState, useEffect } from "react";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { ClipLoader } from "react-spinners";
 import { IoWarningOutline } from "react-icons/io5";
@@ -6,6 +7,7 @@ import { RiRefund2Line } from "react-icons/ri";
 import { track } from "../lib/mixpanel";
 import { FaRegFileImage } from "react-icons/fa";
 import { MdAccessTime } from "react-icons/md";
+import { absoluteUrl } from "../lib/seo";
 
 export default function Form() {
   const router = useRouter();
@@ -61,8 +63,25 @@ export default function Form() {
   };
 
   return (
-    <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
-      <div className="relative mx-auto max-w-xl">
+    <>
+      <Head>
+        <title>Create an Event Gallery | Guestography</title>
+        <meta
+          name="description"
+          content="Create a Guestography event gallery and get printable QR code cards so guests can upload photos and videos from their phones."
+        />
+        <link rel="canonical" href={absoluteUrl("/event")} />
+        <meta property="og:title" content="Create an Event Gallery" />
+        <meta
+          property="og:description"
+          content="Create a QR code photo gallery for your wedding, party, fundraiser, reunion, or event."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={absoluteUrl("/event")} />
+        <meta property="og:image" content={absoluteUrl("/landing-page/0.jpg")} />
+      </Head>
+      <div className="overflow-hidden bg-white py-16 px-4 sm:px-6 lg:px-8 lg:py-24">
+        <div className="relative mx-auto max-w-xl">
         <svg
           className="absolute left-full translate-x-1/2 transform"
           width={404}
@@ -252,6 +271,7 @@ export default function Form() {
           </form>
         </div>
       </div>
-    </div>
+        </div>
+    </>
   );
 }

@@ -42,7 +42,7 @@ export default function NavBar() {
     case "/":
       buttonData = {
         title: "CREATE EVENT",
-        href: "event",
+        href: "/event",
       };
       break;
     case "/[eventId]":
@@ -83,7 +83,7 @@ export default function NavBar() {
                   />
                   <span
                     className={`text-xl font-medium ${
-                      buttonData && "hidden"
+                      buttonData ? "hidden" : ""
                     } sm:block`}
                   >
                     Guestography
@@ -91,14 +91,24 @@ export default function NavBar() {
                 </div>
               </a>
             </div>
-            {buttonData && (
-              <a
-                className="cursor-pointer inline-fle items-center justify-center rounded-md border border-transparent bg-white px-6 py-3 text-base font-medium text-indigo-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 hover:bg-indigo-100"
-                href={buttonData.href}
-              >
-                {buttonData.title}
-              </a>
-            )}
+            <div className="flex items-center gap-4">
+              {path === "/" && (
+                <Link
+                  href="/blog"
+                  className="rounded-md px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-400"
+                >
+                  Blog
+                </Link>
+              )}
+              {buttonData && (
+                <Link
+                  className="cursor-pointer inline-flex items-center justify-center rounded-md border border-transparent bg-white px-6 py-3 text-base font-medium text-indigo-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 hover:bg-indigo-100"
+                  href={buttonData.href}
+                >
+                  {buttonData.title}
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </>

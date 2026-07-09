@@ -1,6 +1,6 @@
 # Architecture
 
-This file captures the current architecture as inferred from the checked-in code. Some details may be incomplete because the project was dormant before this harness refresh.
+This file captures the current architecture as inferred from the checked-in code. Some details may be incomplete because the project was dormant before this documentation refresh.
 
 ## Application Shape
 
@@ -52,8 +52,8 @@ This file captures the current architecture as inferred from the checked-in code
 ## Known Constraints
 
 - The app uses the legacy `pages/` router and older dependency versions
-- The README had been left at the default Next.js template before this harness work
-- There is no existing CI or GitHub automation in the repository history visible from this checkout
+- The app uses a mix of older dependency versions and newer service API versions
+- There is no required CI workflow in this checkout
 
 ## Preferred Change Strategy
 

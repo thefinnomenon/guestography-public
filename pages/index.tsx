@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import Head from "next/head";
+import Link from "next/link";
 import { MdOutlineMailOutline } from "react-icons/md";
+import { absoluteUrl } from "../lib/seo";
 
 const navigation = [
   {
@@ -135,6 +137,25 @@ export default function Example() {
 
   return (
     <div className="bg-white">
+      <Head>
+        <title>Guestography | QR Code Event Photo Gallery</title>
+        <meta
+          name="description"
+          content="Create a QR code photo gallery for weddings, birthdays, fundraisers, reunions, and other events so guests can upload photos with no app download."
+        />
+        <link rel="canonical" href={absoluteUrl("/")} />
+        <meta
+          property="og:title"
+          content="Guestography | QR Code Event Photo Gallery"
+        />
+        <meta
+          property="og:description"
+          content="Collect wedding and event photos from guests with a simple QR code gallery. No app download or login needed."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={absoluteUrl("/")} />
+        <meta property="og:image" content={absoluteUrl("/landing-page/0.jpg")} />
+      </Head>
       <main>
         <div className="relative isolate">
           <svg
@@ -378,6 +399,31 @@ export default function Example() {
             </p>
           </div>
         </div>
+        <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+              A QR code photo gallery for weddings, parties, and events
+            </h2>
+            <p className="mt-6 text-lg leading-8 text-gray-600">
+              Guestography helps hosts collect guest photos from weddings,
+              birthday parties, baby showers, fundraisers, family reunions,
+              corporate events, school events, and holiday parties. Guests scan
+              a QR code, open the event photo upload page, and add pictures or
+              videos from their phone.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3 text-sm font-semibold text-indigo-600">
+              <Link href="/blog/wedding-photo-sharing-options">
+                Wedding photo sharing
+              </Link>
+              <Link href="/blog/birthday-party-photo-sharing-ideas">
+                Birthday party photos
+              </Link>
+              <Link href="/blog/how-to-collect-event-photos-from-guests">
+                Event photo collection
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
       <footer className="bg-indigo-500">
         <div className="mx-auto max-w-7xl px-6 py-4 md:flex md:items-center md:justify-between lg:px-8">
