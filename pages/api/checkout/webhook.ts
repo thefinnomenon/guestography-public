@@ -4,6 +4,7 @@ import { buffer } from "micro";
 import Stripe from "stripe";
 import Mixpanel from "mixpanel";
 import { sendEventCompletionEmail } from "../../../lib/send-completion-email";
+import { sendPurchaseNotificationEmail } from "../../../lib/send-purchase-notification-email";
 
 const mixpanel = Mixpanel.init(process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || "");
 
@@ -22,6 +23,10 @@ if (!admin.apps.length)
 else admin.app();
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+type CheckoutSessionWithLegacyDiscount = Stripe.Checkout.Session & {
+  discount?: unknown;
+};
 
 export const config = {
   api: {
@@ -111,6 +116,107 @@ async function sendCompletionEmailForEvent(eventId: string, db: any) {
   }
 }
 
+async function sendPurchaseNotificationForEvent(
+  eventId: string,
+  session: CheckoutSessionWithLegacyDiscount,
+  db: any
+) {
+  try {
+    const eventDoc = await db.collection("events").doc(eventId).get();
+
+    if (!eventDoc.exists) {
+      console.error(`Event ${eventId} not found for purchase notification`);
+      mixpanel.track("Purchase Notification Failed", {
+        eventId,
+        reason: "Event not found in database",
+        stage: "database_lookup",
+      });
+      return;
+    }
+
+    const eventData = eventDoc.data();
+    const sentSessionIds = Array.isArray(
+      eventData.purchaseNotificationStripeSessionIds
+    )
+      ? eventData.purchaseNotificationStripeSessionIds
+      : [];
+
+    if (sentSessionIds.includes(session.id)) {
+      console.log(
+        `Purchase notification already sent for event ${eventId} and session ${session.id}`
+      );
+      return;
+    }
+
+    const { title, email: ownerEmail, firstName, lastName } = eventData;
+    const ownerName =
+      firstName && lastName
+        ? `${firstName} ${lastName}`
+        : firstName || lastName || "Event Host";
+
+    if (!ownerEmail) {
+      console.error(`No owner email found for purchase notification ${eventId}`);
+      mixpanel.track("Purchase Notification Failed", {
+        eventId,
+        eventTitle: title,
+        reason: "No owner email",
+        stage: "validation",
+      });
+      return;
+    }
+
+    const baseUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://guestography.com"
+        : "http://localhost:3000";
+
+    const result = await sendPurchaseNotificationEmail({
+      eventTitle: title || "Untitled Event",
+      eventId,
+      ownerName,
+      ownerEmail,
+      amountTotal: session.amount_total,
+      amountSubtotal: session.amount_subtotal,
+      currency: session.currency,
+      stripeSessionId: session.id,
+      discountApplied:
+        !!session.discount ||
+        !!session.discounts?.length ||
+        !!session.total_details?.amount_discount,
+      baseUrl,
+    });
+
+    await db.collection("events").doc(eventId).set(
+      {
+        purchaseNotificationSentAt:
+          admin.firestore.FieldValue.serverTimestamp(),
+        purchaseNotificationStripeSessionIds:
+          admin.firestore.FieldValue.arrayUnion(session.id),
+      },
+      { merge: true }
+    );
+
+    mixpanel.track("Purchase Notification Sent", {
+      eventId,
+      eventTitle: title,
+      sessionId: session.id,
+      emailId: result?.emailId,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to send purchase notification for event ${eventId}:`,
+      error
+    );
+
+    mixpanel.track("Purchase Notification Failed", {
+      eventId,
+      sessionId: session.id,
+      reason: error instanceof Error ? error.message : "Unknown error",
+      stage: "email_sending",
+    });
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -187,6 +293,7 @@ export default async function handler(
 
         // Send completion email if payment was successful
         if (status === "PAID") {
+          await sendPurchaseNotificationForEvent(eventId, session, db);
           await sendCompletionEmailForEvent(eventId, db);
         }
       } catch (error) {
@@ -241,6 +348,7 @@ export default async function handler(
         });
 
         // Send completion email for async payment success
+        await sendPurchaseNotificationForEvent(eventId, session, db);
         await sendCompletionEmailForEvent(eventId, db);
       } catch (error) {
         console.error("Failed to update event");

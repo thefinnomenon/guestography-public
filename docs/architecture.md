@@ -32,7 +32,7 @@ This file captures the current architecture as inferred from the checked-in code
 ### Shared libraries
 
 - `lib/firebase.ts`: Firebase initialization
-- `lib/email.ts` and `lib/send-completion-email.ts`: email sending and event completion notifications
+- `lib/email.ts`, `lib/send-completion-email.ts`, and `lib/send-purchase-notification-email.ts`: email sending, event completion emails, and internal purchase notifications
 - `lib/qr-templates.ts`: QR template definitions
 - `lib/mixpanel.ts`: analytics
 
@@ -47,7 +47,7 @@ This file captures the current architecture as inferred from the checked-in code
 - Observability: Sentry is configured for client, edge, and server usage
 - Analytics: Mixpanel is proxied through Next.js rewrites
 - Media handling: uploads rely on multipart and media tooling; image and video processing appear split across app and functions code
-- Email: React Email templates live in `emails/`
+- Email: React Email templates live in `emails/`; purchase notifications are sent from the Stripe checkout webhook when payment reaches `PAID`
 
 ## Known Constraints
 

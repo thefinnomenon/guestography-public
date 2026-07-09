@@ -23,6 +23,7 @@ npm --prefix functions run serve
 - Root `.env` exists locally but is ignored by git
 - `functions/.env` exists for the Firebase Functions package
 - Several integrations likely require credentials that are not suitable for CI unless explicitly added as secrets
+- `PURCHASE_NOTIFICATION_EMAIL` can be set to one or more comma-separated addresses for internal paid-purchase notifications; if unset, the app falls back to `chris@guestography.com`
 
 ## Validation Expectations
 
