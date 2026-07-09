@@ -5,18 +5,28 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-08-27.basil",
 });
 
+const GALLERY_PRICE_CENTS = 4900;
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method === "POST") {
     const line_items = [{
-      price: "price_1MtNwGJ7SSLr30C7xnaIg6Kc",
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: "Guestography Gallery",
+          description: "QR code event gallery with 100GB storage for 12 months",
+        },
+        unit_amount: GALLERY_PRICE_CENTS,
+      },
       quantity: 1,
     }];
 
     try {
       const params: Stripe.Checkout.SessionCreateParams = {
+        mode: "payment",
         payment_method_types: ["card"],
         line_items,
         allow_promotion_codes: true,

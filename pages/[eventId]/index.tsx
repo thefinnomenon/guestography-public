@@ -266,7 +266,7 @@ export default function Home(props: Props) {
                   </h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">
-                      Get 50% off Guestography for your next event! We&apos;ll email
+                      Get $10 off Guestography for your next event! We&apos;ll email
                       you an exclusive discount code.
                     </p>
                   </div>
@@ -301,7 +301,7 @@ export default function Home(props: Props) {
                   {isSubmittingEmail ? (
                     <ClipLoader size={20} color="white" />
                   ) : (
-                    "Email Me My 50% Off Code"
+                    "Email Me My $10 Off Code"
                   )}
                 </button>
               </div>

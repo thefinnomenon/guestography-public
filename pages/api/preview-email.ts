@@ -17,7 +17,7 @@ export default async function handler(
     const emailHtml = await render(DiscountCodeEmail({
       userName: "John Doe",
       eventTitle: "Sarah & Mike's Wedding",
-      discountCode: "WEDDING-ABC123-50OFF",
+      discountCode: "WEDDING-ABC123-10OFF",
       eventId: "wedding-abc123",
     }));
 

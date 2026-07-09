@@ -26,7 +26,7 @@ export async function sendDiscountCodeEmail({
     const { data, error } = await resend.emails.send({
       from: 'Guestography <noreply@guestography.com>',
       to: [to],
-      subject: 'Your 50% off discount code - Thanks for sharing!',
+      subject: 'Your $10 off discount code - Thanks for sharing!',
       react: DiscountCodeEmail({
         userName,
         eventTitle,

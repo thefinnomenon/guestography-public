@@ -20,6 +20,66 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-08-27.basil",
 });
 
+const GALLERY_PRICE_CENTS = 4900;
+const DISCOUNT_AMOUNT_CENTS = 1000;
+const BLOG_DISCOUNT_CODE = "BLOG10";
+
+async function getActivePromotionCode(code: string) {
+  const promotionCodes = await stripe.promotionCodes.list({
+    code,
+    active: true,
+    limit: 1,
+  });
+
+  return promotionCodes.data[0];
+}
+
+async function createFixedDiscountPromotionCode(code: string, name: string) {
+  const coupon = await stripe.coupons.create({
+    amount_off: DISCOUNT_AMOUNT_CENTS,
+    currency: "usd",
+    duration: "once",
+    name,
+    metadata: {
+      app: "guestography",
+      code,
+    },
+  });
+
+  return stripe.promotionCodes.create({
+    coupon: coupon.id,
+    code,
+    active: true,
+    metadata: {
+      app: "guestography",
+      code,
+    },
+  });
+}
+
+async function ensureBlogPromotionCode() {
+  const existingPromotionCode = await getActivePromotionCode(BLOG_DISCOUNT_CODE);
+
+  if (existingPromotionCode) {
+    return existingPromotionCode;
+  }
+
+  try {
+    return await createFixedDiscountPromotionCode(
+      BLOG_DISCOUNT_CODE,
+      "$10 off Guestography"
+    );
+  } catch (error) {
+    const promotionCode = await getActivePromotionCode(BLOG_DISCOUNT_CODE);
+
+    if (promotionCode) {
+      return promotionCode;
+    }
+
+    throw error;
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -53,22 +113,11 @@ export default async function handler(
     length: 4,
   })()}`;
 
-  // Generate discount code for this event (50% off)
-  const discountCode = `${eventId.toUpperCase()}-50OFF`;
+  // Generate a fixed discount code for this event's guests.
+  const discountCode = `${eventId.toUpperCase()}-10OFF`;
   
   console.log("Generating Stripe Checkout Session for event ", eventId);
   console.log("Creating discount code:", discountCode);
-
-  // Use test price ID in development, production price ID in production
-  const price = process.env.NODE_ENV === 'development' 
-    ? process.env.STRIPE_TEST_GALLERY_PRICE_ID 
-    : process.env.STRIPE_GALLERY_PRICE_ID;
-    
-  if (!price) {
-    console.error("Stripe price ID not set for environment:", process.env.NODE_ENV);
-    res.status(400).send(`Stripe price ID not set for ${process.env.NODE_ENV} environment`);
-    return;
-  }
 
   // Generate Stripe Checkout Session
   let checkoutSession: Stripe.Checkout.Session;
@@ -79,7 +128,14 @@ export default async function handler(
       customer_email: event.email,
       line_items: [
         {
-          price,
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Guestography Gallery",
+              description: "QR code event gallery with 100GB storage for 12 months",
+            },
+            unit_amount: GALLERY_PRICE_CENTS,
+          },
           quantity: 1,
         },
       ],
@@ -92,16 +148,13 @@ export default async function handler(
     let discountApplied = false;
     if (providedDiscountCode) {
       try {
-        // Find the promotion code in Stripe
-        const promotionCodes = await stripe.promotionCodes.list({
-          code: providedDiscountCode,
-          active: true,
-          limit: 1,
-        });
+        const promotionCode = providedDiscountCode === BLOG_DISCOUNT_CODE
+          ? await ensureBlogPromotionCode()
+          : await getActivePromotionCode(providedDiscountCode);
 
-        if (promotionCodes.data.length > 0) {
+        if (promotionCode) {
           params.discounts = [{
-            promotion_code: promotionCodes.data[0].id,
+            promotion_code: promotionCode.id,
           }];
           discountApplied = true;
           console.log("Applied discount code:", providedDiscountCode);
@@ -128,15 +181,16 @@ export default async function handler(
     return;
   }
 
-  // Create Stripe promotional code for 50% off
+  // Create Stripe promotional code for $10 off
   let promoCodeId: string | undefined;
   try {
-    // First create a coupon for 50% off
+    // First create a coupon for $10 off
     const coupon = await stripe.coupons.create({
-      percent_off: 50,
-      duration: 'forever',
+      amount_off: DISCOUNT_AMOUNT_CENTS,
+      currency: "usd",
+      duration: "once",
       id: `coupon-${eventId}`,
-      name: `50% off for ${event.title} guests`,
+      name: `$10 off for ${event.title} guests`,
       metadata: {
         eventId: eventId,
         createdBy: event.email,

@@ -670,7 +670,7 @@ export default function Home(props: Props) {
                   </h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">
-                      Get 50% off your next Guestography event! Perfect for capturing memories at weddings, parties, and special occasions.
+                      Get $10 off your next Guestography event! Perfect for capturing memories at weddings, parties, and special occasions.
                     </p>
                   </div>
                   <div className="mt-4">

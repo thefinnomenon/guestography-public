@@ -30,13 +30,13 @@ const logoUrl = "https://guestography.com";
 export const DiscountCodeEmail = ({
   userName = "Guest",
   eventTitle = "Your Event",
-  discountCode = "DISCOUNT50",
+  discountCode = "DISCOUNT10",
   eventId = "sample-event",
 }: DiscountCodeEmailProps) => (
   <Html>
     <Head />
     <Preview>
-      Your 50% discount code for Guestography - Thanks for sharing your
+      Your $10 discount code for Guestography - Thanks for sharing your
       memories!
     </Preview>
     <Body style={main}>
@@ -69,14 +69,14 @@ export const DiscountCodeEmail = ({
 
         <Section style={discountSection}>
           <Heading style={h2}>
-            Here&apos;s your exclusive 50% off discount!
+            Here&apos;s your exclusive $10 off discount!
           </Heading>
           <Text style={discountText}>
             Use this code when creating your next Guestography event:
           </Text>
           <Text style={discountCodeStyle}>{discountCode}</Text>
           <Text style={smallText}>
-            This code gives you 50% off your next event - perfect for weddings,
+            This code gives you $10 off your next event - perfect for weddings,
             parties, corporate events, and more!
           </Text>
         </Section>

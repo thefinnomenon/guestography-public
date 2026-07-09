@@ -159,7 +159,7 @@ export default function Form() {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <p className="text-sm font-medium text-green-800">
-                  Great! Your 50% discount ({discountCode}) will be automatically applied at checkout.
+                  Great! Your $10 discount ({discountCode}) will be automatically applied at checkout.
                 </p>
               </div>
             </div>
@@ -218,7 +218,7 @@ export default function Form() {
                 <div className="px-4 py-4 sm:px-6 sm:py-5">
                   <div className="flex justify-between items-center mb-3">
                     <p className="text-xl sm:text-2xl font-bold">GALLERY</p>
-                    <p className="text-lg sm:text-xl font-medium">$20</p>
+                    <p className="text-lg sm:text-xl font-medium">$49</p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex gap-2 items-center text-sm sm:text-base">
@@ -227,7 +227,7 @@ export default function Form() {
                     </div>
                     <div className="flex gap-2 items-center text-sm sm:text-base">
                       <MdAccessTime className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                      <span>Media stored for 3 months</span>
+                      <span>Media stored for 12 months</span>
                     </div>
                     <div className="flex gap-2 items-center text-sm sm:text-base">
                       <RiRefund2Line className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
