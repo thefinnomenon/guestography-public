@@ -10,7 +10,7 @@ const fs = require("fs").promises;
 const fetch = require("cross-fetch");
 const util = require("node:util");
 const sanitize = require("sanitize-filename");
-const exec = util.promisify(require("node:child_process").exec);
+const execFile = util.promisify(require("node:child_process").execFile);
 import { getPlaiceholder } from "plaiceholder";
 import * as ExifReader from "exifreader";
 import sizeOf from "image-size";
@@ -186,7 +186,15 @@ export const handleMediaUpload = functions
 
           // Generate poster from first frame of video
           // and save to tempFilePath
-          await exec(`ffmpeg -i ${media.publicUrl} -vframes 1 ${tempFilePath}`);
+          const videoUrl = new URL(media.publicUrl).href;
+          await execFile("ffmpeg", [
+            "-y",
+            "-i",
+            videoUrl,
+            "-frames:v",
+            "1",
+            tempFilePath,
+          ]);
           console.log(`Generated poster at ${tempFilePath}`);
 
           // Generate base64 placeholder for poster
