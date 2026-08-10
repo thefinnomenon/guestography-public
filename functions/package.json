@@ -18,7 +18,7 @@
     "db:backup": "cp ./data/firestore.json ./data/firestore-$(date +%d-%m-%Y-%H-%M).json"
   },
   "engines": {
-    "node": "18"
+    "node": "22"
   },
   "main": "lib/functions/src/index.js",
   "dependencies": {
