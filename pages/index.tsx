@@ -216,12 +216,9 @@ export default function Example() {
                     through the eyes of your guests
                   </h1>
                   <p className="relative mt-6 text-lg leading-8 text-gray-600 sm:max-w-md lg:max-w-none">
-                    Create your event gallery and you&apos;ll receive some
-                    beautifully designed printable QR code cards to place at
-                    your event. Guests simply scan with their phone camera to
-                    instantly access your gallery and upload photos. Simple to
-                    use, no app to download, no login needed, and works for both
-                    iPhone & Android.
+                    Collect every guest&apos;s photos and videos in one shared
+                    gallery. They scan your QR code and upload instantly. No
+                    app or account required.
                   </p>
                   <div className="mt-10 flex items-center gap-x-6">
                     {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
@@ -311,115 +308,106 @@ export default function Example() {
             </div>
           </div>
         </div>
-        {/* Create Event Block */}
-        <div className="flex flex-wrap lg:flex-nowrap flex-col-reverse lg:flex-row mx-auto max-w-7xl px-6 py-8 lg:flex lg:items-center lg:gap-x-10 lg:px-8">
-          <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
-            <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
-              <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
-              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
-              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
-              <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
-              <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800">
-                <img
-                  className="object-cover object-center  w-[272px] h-[572px]"
-                  src={"/landing-page/create_event_screenshot.png"}
-                  alt="iPhone mockup with example event creation form"
-                />
-              </div>
+        <section className="bg-gray-50 py-16 sm:py-20">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-semibold uppercase tracking-widest text-indigo-600">
+                How it works
+              </p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                One gallery. Every guest&apos;s perspective.
+              </h2>
+            </div>
+            <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-3">
+              {[
+                {
+                  number: "1",
+                  title: "Create your gallery",
+                  description:
+                    "Name your event and receive printable QR code designs, or make your own.",
+                },
+                {
+                  number: "2",
+                  title: "Guests scan & upload",
+                  description:
+                    "Anyone can add photos and videos from their phone. No app or login.",
+                },
+                {
+                  number: "3",
+                  title: "Enjoy every moment",
+                  description:
+                    "View, share, and download everyone’s photos from one place.",
+                },
+              ].map((step) => (
+                <div
+                  key={step.number}
+                  className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-600 text-lg font-bold text-white">
+                    {step.number}
+                  </div>
+                  <h3 className="mt-6 text-xl font-bold text-gray-900">
+                    {step.title}
+                  </h3>
+                  <p className="mt-3 leading-7 text-gray-600">
+                    {step.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-10 text-center">
+              <a
+                href="https://guestography.com/alyssa-mikes-wedding-QUCb"
+                className="inline-flex rounded-md bg-indigo-600 px-5 py-3 text-base font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              >
+                See Demo Gallery <span aria-hidden="true">→</span>
+              </a>
             </div>
           </div>
-          <div className="mb-12 mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
-            <h1 className="mt-10 max-w-lg text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Create an event
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Create your event gallery in minutes. After completing payment,
-              you&apos;ll receive an email with 5 professionally designed QR
-              code templates to print and display at your event. Each template
-              suits different event styles - from elegant weddings to fun
-              celebrations.
-            </p>
-          </div>
-        </div>
-        {/* Collect Media Block */}
-        <div className="flex flex-wrap flex-col-reverse lg:flex-nowrap lg:flex-row-reverse mx-auto max-w-7xl px-6 py-12 sm:py-12 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:py-12">
-          <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
-            <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
-              <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
-              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
-              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
-              <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
-              <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800">
-                <img
-                  className="object-center w-[400px] h-[572px]"
-                  src="/landing-page/upload.png"
-                  alt="iPhone mockup with example guest text"
-                />
-              </div>
+        </section>
+        <section className="bg-white py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Everything you need for one event
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-gray-600">
+                Set it up once, share the QR code, and let your guests fill the
+                gallery.
+              </p>
             </div>
-          </div>
-          <div className="mb-12 mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
-            <h1 className="mt-10 max-w-lg text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Guests scan & upload
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Place your printed QR codes around the event venue - at the
-              entrance, bar, photo booth, or tables. Guests simply point their
-              phone camera at the QR code and instantly access your gallery to
-              upload their favorite moments from your event.
-            </p>
-          </div>
-        </div>
-        {/* Media Gallery Block */}
-        <div className="flex flex-wrap lg:flex-nowrap flex-col-reverse lg:flex-row mx-auto max-w-7xl px-6 py-8 lg:flex lg:items-center lg:gap-x-10 lg:px-8">
-          <div className="mt-0 lg:flex-shrink-0 lg:flex-grow">
-            <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-xl">
-              <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
-              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
-              <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
-              <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
-              <div className="rounded-[2rem] overflow-hidden w-[272px] h-[572px] bg-white dark:bg-gray-800">
-                <img
-                  className="object-cover object-center  w-[272px] h-[572px]"
-                  src={exampleImages[(index || 0) % (exampleImages.length - 1)]}
-                  alt="iPhone mockup with example event images"
-                />
-              </div>
+            <div className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-4 lg:grid-cols-4">
+              {[
+                { value: "5", label: "printable QR designs" },
+                { value: "100GB", label: "of photo and video storage" },
+                { value: "12 months", label: "of gallery access" },
+                { value: "No app", label: "or guest account needed" },
+              ].map((feature) => (
+                <div
+                  key={feature.label}
+                  className="rounded-2xl border border-gray-200 p-6 text-center"
+                >
+                  <p className="text-2xl font-bold text-indigo-600">
+                    {feature.value}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-gray-600">
+                    {feature.label}
+                  </p>
+                </div>
+              ))}
             </div>
-          </div>
-          <div className="mb-12 mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
-            <h1 className="mt-10 max-w-lg text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Enjoy the Event Gallery!
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Your gallery collects all the photos and videos as guests upload
-              them throughout your event. After the celebration, everyone can
-              visit the gallery to view, download, and share all the amazing
-              moments captured from every perspective.
-            </p>
-          </div>
-        </div>
-        <section className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              A QR code photo gallery for weddings, parties, and events
-            </h2>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Guestography helps hosts collect guest photos from weddings,
-              birthday parties, baby showers, fundraisers, family reunions,
-              corporate events, school events, and holiday parties. Guests scan
-              a QR code, open the event photo upload page, and add pictures or
-              videos from their phone.
-            </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3 text-sm font-semibold text-indigo-600">
-              <Link href="/blog/wedding-photo-sharing-options">
-                Wedding photo sharing
-              </Link>
-              <Link href="/blog/birthday-party-photo-sharing-ideas">
-                Birthday party photos
-              </Link>
-              <Link href="/blog/how-to-collect-event-photos-from-guests">
-                Event photo collection
+            <div className="mx-auto mt-12 max-w-5xl rounded-3xl bg-indigo-600 px-6 py-12 text-center shadow-lg sm:px-12">
+              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Bring every guest&apos;s photos together
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-lg text-indigo-100">
+                One event gallery for a one-time payment of $49.
+              </p>
+              <Link
+                href="/event"
+                className="mt-8 inline-flex rounded-md bg-white px-5 py-3 text-sm font-semibold text-indigo-600 shadow-sm hover:bg-indigo-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              >
+                Create Event
               </Link>
             </div>
           </div>
