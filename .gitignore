@@ -41,3 +41,32 @@ functions/pubsub-debug.log
 functions/firestore-debug.log
 # Sentry Auth Token
 .sentryclirc
+
+# Private credentials and local environment variants
+.env*
+!.env.example
+!.env.sample
+!.env.template
+*serviceAccount*.json
+*ServiceAccount*.json
+*service-account*.json
+*service_account*.json
+*-firebase-adminsdk-*.json
+*credentials*.json
+*.key
+*.p12
+*.pfx
+
+# Generated Firebase data and operational logs
+/functions/data/
+firebase-export-*/
+firestore_export/
+auth_export/
+*.log
+*.log.*
+
+# Private outreach workbooks and generated artifacts
+outputs/
+*outreach*.xlsx*
+*outreach*.ndjson
+*-leads.xlsx*
