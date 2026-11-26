@@ -4,7 +4,7 @@ Guestography is a Next.js and Firebase event-media application for creating even
 
 Built by [Chris Finn](https://finnternet.com). The original service is inactive. This repository preserves its application source for reference and portfolio review; running it requires your own service accounts and configuration.
 
-[Try the interactive portfolio demo](https://finnternet.chris-b92.workers.dev/projects/guestography/).
+[Try the interactive portfolio demo](https://finnternet.com/projects/guestography/).
 
 ## Features
 
